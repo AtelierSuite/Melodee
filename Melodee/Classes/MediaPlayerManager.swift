@@ -81,6 +81,16 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
             }
             return .commandFailed
         }
+        remoteCommandCenter.togglePlayPauseCommand.addTarget { _ in
+            if self.isEnginePlaying() {
+                self.pause()
+                return .success
+            } else if self.canStartPlayback() {
+                self.play()
+                return .success
+            }
+            return .commandFailed
+        }
         remoteCommandCenter.nextTrackCommand.addTarget { _ in
             self.skipToNextTrack()
             return .success
@@ -424,6 +434,7 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
         let playing = isEnginePlaying()
         remoteCommandCenter.playCommand.isEnabled = canStartPlayback()
         remoteCommandCenter.pauseCommand.isEnabled = playing
+        remoteCommandCenter.togglePlayPauseCommand.isEnabled = playing || canStartPlayback()
         remoteCommandCenter.nextTrackCommand.isEnabled = canGoToNextTrack()
         remoteCommandCenter.previousTrackCommand.isEnabled = canGoToPreviousTrack()
         remoteCommandCenter.changePlaybackPositionCommand.isEnabled = playing && supportsSeeking()
