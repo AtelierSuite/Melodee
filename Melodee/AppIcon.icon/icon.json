@@ -1,78 +1,329 @@
 {
   "fill" : {
-    "linear-gradient" : [
-      "display-p3:0.68218,0.75465,0.99860,1.00000",
-      "display-p3:0.36863,0.34510,0.92157,1.00000"
-    ]
+    "automatic-gradient" : "display-p3:0.31946,0.31070,0.89405,1.00000"
   },
   "groups" : [
     {
-      "blur-material" : null,
+      "blend-mode" : "normal",
       "layers" : [
         {
           "fill-specializations" : [
             {
+              "value" : {
+                "automatic-gradient" : "gray:1.00000,1.00000"
+              }
+            },
+            {
               "appearance" : "dark",
               "value" : {
-                "linear-gradient" : [
-                  "display-p3:0.58309,0.75909,1.00000,1.00000",
-                  "srgb:0.36863,0.34510,0.92157,1.00000"
-                ]
+                "solid" : "srgb:1.00000,1.00000,1.00000,1.00000"
               }
             }
           ],
-          "image-name" : "Melodee.png",
-          "name" : "Melodee"
+          "glass" : true,
+          "hidden" : false,
+          "image-name" : "Play.svg",
+          "name" : "Play",
+          "position-specializations" : [
+            {
+              "value" : {
+                "scale" : 1,
+                "translation-in-points" : [
+                  0,
+                  0
+                ]
+              }
+            },
+            {
+              "idiom" : "square",
+              "value" : {
+                "scale" : 1.15,
+                "translation-in-points" : [
+                  0,
+                  0
+                ]
+              }
+            }
+          ]
         }
       ],
-      "lighting" : "combined",
-      "name" : "Melodee",
+      "name" : "Play",
       "shadow" : {
         "kind" : "neutral",
-        "opacity" : 1
+        "opacity" : 0.5
       },
+      "specular" : true,
       "translucency" : {
         "enabled" : true,
         "value" : 0.5
       }
     },
     {
-      "blend-mode-specializations" : [
-        {
-          "value" : "soft-light"
-        },
-        {
-          "appearance" : "tinted",
-          "value" : "normal"
-        }
-      ],
+      "blend-mode" : "normal",
       "layers" : [
         {
           "fill-specializations" : [
             {
               "appearance" : "dark",
-              "value" : "automatic"
+              "value" : {
+                "solid" : "srgb:1.00000,1.00000,1.00000,1.00000"
+              }
             }
           ],
-          "image-name" : "Speakers.png",
-          "name" : "Speakers"
-        }
-      ],
-      "lighting" : "combined",
-      "name" : "Speakers",
-      "opacity-specializations" : [
-        {
-          "appearance" : "dark",
-          "value" : 1
+          "glass" : true,
+          "hidden" : false,
+          "image-name" : "Wave 1.svg",
+          "name" : "Wave 1",
+          "opacity" : 0.8,
+          "position-specializations" : [
+            {
+              "value" : {
+                "scale" : 1,
+                "translation-in-points" : [
+                  0,
+                  0
+                ]
+              }
+            },
+            {
+              "idiom" : "square",
+              "value" : {
+                "scale" : 1.15,
+                "translation-in-points" : [
+                  0,
+                  0
+                ]
+              }
+            }
+          ]
         },
         {
-          "appearance" : "tinted",
-          "value" : 0.6
+          "fill-specializations" : [
+            {
+              "appearance" : "dark",
+              "value" : {
+                "solid" : "srgb:1.00000,1.00000,1.00000,1.00000"
+              }
+            }
+          ],
+          "glass" : true,
+          "hidden" : false,
+          "image-name" : "Wave 2.svg",
+          "name" : "Wave 2",
+          "opacity" : 0.7,
+          "position-specializations" : [
+            {
+              "value" : {
+                "scale" : 1,
+                "translation-in-points" : [
+                  0,
+                  0
+                ]
+              }
+            },
+            {
+              "idiom" : "square",
+              "value" : {
+                "scale" : 1.15,
+                "translation-in-points" : [
+                  0,
+                  0
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "fill-specializations" : [
+            {
+              "appearance" : "dark",
+              "value" : {
+                "solid" : "srgb:1.00000,1.00000,1.00000,1.00000"
+              }
+            }
+          ],
+          "glass" : true,
+          "hidden" : false,
+          "image-name" : "Wave 3.svg",
+          "name" : "Wave 3",
+          "opacity" : 0.6,
+          "position-specializations" : [
+            {
+              "value" : {
+                "scale" : 1,
+                "translation-in-points" : [
+                  0,
+                  0
+                ]
+              }
+            },
+            {
+              "idiom" : "square",
+              "value" : {
+                "scale" : 1.15,
+                "translation-in-points" : [
+                  0,
+                  0
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "fill-specializations" : [
+            {
+              "appearance" : "dark",
+              "value" : {
+                "solid" : "srgb:1.00000,1.00000,1.00000,1.00000"
+              }
+            }
+          ],
+          "glass" : true,
+          "hidden" : false,
+          "image-name" : "Wave 4.svg",
+          "name" : "Wave 4",
+          "opacity" : 0.5,
+          "position-specializations" : [
+            {
+              "value" : {
+                "scale" : 1,
+                "translation-in-points" : [
+                  0,
+                  0
+                ]
+              }
+            },
+            {
+              "idiom" : "square",
+              "value" : {
+                "scale" : 1.15,
+                "translation-in-points" : [
+                  0,
+                  0
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "fill-specializations" : [
+            {
+              "appearance" : "dark",
+              "value" : {
+                "solid" : "srgb:1.00000,1.00000,1.00000,1.00000"
+              }
+            }
+          ],
+          "glass" : true,
+          "hidden" : false,
+          "image-name" : "Wave 5.svg",
+          "name" : "Wave 5",
+          "opacity" : 0.4,
+          "position-specializations" : [
+            {
+              "value" : {
+                "scale" : 1,
+                "translation-in-points" : [
+                  0,
+                  0
+                ]
+              }
+            },
+            {
+              "idiom" : "square",
+              "value" : {
+                "scale" : 1.15,
+                "translation-in-points" : [
+                  0,
+                  0
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "fill-specializations" : [
+            {
+              "appearance" : "dark",
+              "value" : {
+                "solid" : "srgb:1.00000,1.00000,1.00000,1.00000"
+              }
+            }
+          ],
+          "glass" : true,
+          "hidden" : false,
+          "image-name" : "Wave 6.svg",
+          "name" : "Wave 6",
+          "opacity" : 0.3,
+          "position-specializations" : [
+            {
+              "value" : {
+                "scale" : 1,
+                "translation-in-points" : [
+                  0,
+                  0
+                ]
+              }
+            },
+            {
+              "idiom" : "square",
+              "value" : {
+                "scale" : 1.15,
+                "translation-in-points" : [
+                  0,
+                  0
+                ]
+              }
+            }
+          ]
         }
       ],
+      "name" : "Waves",
       "shadow" : {
         "kind" : "neutral",
-        "opacity" : 0.2
+        "opacity" : 0.3
+      },
+      "specular" : true,
+      "translucency" : {
+        "enabled" : true,
+        "value" : 0
+      }
+    },
+    {
+      "blend-mode" : "normal",
+      "layers" : [
+        {
+          "glass" : true,
+          "hidden" : false,
+          "image-name" : "Bar.svg",
+          "name" : "Bar",
+          "position-specializations" : [
+            {
+              "value" : {
+                "scale" : 1,
+                "translation-in-points" : [
+                  0,
+                  0
+                ]
+              }
+            },
+            {
+              "idiom" : "square",
+              "value" : {
+                "scale" : 1.15,
+                "translation-in-points" : [
+                  0,
+                  0
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "name" : "Bar",
+      "shadow" : {
+        "kind" : "neutral",
+        "opacity" : 0.5
       },
       "specular" : true,
       "translucency" : {

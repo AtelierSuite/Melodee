@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <!--
+    Line 3 of 6 in the waveform beside the play button, counting from the left.
+  -->
+  <rect fill="#FFFFFF" x="584" y="412" width="28" height="200" rx="14" opacity="0.85"/>
+</svg>

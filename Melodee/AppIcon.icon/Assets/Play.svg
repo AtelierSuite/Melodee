@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <!--
+    The play button on the playback bar.
+  -->
+  <path fill="#FFFFFF" d="M300 444.6A20 20 0 0 1 330 427.3L410 473.4A20 20 0 0 1 410 508.1L330 554.2A20 20 0 0 1 300 536.9Z" transform="translate(0 21)"/>
+</svg>
