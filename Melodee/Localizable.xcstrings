@@ -1683,37 +1683,37 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "katagaki/Melodee"
+            "value" : "AtelierSuite/Melodee"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "katagaki/Melodee"
+            "value" : "AtelierSuite/Melodee"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "katagaki/Melodee"
+            "value" : "AtelierSuite/Melodee"
           }
         },
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "katagaki/Melodee"
+            "value" : "AtelierSuite/Melodee"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "katagaki/Melodee"
+            "value" : "AtelierSuite/Melodee"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "katagaki/Melodee"
+            "value" : "AtelierSuite/Melodee"
           }
         }
       }

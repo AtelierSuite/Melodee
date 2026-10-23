@@ -213,7 +213,7 @@ struct FolderView: View {
                     }
                     .menuActionDismissBehavior(.disabled)
                     Section {
-                        Link(destination: URL(string: "https://github.com/katagaki/Melodee")!) {
+                        Link(destination: URL(string: "https://github.com/AtelierSuite/Melodee")!) {
                             Label("More.GitHub", systemImage: "chevron.left.forwardslash.chevron.right")
                         }
                         Button("More.Attributions") {
