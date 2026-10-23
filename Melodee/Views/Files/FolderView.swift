@@ -74,9 +74,6 @@ struct FolderView: View {
                     .textCase(.none)
                     .bold()
                     .foregroundColor(.primary)
-                    .listRowSeparator(.hidden)
-                    .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 8, trailing: 16))
-                    .listRowBackground(Color.clear)
                     .textSelection(.enabled)
                     .onGeometryChange(for: CGFloat.self) { geometry in
                         geometry.size.height
@@ -84,6 +81,9 @@ struct FolderView: View {
                         heightOfTitle = height
                     }
                     .opacity(isTitleHidden ? 0 : 1)
+                    .listRowSeparator(.hidden)
+                    .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 8, trailing: 16))
+                    .listRowBackground(Color.clear)
                 }
                 HStack(alignment: .center, spacing: 8.0) {
                     Group {
