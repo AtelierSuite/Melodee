@@ -12,6 +12,12 @@ struct MelodeeApp: App {
     var body: some Scene {
         WindowGroup {
             MainView()
+                .onAppear {
+                    // NSAccentColorName isn't applied to SwiftUI's window, so tint the window directly
+                    for case let scene as UIWindowScene in UIApplication.shared.connectedScenes {
+                        scene.windows.forEach { $0.tintColor = .accent }
+                    }
+                }
                 .task {
                     debugPrint("Creating placeholder files")
                     fileManager.createPlaceholders()
