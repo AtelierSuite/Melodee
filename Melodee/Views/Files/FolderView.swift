@@ -123,6 +123,7 @@ struct FolderView: View {
                 .buttonStyle(.plain)
                 .frame(maxWidth: .infinity)
             }
+            .listSectionSeparator(.hidden, edges: .top)
             Section {
                 ForEach($files, id: \.path) { $file in
                     fileBrowserRow(for: file)

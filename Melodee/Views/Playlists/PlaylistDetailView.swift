@@ -76,6 +76,7 @@ struct PlaylistDetailView: View {
                 .buttonStyle(.plain)
                 .frame(maxWidth: .infinity)
             }
+            .listSectionSeparator(.hidden, edges: .top)
             if !audioFiles.isEmpty {
                 Section {
                     ForEach(audioFiles) { item in
