@@ -2,3 +2,4 @@ xcuserdata/
 .DS_Store
 Melodee/Licenses.plist
 Melodee.xcodeproj/xcshareddata/xcodecloud/
+__pycache__/
