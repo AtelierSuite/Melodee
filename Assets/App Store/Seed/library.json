@@ -1,0 +1,144 @@
+{
+  "schools": [
+    {
+      "folder": {"en": "Trinity General School", "ja": "トリニティ総合学園"},
+      "albums": [
+        {
+          "key": "tea-party",
+          "folder": {"en": "Afternoon Assembly", "ja": "午後の茶会"},
+          "artist": {"en": "Trinity Tea Party", "ja": "トリニティ・ティーパーティー"},
+          "genre": {"en": "Classical", "ja": "クラシック"},
+          "year": 2026,
+          "hues": [42, 350, 200],
+          "extras": ["cover", "notes"],
+          "tracks": [
+            {"en": "Rose Garden Overture", "ja": "薔薇園の序曲"},
+            {"en": "Earl Grey Waltz", "ja": "アールグレイ・ワルツ"},
+            {"en": "Sanctuary Bells", "ja": "聖堂の鐘"},
+            {"en": "Scones and Sonatas", "ja": "スコーンとソナタ"},
+            {"en": "Letters to the Tea Party", "ja": "ティーパーティーへの手紙"},
+            {"en": "Gilded Teacups", "ja": "金縁のティーカップ"},
+            {"en": "Twilight Cloister", "ja": "黄昏の回廊"}
+          ]
+        },
+        {
+          "key": "sweets-club",
+          "folder": {"en": "Sugar Rush Sessions", "ja": "シュガーラッシュ・セッション"},
+          "artist": {"en": "After-School Sweets Club", "ja": "放課後スイーツ部"},
+          "genre": {"en": "J-Pop", "ja": "J-Pop"},
+          "year": 2026,
+          "hues": [330, 20, 290],
+          "tracks": [
+            {"en": "Strawberry Shortcake Stomp", "ja": "ショートケーキ・ストンプ"},
+            {"en": "Midnight Parfait", "ja": "真夜中のパフェ"},
+            {"en": "Cream Puff Panic", "ja": "シュークリーム・パニック"},
+            {"en": "Macaron Daydream", "ja": "マカロンの白昼夢"},
+            {"en": "One More Slice", "ja": "もうひと切れだけ"},
+            {"en": "Last Bite Encore", "ja": "最後のひと口アンコール"}
+          ]
+        },
+        {
+          "key": "sisterhood",
+          "folder": {"en": "Vespers", "ja": "晩課"},
+          "artist": {"en": "Sisterhood Choir", "ja": "シスターフッド聖歌隊"},
+          "genre": {"en": "Choral", "ja": "合唱"},
+          "year": 2025,
+          "hues": [210, 250, 45],
+          "tracks": [
+            {"en": "Kyrie of the Cathedral", "ja": "大聖堂のキリエ"},
+            {"en": "Candlelight Procession", "ja": "燭光の行列"},
+            {"en": "Stained Glass Morning", "ja": "ステンドグラスの朝"},
+            {"en": "Hymn for the Faithful", "ja": "信ずる者への賛歌"},
+            {"en": "Benediction", "ja": "祝福"}
+          ]
+        },
+        {
+          "key": "make-up-work",
+          "folder": {"en": "Study Session", "ja": "放課後スタディ"},
+          "artist": {"en": "Make-Up Work Club", "ja": "補習授業部"},
+          "genre": {"en": "Lo-Fi", "ja": "ローファイ"},
+          "year": 2026,
+          "hues": [160, 95, 190],
+          "tracks": [
+            {"en": "Homework at Dusk", "ja": "夕暮れの宿題"},
+            {"en": "Bookmark Blues", "ja": "しおりのブルース"},
+            {"en": "Extra Lessons", "ja": "補習授業"},
+            {"en": "Mock Exam Morning", "ja": "模試の朝"},
+            {"en": "Passing Grade", "ja": "合格点"}
+          ]
+        }
+      ]
+    },
+    {
+      "folder": {"en": "Wildhunt Arts Academy", "ja": "ワイルドハント芸術学院"},
+      "albums": [
+        {
+          "key": "philharmonic",
+          "folder": {"en": "Atelier Nocturnes", "ja": "アトリエ夜想曲"},
+          "artist": {"en": "Wildhunt Philharmonic", "ja": "ワイルドハント・フィルハーモニー"},
+          "genre": {"en": "Classical", "ja": "クラシック"},
+          "year": 2026,
+          "hues": [265, 220, 320],
+          "extras": ["cover", "notes"],
+          "tracks": [
+            {"en": "Charcoal Sketch Nocturne", "ja": "木炭デッサンの夜想曲"},
+            {"en": "Oil on Canvas", "ja": "カンヴァスに油彩"},
+            {"en": "Gallery After Hours", "ja": "閉館後のギャラリー"},
+            {"en": "Turpentine Moon", "ja": "テレピンの月"},
+            {"en": "Unfinished Portrait", "ja": "未完の肖像"},
+            {"en": "Varnish and Velvet", "ja": "ニスとベルベット"},
+            {"en": "Curtain Call", "ja": "カーテンコール"}
+          ]
+        },
+        {
+          "key": "occult",
+          "folder": {"en": "Moonlit Séance", "ja": "月下の降霊会"},
+          "artist": {"en": "Wildhunt Occult Society", "ja": "ワイルドハント・オカルト研究会"},
+          "genre": {"en": "Ambient", "ja": "アンビエント"},
+          "year": 2025,
+          "hues": [280, 175, 330],
+          "tracks": [
+            {"en": "Tarot at Midnight", "ja": "真夜中のタロット"},
+            {"en": "Crystal Ball Interlude", "ja": "水晶玉の間奏曲"},
+            {"en": "Thirteen Candles", "ja": "十三本の蝋燭"},
+            {"en": "Ouija Waltz", "ja": "ウィジャ・ワルツ"},
+            {"en": "Witching Hour", "ja": "丑三つ時"}
+          ]
+        },
+        {
+          "key": "jazz",
+          "folder": {"en": "Gallery Opening", "ja": "ギャラリー・オープニング"},
+          "artist": {"en": "Wildhunt Jazz Ensemble", "ja": "ワイルドハント・ジャズアンサンブル"},
+          "genre": {"en": "Jazz", "ja": "ジャズ"},
+          "year": 2026,
+          "hues": [15, 300, 45],
+          "tracks": [
+            {"en": "Exhibit A", "ja": "展示その一"},
+            {"en": "Curator's Swing", "ja": "キュレーターのスウィング"},
+            {"en": "Sculpture Garden", "ja": "彫刻の庭"},
+            {"en": "Brushstroke Bossa", "ja": "筆致のボサノヴァ"},
+            {"en": "Closing Reception", "ja": "クロージング・レセプション"}
+          ]
+        }
+      ]
+    }
+  ],
+  "singles": [
+    {"album": "tea-party", "track": 2},
+    {"album": "philharmonic", "track": 3}
+  ],
+  "playlists": [
+    {
+      "name": {"en": "Tea Time", "ja": "ティータイム"},
+      "tracks": [["tea-party", 2], ["sweets-club", 4], ["sisterhood", 3], ["jazz", 4], ["tea-party", 4], ["sweets-club", 2], ["make-up-work", 1], ["tea-party", 6]]
+    },
+    {
+      "name": {"en": "Late Night Atelier", "ja": "深夜のアトリエ"},
+      "tracks": [["philharmonic", 1], ["occult", 1], ["jazz", 3], ["philharmonic", 4], ["occult", 5], ["make-up-work", 2], ["philharmonic", 7]]
+    },
+    {
+      "name": {"en": "Favorites", "ja": "お気に入り"},
+      "tracks": [["sweets-club", 1], ["philharmonic", 3], ["tea-party", 1], ["occult", 4], ["sisterhood", 1]]
+    }
+  ]
+}
