@@ -4,8 +4,9 @@ struct MissingCapture: Error {
     let url: URL
 }
 
+/// Draws the gradient and copy, and returns how far down from the top the copy ends.
 @MainActor
-func drawBackground(_ screenshot: Screenshot, copy: Copy, in canvas: NSRect, device: Device) {
+func drawBackground(_ screenshot: Screenshot, copy: Copy, in canvas: NSRect, device: Device) -> CGFloat {
     NSGradient(
         colors: screenshot.theme.stops.map(\.0),
         atLocations: screenshot.theme.stops.map(\.1),
@@ -18,16 +19,18 @@ func drawBackground(_ screenshot: Screenshot, copy: Copy, in canvas: NSRect, dev
     header.draw(top: headerTop, centerX: canvas.midX)
     let caption = Line(copy.caption, size: device.captionSize, weight: .medium,
                        color: screenshot.theme.text.withAlphaComponent(0.75), maxWidth: device.textWidth)
-    caption.draw(top: headerTop - header.size.height - 12, centerX: canvas.midX)
+    let captionTop = headerTop - header.size.height - 12
+    caption.draw(top: captionTop, centerX: canvas.midX)
+    return canvas.maxY - (captionTop - caption.size.height)
 }
 
 /// Draws the hardware with the capture clipped to its display.
 @MainActor
-func drawDevice(_ capture: CGImage, device: Device, canvasHeight: CGFloat, context: CGContext) {
+func drawDevice(_ capture: CGImage, device: Device, canvasHeight: CGFloat, copyBottom: CGFloat, context: CGContext) {
     let frame = DeviceFrames.frame(for: device)
     let scale = device.placementWidth / frame.hardwareSize.width
     let size = NSSize(width: frame.hardwareSize.width * scale, height: frame.hardwareSize.height * scale)
-    let center = device.placementCenter
+    let center = NSPoint(x: device.canvasSize.width / 2, y: (copyBottom + canvasHeight) / 2)
     let hardwareRect = CGRect(
         x: center.x - size.width / 2, y: canvasHeight - center.y - size.height / 2,
         width: size.width, height: size.height
@@ -69,8 +72,9 @@ func render(_ screenshot: Screenshot, copy: Copy, device: Device, language: Stri
     defer { NSGraphicsContext.restoreGraphicsState() }
     NSGraphicsContext.current = graphics
     let canvas = NSRect(origin: .zero, size: canvasSize)
-    drawBackground(screenshot, copy: copy, in: canvas, device: device)
-    drawDevice(capture, device: device, canvasHeight: canvasSize.height, context: graphics.cgContext)
+    let copyBottom = drawBackground(screenshot, copy: copy, in: canvas, device: device)
+    drawDevice(capture, device: device, canvasHeight: canvasSize.height, copyBottom: copyBottom,
+               context: graphics.cgContext)
     graphics.flushGraphics()
     return bitmap
 }

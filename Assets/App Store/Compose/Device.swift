@@ -45,14 +45,7 @@ enum Device: String {
         }
     }
 
-    /// The hardware's center on the canvas, and its width. It runs off the bottom.
-    var placementCenter: NSPoint {
-        switch self {
-        case .iPhone: NSPoint(x: 642, y: 1640)
-        case .iPad: NSPoint(x: 1024, y: 1650)
-        }
-    }
-
+    /// The hardware's width. It is centered in the space below the copy.
     var placementWidth: CGFloat {
         switch self {
         case .iPhone: 1060
