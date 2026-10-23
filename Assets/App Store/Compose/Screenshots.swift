@@ -10,15 +10,15 @@ enum Screenshots {
                 "en": Copy(header: "Your music, your files", caption: "Play straight from your folders"),
                 "ja": Copy(header: "音楽を、ファイルのままで", caption: "フォルダからそのまま再生")
             ],
-            theme: Palette.iris
+            theme: Palette.nocturne
         ),
         Screenshot(
             name: "02-album",
             copy: [
-                "en": Copy(header: "Every album, beautifully", caption: "Artwork and tags, read from your files"),
+                "en": Copy(header: "Browse your albums", caption: "With artwork and tags from your files"),
                 "ja": Copy(header: "アルバムを美しく", caption: "アートワークもタグもファイルから")
             ],
-            theme: Palette.teaParty
+            theme: Palette.nocturne
         ),
         Screenshot(
             name: "03-now-playing",
@@ -34,7 +34,7 @@ enum Screenshots {
                 "en": Copy(header: "Edit tags in a tap", caption: "Titles, artists, albums, and artwork"),
                 "ja": Copy(header: "タグをかんたん編集", caption: "タイトル・アーティスト・アートワークも")
             ],
-            theme: Palette.sweets
+            theme: Palette.nocturne
         ),
         Screenshot(
             name: "05-playlist",
@@ -42,7 +42,7 @@ enum Screenshots {
                 "en": Copy(header: "Playlists that travel", caption: "Saved right beside your music"),
                 "ja": Copy(header: "持ち歩けるプレイリスト", caption: "音楽と同じフォルダに保存")
             ],
-            theme: Palette.atelier
+            theme: Palette.nocturne
         ),
         Screenshot(
             name: "06-context-menu",
@@ -50,7 +50,7 @@ enum Screenshots {
                 "en": Copy(header: "Queue, convert, and more", caption: "Everything is a long press away"),
                 "ja": Copy(header: "キューも変換も", caption: "長押しするだけですぐに操作")
             ],
-            theme: Palette.seance
+            theme: Palette.nocturne
         )
     ]
 }
