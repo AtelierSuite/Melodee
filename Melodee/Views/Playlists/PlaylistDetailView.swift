@@ -15,15 +15,8 @@ struct PlaylistDetailView: View {
     @State var editedPlaylistName: String = ""
     @State var isManagingFiles: Bool = false
 
-    let statusBarHeight: CGFloat = UIApplication.shared.connectedScenes
-        .filter { $0.activationState == .foregroundActive }
-        .map { $0 as? UIWindowScene }
-        .compactMap { $0 }
-        .first?.windows
-        .filter({ $0.isKeyWindow }).first?
-        .windowScene?.statusBarManager?.statusBarFrame.height ?? 0
     @State var heightOfTitle: CGFloat = 1.0
-    @State var scrollOffset: CGFloat = 0.0
+    @State var isTitleHidden: Bool = false
 
     var playlistName: String {
         playlist?.name ?? file.name
@@ -54,15 +47,12 @@ struct PlaylistDetailView: View {
                     .bold()
                     .foregroundColor(.primary)
                     .textSelection(.enabled)
-                    .onGeometryChange(for: CGRect.self) { geometry in
-                        geometry.frame(in: .global)
-                    } action: { frame in
-                        withAnimation {
-                            scrollOffset = frame.minY - statusBarHeight - 51.0
-                            heightOfTitle = frame.height
-                        }
+                    .onGeometryChange(for: CGFloat.self) { geometry in
+                        geometry.size.height
+                    } action: { height in
+                        heightOfTitle = height
                     }
-                    .opacity(scrollOffset > -heightOfTitle ? 1 : 0)
+                    .opacity(isTitleHidden ? 0 : 1)
                     .listRowSeparator(.hidden, edges: .all)
                     .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 8, trailing: 16))
                     .listRowBackground(Color.clear)
@@ -133,6 +123,13 @@ struct PlaylistDetailView: View {
                 .listRowSeparator(.hidden)
             }
         }
+        .onScrollGeometryChange(for: Bool.self) { geometry in
+            geometry.contentOffset.y + geometry.contentInsets.top > heightOfTitle
+        } action: { _, isHidden in
+            withAnimation {
+                isTitleHidden = isHidden
+            }
+        }
         .navigationTitle(playlistName)
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
@@ -157,7 +154,7 @@ struct PlaylistDetailView: View {
                     .lineLimit(1)
                     .truncationMode(.middle)
                     .bold()
-                    .opacity(scrollOffset <= -heightOfTitle ? 1 : 0)
+                    .opacity(isTitleHidden ? 1 : 0)
                     .transition(.opacity.animation(.default.speed(0.2)))
             }
         }

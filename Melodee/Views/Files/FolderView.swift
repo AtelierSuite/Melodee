@@ -46,15 +46,8 @@ struct FolderView: View {
         !searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
-    let statusBarHeight: CGFloat = UIApplication.shared.connectedScenes
-            .filter {$0.activationState == .foregroundActive }
-            .map {$0 as? UIWindowScene }
-            .compactMap { $0 }
-            .first?.windows
-            .filter({ $0.isKeyWindow }).first?
-            .windowScene?.statusBarManager?.statusBarFrame.height ?? 0
     @State var heightOfTitle: CGFloat = 1.0
-    @State var scrollOffset: CGFloat = 0.0
+    @State var isTitleHidden: Bool = false
 
     var body: some View {
         List {
@@ -85,18 +78,12 @@ struct FolderView: View {
                     .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 8, trailing: 16))
                     .listRowBackground(Color.clear)
                     .textSelection(.enabled)
-                    .background {
-                        GeometryReader { geometry in
-                            DispatchQueue.main.async {
-                                withAnimation {
-                                    scrollOffset = geometry.frame(in: .global).minY - statusBarHeight - 51.0
-                                    heightOfTitle = geometry.frame(in: .local).height
-                                }
-                            }
-                            return Color.clear
-                        }
+                    .onGeometryChange(for: CGFloat.self) { geometry in
+                        geometry.size.height
+                    } action: { height in
+                        heightOfTitle = height
                     }
-                    .opacity(scrollOffset > -heightOfTitle ? 1 : 0)
+                    .opacity(isTitleHidden ? 0 : 1)
                 }
                 HStack(alignment: .center, spacing: 8.0) {
                     Group {
@@ -141,6 +128,13 @@ struct FolderView: View {
                     fileBrowserRow(for: file)
                 }
             }
+            }
+        }
+        .onScrollGeometryChange(for: Bool.self) { geometry in
+            geometry.contentOffset.y + geometry.contentInsets.top > heightOfTitle
+        } action: { _, isHidden in
+            withAnimation {
+                isTitleHidden = isHidden
             }
         }
         .navigationTitle(viewTitle())
@@ -236,7 +230,7 @@ struct FolderView: View {
                         .truncationMode(.middle)
                         .frame(maxWidth: 200.0)
                         .bold()
-                        .opacity(scrollOffset <= -heightOfTitle ? 1 : 0)
+                        .opacity(isTitleHidden ? 1 : 0)
                         .transition(.opacity.animation(.default.speed(0.2)))
                 }
             }
