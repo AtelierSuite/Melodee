@@ -26,19 +26,19 @@ capture_scenes() {
     local trinity=$(sample school 0) wildhunt=$(sample school 1)
     local play="=$(text Shared.PlayAll)"
 
-    scene 01-library light launch \
+    scene 01-library dark launch \
         "tap:$wildhunt" "tap:$(sample album philharmonic)" "tap:$(sample track philharmonic 3)" \
         wait:2 back back wait:2
-    scene 02-album light launch \
+    scene 02-album dark launch \
         "tap:$trinity" "tap:$(sample album tea-party)" "tap:$(sample track tea-party 2)" wait:3
     scene 03-now-playing dark launch \
         "tap:$wildhunt" "tap:$(sample album philharmonic)" "tap:$play" wait:2 bar wait:4
-    scene 04-tag-editor light launch \
+    scene 04-tag-editor dark launch \
         "tap:$trinity" "tap:$(sample album sweets-club)" "press:$(sample track sweets-club 2)" \
         "tap:$(text Shared.EditTag.Single)" wait:3
     scene 05-playlist dark launch \
         "tap:$(sample playlist 1)" "tap:$play" wait:3
-    scene 06-context-menu light launch \
+    scene 06-context-menu dark launch \
         "tap:$wildhunt" "tap:$(sample album occult)" "tap:$(sample track occult 4)" wait:2 \
         "press:$(sample track occult 1)" wait:2
 }
