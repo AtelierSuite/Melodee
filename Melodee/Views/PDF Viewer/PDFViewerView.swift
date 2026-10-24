@@ -7,6 +7,7 @@ struct PDFViewerView: View {
 
     var body: some View {
         PDFKitView(file: file)
+            .playbackBarContentInset()
             .navigationTitle(file.name)
     }
 }

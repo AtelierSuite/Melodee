@@ -133,6 +133,7 @@ struct PlaylistDetailView: View {
         }
         .navigationTitle(playlistName)
         .listStyle(.plain)
+        .playbackBarContentInset()
         .scrollContentBackground(.hidden)
         .background(
             .linearGradient(

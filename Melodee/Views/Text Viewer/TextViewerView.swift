@@ -9,6 +9,7 @@ struct TextViewerView: View {
 
     var body: some View {
         TextEditor(text: .constant(text))
+            .playbackBarContentInset()
             .navigationTitle(file.name)
             .onAppear {
                 do {
