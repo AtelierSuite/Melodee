@@ -113,6 +113,7 @@ struct FolderView: View {
                     }
                     .frame(maxWidth: .infinity)
                     .disabled(!folderContainsPlayableMedia())
+                    sortMenu
                 }
                 .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 16, trailing: 16))
                 .listRowBackground(Color.clear)
@@ -150,21 +151,8 @@ struct FolderView: View {
         .listStyle(.plain)
         .playbackBarContentInset()
         .toolbar {
-            ToolbarItemGroup(placement: .topBarTrailing) {
+            ToolbarItem(placement: .topBarLeading) {
                 Menu {
-                    Section {
-                        Button {
-                            newFolderName = ""
-                            isCreatingFolder = true
-                        } label: {
-                            Label("Shared.NewFolder", systemImage: "folder")
-                        }
-                        Button {
-                            isCreatingPlaylist = true
-                        } label: {
-                            Label("Shared.NewPlaylist", systemImage: "music.note.list")
-                        }
-                    }
                     if folderContainsTaggableFiles() {
                         Section {
                             Button {
@@ -174,31 +162,6 @@ struct FolderView: View {
                             }
                         }
                     }
-                    Section("Sort.Title") {
-                        Picker("Sort.SortBy", selection: $state.sortOption) {
-                            Label("Sort.FileName", systemImage: "doc")
-                                .tag(SortOption.fileName)
-                            Label("Sort.TrackTitle", systemImage: "music.note")
-                                .tag(SortOption.trackTitle)
-                            Label("Sort.TrackNumber", systemImage: "number")
-                                .tag(SortOption.trackNumber)
-                            Label("Sort.AlbumName", systemImage: "square.stack")
-                                .tag(SortOption.albumName)
-                            Label("Sort.ArtistName", systemImage: "music.mic")
-                                .tag(SortOption.artistName)
-                        }
-                    }
-                    .labelsVisibility(.visible)
-                    .menuActionDismissBehavior(.disabled)
-                    Section {
-                        Picker("Sort.Order", selection: $state.sortOrder) {
-                            Label("Sort.Ascending", systemImage: "arrow.up")
-                                .tag(SortOrder.ascending)
-                            Label("Sort.Descending", systemImage: "arrow.down")
-                                .tag(SortOrder.descending)
-                        }
-                    }
-                    .menuActionDismissBehavior(.disabled)
                     Section {
                         Link(destination: URL(string: "https://github.com/AtelierSuite/Melodee")!) {
                             Label("More.GitHub", systemImage: "chevron.left.forwardslash.chevron.right")
@@ -209,6 +172,23 @@ struct FolderView: View {
                     }
                 } label: {
                     Image(systemName: "ellipsis")
+                }
+            }
+            ToolbarItem(placement: .topBarTrailing) {
+                Menu {
+                    Button {
+                        newFolderName = ""
+                        isCreatingFolder = true
+                    } label: {
+                        Label("Shared.NewFolder", systemImage: "folder")
+                    }
+                    Button {
+                        isCreatingPlaylist = true
+                    } label: {
+                        Label("Shared.NewPlaylist", systemImage: "music.note.list")
+                    }
+                } label: {
+                    Image(systemName: "plus")
                 }
             }
             ToolbarItem(placement: .principal) {
@@ -347,6 +327,46 @@ struct FolderView: View {
                 newFolderName = ""
             }
         }
+    }
+
+    var sortMenu: some View {
+        Menu {
+            Section("Sort.Title") {
+                Picker("Sort.SortBy", selection: $state.sortOption) {
+                    Label("Sort.FileName", systemImage: "doc")
+                        .tag(SortOption.fileName)
+                    Label("Sort.TrackTitle", systemImage: "music.note")
+                        .tag(SortOption.trackTitle)
+                    Label("Sort.TrackNumber", systemImage: "number")
+                        .tag(SortOption.trackNumber)
+                    Label("Sort.AlbumName", systemImage: "square.stack")
+                        .tag(SortOption.albumName)
+                    Label("Sort.ArtistName", systemImage: "music.mic")
+                        .tag(SortOption.artistName)
+                }
+            }
+            .labelsVisibility(.visible)
+            .menuActionDismissBehavior(.disabled)
+            Section {
+                Picker("Sort.Order", selection: $state.sortOrder) {
+                    Label("Sort.Ascending", systemImage: "arrow.up")
+                        .tag(SortOrder.ascending)
+                    Label("Sort.Descending", systemImage: "arrow.down")
+                        .tag(SortOrder.descending)
+                }
+            }
+            .menuActionDismissBehavior(.disabled)
+        } label: {
+            Image(systemName: "arrow.up.arrow.down")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 18.0, height: 18.0)
+                .bold()
+                .frame(width: 24.0, height: 24.0)
+        }
+        .buttonStyle(.glass)
+        .buttonBorderShape(.circle)
+        .accessibilityLabel("Sort.Title")
     }
 
     @ViewBuilder
