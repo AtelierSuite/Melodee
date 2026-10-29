@@ -1,4 +1,5 @@
 import Foundation
+import Prelude
 import SwiftUI
 
 struct FSFile: FilesystemObject {
@@ -44,19 +45,13 @@ struct FSFile: FilesystemObject {
         return type == .audio || type == .video
     }
 
-    /// Returns true if this file is a taggable audio file (SFBAudioEngine-writable).
+    /// Returns true if this file is an audio file that Prelude can read and write tags for.
     func isTaggableAudio() -> Bool {
-        return FSFile.taggableAudioExtensions.contains(self.extension)
+        return type == .audio && FSFile.taggableAudioExtensions.contains(self.extension.lowercased())
     }
 
-    /// Audio file extensions for which SFBAudioEngine can both read and write metadata.
-    /// Excludes formats with read-only or partial metadata support (Shorten, tracker modules).
-    static let taggableAudioExtensions: Set<String> = [
-        "mp3", "m4a", "m4b", "aac", "alac",
-        "wav", "wave", "aif", "aiff", "aifc",
-        "flac", "ogg", "oga", "opus", "spx",
-        "ape", "wv", "mpc", "tta", "dsf"
-    ]
+    /// Audio file extensions that TagLib can read and write tags for.
+    static let taggableAudioExtensions = Set(TagLibFile.supportedExtensions())
 
     /// Returns true if this audio file can be converted to other formats
     func isConvertibleAudio() -> Bool {
