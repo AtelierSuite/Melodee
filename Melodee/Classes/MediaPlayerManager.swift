@@ -501,6 +501,26 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
         savePlaybackPosition(at: time)
     }
 
+    /// Points queued files at their new locations after they have been renamed.
+    /// `renamedPaths` maps normalized old paths to new paths.
+    func updateQueuedFilePaths(_ renamedPaths: [String: String]) {
+        var updatedQueue = queue
+        var isModified = false
+        for index in updatedQueue.indices {
+            let key = BatchRenamePlanner.normalizedPath(updatedQueue[index].path)
+            guard let newPath = renamedPaths[key] else { continue }
+            let newURL = URL(filePath: newPath)
+            updatedQueue[index].path = newPath
+            updatedQueue[index].name = newURL.deletingPathExtension().lastPathComponent
+            isModified = true
+        }
+        if isModified {
+            queue = updatedQueue
+            invalidateMetadataCache()
+            setNowPlaying()
+        }
+    }
+
     func setQueueIDs() {
         for index in 0..<queue.count where queue[index].playbackQueueID.isEmpty {
             queue[index].playbackQueueID = UUID().uuidString

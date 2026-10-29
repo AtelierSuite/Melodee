@@ -17,6 +17,9 @@ struct FBState {
     var fileBeingRenamed: FSFile?
     var newFileName: String = ""
 
+    // State handling for batch rename
+    var batchRenamePresentation: BatchRenamePresentation?
+
     // State handling for directory rename
     var isRenamingDirectory: Bool = false
     var directoryBeingRenamed: FSDirectory?
