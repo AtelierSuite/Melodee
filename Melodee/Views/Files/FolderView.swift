@@ -284,18 +284,7 @@ struct FolderView: View {
             sortFiles()
         }
         .fileBrowserAlerts(state: $state, refreshFiles: refreshFiles)
-        .sheet(item: $state.tagEditorPresentation) { presentation in
-            NavigationStack {
-                TagEditorView(files: presentation.files)
-                    .toolbar {
-                        ToolbarItem(placement: .topBarLeading) {
-                            Button(role: .close) {
-                                state.tagEditorPresentation = nil
-                            }
-                        }
-                    }
-            }
-        }
+        .tagEditorPresentation($state.tagEditorPresentation)
         .sheet(isPresented: $isCreatingPlaylist) {
             CreatePlaylistSheet(
                 scopeRootURL: scopeRootURL(),

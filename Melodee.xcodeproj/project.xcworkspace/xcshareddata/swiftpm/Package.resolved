@@ -1,5 +1,5 @@
 {
-  "originHash" : "f2bd5b677010a2e73575268884c27832b43391c8e4705da86547704b81a09237",
+  "originHash" : "6de0368b464482afa20ccf81675204b0ef5f568abe0eab9add321f18120012d5",
   "pins" : [
     {
       "identity" : "avfaudioextensions",
@@ -179,6 +179,15 @@
       "state" : {
         "revision" : "b68cf8a127936434cae93aa2c613d4b47eb34de4",
         "version" : "0.1.2"
+      }
+    },
+    {
+      "identity" : "tunetag",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/katagaki/Tunetag",
+      "state" : {
+        "branch" : "main",
+        "revision" : "57691846cb9aec9c74abc9a7abbe32b1c3a802ea"
       }
     },
     {

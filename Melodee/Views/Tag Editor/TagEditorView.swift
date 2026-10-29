@@ -1,229 +1,72 @@
 import PhotosUI
-import SFBAudioEngine
+import Prelude
 import SwiftUI
-import TipKit
 
 struct TagEditorView: View {
 
-    @Environment(NowPlayingBarManager.self) var nowPlayingBarManager: NowPlayingBarManager
-
     @State var files: [FSFile]
-    @State var audioFiles: [FSFile: AudioFile] = [:]
     @State var tagData = Tag()
-    @State var selectedPhoto: PhotosPickerItem?
-    @State var isSelectingFile: Bool = false
+    @State var loadedTagData = Tag()
+    @State var selectedAlbumArt: PhotosPickerItem?
+    @State var isAlbumArtRemoved: Bool = false
     @State var saveState: SaveState = .notSaved
-    @State var savePercentage: Int = 0
-    @State var isInitialLoadCompleted: Bool = false
-    @State var initialLoadPercentage: Int = 0
-    @State var isConfirmingAlbumArtDeletion: Bool = false
-    @State var isTokensPopoverPresented: Bool = false
-    @State var isShowingSaveError: Bool = false
+    @State var savedFileCount: Int = 0
+    @State var totalFileCount: Int = 0
+    @State var isReadingTags: Bool = true
+    @State var showsSaveError: Bool = false
+    @State var isSortingExpanded: Bool = false
+    @State var showsExtendedTags: Bool = false
+    @State var showsSaveBeforeExtendedTags: Bool = false
+    @State var showsOnlineLookup: Bool = false
+    @State var showsSaveBeforeOnlineLookup: Bool = false
+    @State var showsRemoveTagsConfirmation: Bool = false
+    @State var showsRemoveTagsError: Bool = false
+    @State var isSidebarShown: Bool = false
     @FocusState var focusedField: FocusedField?
 
-    var albumArtControlsPadding: CGFloat {
-        if #available(iOS 27.0, *) {
-            8.0
-        } else {
-            0.0
-        }
+    @Environment(NowPlayingBarManager.self) var nowPlayingBarManager: NowPlayingBarManager
+    @Environment(\.horizontalSizeClass) var horizontalSizeClass
+
+    var usesWideLayout: Bool {
+        horizontalSizeClass == .regular
     }
 
     var body: some View {
-        List {
-            Section {
-                VStack(spacing: 12.0) {
-                    Group {
-                        if let albumArt = tagData.albumArt,
-                           let albumArtImage = UIImage(data: albumArt) {
-                            Image(uiImage: albumArtImage)
-                                .resizable()
-                        } else {
-                            Image(.albumGeneric)
-                                .resizable()
-                        }
-                    }
-                    .scaledToFill()
-                    .frame(width: 240.0, height: 240.0)
-                    .clipShape(RoundedRectangle(cornerRadius: 16.0))
-                    .shadow(color: .black.opacity(0.15), radius: 8.0, y: 4.0)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 16.0)
-                            .stroke(.primary, lineWidth: 1/3)
-                            .opacity(0.3)
-                    )
-                    .overlay(alignment: .bottom) {
-                        HStack(spacing: albumArtControlsPadding) {
-                            PhotosPicker(selection: $selectedPhoto,
-                                         matching: .images,
-                                         photoLibrary: .shared()) {
-                                Image(systemName: "photo")
-                            }
-                            .buttonStyle(.glass)
-                            .buttonBorderShape(.circle)
-                            .accessibilityLabel("TagEditor.SelectAlbumArt")
-                            Button {
-                                isSelectingFile = true
-                            } label: {
-                                Image(systemName: "folder")
-                            }
-                            .buttonStyle(.glass)
-                            .buttonBorderShape(.circle)
-                            .accessibilityLabel("TagEditor.SelectAlbumArt.FromFiles")
-                            Button(role: .destructive) {
-                                isConfirmingAlbumArtDeletion = true
-                            } label: {
-                                Image(systemName: "trash")
-                            }
-                            .buttonStyle(.glass)
-                            .buttonBorderShape(.circle)
-                            .tint(.red)
-                            .disabled(tagData.albumArt == nil)
-                            .accessibilityLabel("TagEditor.DeleteAlbumArt")
-                        }
+        editorContent
+        .disabled(saveState == .saving || isReadingTags)
+        .overlay {
+            if isReadingTags {
+                ZStack {
+                    Color(.systemBackground).opacity(0.6)
+                    ProgressView()
                         .controlSize(.large)
-                        .imageScale(.large)
-                        .padding(.bottom, 12.0)
-                    }
-                    Text(files.count == 1 ? files[0].name :
-                            NSLocalizedString("BatchEdit.MultipleFiles", comment: ""))
-                        .bold()
-                        .textCase(.none)
-                        .foregroundStyle(.primary)
-                        .multilineTextAlignment(.center)
                 }
-                .frame(maxWidth: .infinity)
-                .listRowBackground(Color.clear)
-                .listRowSeparator(.hidden)
-                .listRowInsets(EdgeInsets(top: 16.0, leading: 16.0, bottom: 16.0, trailing: 16.0))
-            }
-            if files.count == 1 {
-                TETagDataSection(tagData: $tagData, focusedField: $focusedField)
-                    .popoverTip(TETokensTip(), arrowEdge: .top)
-            } else {
-                TETagDataSection(tagData: $tagData, focusedField: $focusedField,
-                               placeholder: NSLocalizedString("BatchEdit.Keep", comment: ""))
-            }
-            if !tagData.hasValidNumbers {
-                Text("TagEditor.InvalidNumber.Message")
-                    .font(.footnote)
-                    .foregroundStyle(.red)
+                .ignoresSafeArea()
+                .transition(.opacity)
             }
         }
-        .contentMargins(.top, 0.0, for: .scrollContent)
-        .navigationTitle("ViewTitle.TagEditor")
+        .scrollDismissesKeyboard(.interactively)
         .navigationBarTitleDisplayMode(.inline)
-        .disabled(saveState == .saving || !isInitialLoadCompleted)
-        .toolbar {
-            ToolbarItem(placement: .principal) {
-                Spacer()
-            }
-            ToolbarItem(placement: .topBarTrailing) {
-                Button {
-                    if saveState == .notSaved && isInitialLoadCompleted {
-                        Task {
-                            changeSaveState(to: .saving)
-                            UIApplication.shared.isIdleTimerDisabled = true
-                            let didSave = await saveAllTagData()
-                            if didSave {
-                                await readAllTagData()
-                            }
-                            UIApplication.shared.isIdleTimerDisabled = false
-                            changeSaveState(to: didSave ? .saved : .notSaved)
-                            isShowingSaveError = !didSave
-                        }
-                    }
-                } label: {
-                    Group {
-                        switch saveState {
-                        case .notSaved:
-                            Text("Shared.Save")
-                                .bold()
-                        case .saving:
-                            ProgressView()
-                                .controlSize(.small)
-                                .tint(.white)
-                        case .saved:
-                            Image(systemName: "checkmark")
-                                .bold()
-                        }
-                    }
-                    .foregroundStyle(.white)
-                }
-                .buttonStyle(.borderedProminent)
-                .tint(saveState == .saved ? .green : .accentColor)
-                .disabled(!isInitialLoadCompleted || !tagData.hasValidNumbers)
-            }
-            ToolbarSpacer(.flexible, placement: .bottomBar)
-            ToolbarItem(placement: .bottomBar) {
-                Button {
-                    isTokensPopoverPresented = true
-                } label: {
-                    Image(systemName: "curlybraces")
-                }
-                .popover(isPresented: $isTokensPopoverPresented) {
-                    List {
-                        TEAvailableTokensSection()
-                    }
-                    .listStyle(.plain)
-                    .frame(minWidth: 320.0, idealWidth: 360.0, minHeight: 320.0, idealHeight: 440.0)
-                    .presentationCompactAdaptation(.popover)
-                }
-            }
-        }
-        .scrollDismissesKeyboard(.immediately)
-        .sheet(isPresented: $isSelectingFile) {
-            DocumentPicker(allowedUTIs: [.image], onDocumentPicked: { url in
-                let isAccessSuccessful = url.startAccessingSecurityScopedResource()
-                if isAccessSuccessful {
-                    selectedPhoto = nil
-                    let imageFileData: Data? = try? Data(contentsOf: url)
-                    tagData.albumArt = imageFileData
-                    tagData.shouldRemoveAlbumArt = false
-                }
-                url.stopAccessingSecurityScopedResource()
-            })
-            .ignoresSafeArea(edges: [.bottom])
-        }
-        .alert("TagEditor.RemoveAlbumArt", isPresented: $isConfirmingAlbumArtDeletion) {
-            Button("Shared.Delete", role: .destructive) {
-                selectedPhoto = nil
-                tagData.albumArt = nil
-                tagData.shouldRemoveAlbumArt = true
-            }
-            Button("Shared.Cancel", role: .cancel) { }
-        } message: {
-            Text("TagEditor.RemoveAlbumArt.Subtitle")
-        }
-        .alert("TagEditor.SaveFailed.Message", isPresented: $isShowingSaveError) {
-            Button("Shared.OK", role: .cancel) { }
-        }
-        .overlay {
-            if !isInitialLoadCompleted {
-                ProgressAlert(title: "Alert.ReadingTags.Title",
-                              message: "Alert.ReadingTags.Text",
-                              percentage: $initialLoadPercentage)
-            }
-        }
-        .overlay {
-            if saveState == .saving {
-                ProgressAlert(title: "Alert.SavingTags.Title",
-                              message: "Alert.SavingTags.Text",
-                              percentage: $savePercentage)
+        .safeAreaInset(edge: .bottom) {
+            // While typing, the keyboard bar takes the place of the Save button
+            if focusedField != nil {
+                keyboardBar
+                    .padding([.leading, .trailing, .bottom])
+            } else if !(usesWideLayout && isSidebarShown) {
+                saveControls
+                    .frame(maxWidth: usesWideLayout ? 480.0 : .infinity)
+                    .padding([.leading, .trailing, .bottom])
             }
         }
         .task {
-            if !isInitialLoadCompleted {
-                await readAllTagData()
-                isInitialLoadCompleted = true
-            }
+            await readAllTagData()
         }
-        .onChange(of: selectedPhoto) { _, _ in
+        .onChange(of: selectedAlbumArt) { _, _ in
             Task {
-                if let selectedPhoto = selectedPhoto,
-                    let data = try? await selectedPhoto.loadTransferable(type: Data.self) {
+                if let selectedAlbumArt = selectedAlbumArt,
+                    let data = try? await selectedAlbumArt.loadTransferable(type: Data.self) {
                     tagData.albumArt = data
-                    tagData.shouldRemoveAlbumArt = false
+                    isAlbumArtRemoved = false
                 }
             }
         }
@@ -237,6 +80,41 @@ struct TagEditorView: View {
                 break
             }
         }
+        .alert("TagEditor.SaveFailed.Message", isPresented: $showsSaveError) {
+            Button("Shared.OK", role: .cancel) { }
+        }
+        .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                moreMenu
+            }
+        }
+        .navigationDestination(isPresented: $showsExtendedTags) {
+            ExtendedTagsView(file: files[0]) {
+                Task { await readAllTagData() }
+            }
+        }
+        .alert("TagEditor.ExtendedTags.SaveFirst", isPresented: $showsSaveBeforeExtendedTags) {
+            Button("Shared.OK", role: .cancel) { }
+        }
+        .sheet(isPresented: $showsOnlineLookup) {
+            OnlineLookupView(files: files,
+                             artist: tagData.albumArtist ?? tagData.artist ?? "",
+                             album: tagData.album ?? "") {
+                Task { await readAllTagData() }
+            }
+        }
+        .alert("OnlineLookup.SaveFirst", isPresented: $showsSaveBeforeOnlineLookup) {
+            Button("Shared.OK", role: .cancel) { }
+        }
+        .confirmationDialog("TagEditor.RemoveAllTags.Confirm", isPresented: $showsRemoveTagsConfirmation,
+                            titleVisibility: .visible) {
+            Button("TagEditor.RemoveAllTags", role: .destructive) {
+                Task { await removeAllTagsFromFiles() }
+            }
+        }
+        .alert("TagEditor.RemoveAllTags.Failed", isPresented: $showsRemoveTagsError) {
+            Button("Shared.OK", role: .cancel) { }
+        }
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
             withAnimation(.easeOut) {
                 nowPlayingBarManager.isKeyboardShowing = true
@@ -247,5 +125,176 @@ struct TagEditorView: View {
                 nowPlayingBarManager.isKeyboardShowing = false
             }
         }
+    }
+
+    @ViewBuilder
+    var editorContent: some View {
+        if usesWideLayout {
+            TagEditorWideLayout(tagData: $tagData, focusedField: $focusedField,
+                                isBatchEditing: files.count > 1, showsAdvancedInformation: files.count == 1,
+                                isSortingExpanded: $isSortingExpanded,
+                                isSidebarShown: $isSidebarShown) {
+                FileHeaderView(filename: filename,
+                               albumArt: $tagData.albumArt,
+                               selectedAlbumArt: $selectedAlbumArt,
+                               isAlbumArtRemoved: $isAlbumArtRemoved)
+                .frame(maxWidth: .infinity)
+            } sidebarFooter: {
+                saveControls
+            }
+        } else {
+            List {
+                FileHeaderSection(filename: filename,
+                                  albumArt: $tagData.albumArt,
+                                  selectedAlbumArt: $selectedAlbumArt,
+                                  isAlbumArtRemoved: $isAlbumArtRemoved)
+                TagDataSection(tagData: $tagData, focusedField: $focusedField,
+                               isBatchEditing: files.count > 1, isSortingExpanded: $isSortingExpanded)
+                if files.count == 1 {
+                    TagInfoSection(tagData: tagData)
+                }
+            }
+        }
+    }
+
+    var saveControls: some View {
+        VStack(spacing: 4) {
+            if !tagData.hasValidNumbersAllowingTokens {
+                Text("TagEditor.InvalidNumber.Message")
+                    .font(.footnote)
+                    .foregroundStyle(.red)
+            }
+            Button {
+                if saveState == .notSaved && !isReadingTags {
+                    Task {
+                        changeSaveState(to: .saving)
+                        UIApplication.shared.isIdleTimerDisabled = true
+                        let allSaved = await saveAllTagData()
+                        await readAllTagData()
+                        UIApplication.shared.isIdleTimerDisabled = false
+                        changeSaveState(to: allSaved ? .saved : .notSaved)
+                        showsSaveError = !allSaved
+                    }
+                }
+            } label: {
+                switch saveState {
+                case .notSaved:
+                    LargeButtonLabel(iconName: "square.and.arrow.down.fill", text: "Shared.Save")
+                        .bold()
+                        .frame(maxWidth: .infinity)
+                case .saving:
+                    ProgressDonut(progress: totalFileCount > 0
+                                  ? Double(savedFileCount) / Double(totalFileCount)
+                                  : 0)
+                        .frame(width: 24.0, height: 24.0)
+                        .padding(.all, 8.0)
+                case .saved:
+                    Image(systemName: "checkmark")
+                        .font(.body)
+                        .bold()
+                        .padding([.top, .bottom], 8.0)
+                        .frame(maxWidth: .infinity)
+                }
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(tintForSaveState)
+            .modifier(SaveButtonStyleModifier())
+            .frame(minHeight: 56.0)
+        }
+        .disabled(isReadingTags || !tagData.hasValidNumbersAllowingTokens)
+    }
+
+    var filename: String {
+        files.count == 1 ? files[0].name : NSLocalizedString("BatchEdit.MultipleFiles", comment: "")
+    }
+
+    var moreMenu: some View {
+        Menu {
+            Button("OnlineLookup.Title", systemImage: "magnifyingglass") {
+                if hasUnsavedChanges {
+                    showsSaveBeforeOnlineLookup = true
+                } else {
+                    showsOnlineLookup = true
+                }
+            }
+            if files.count == 1 {
+                Button("TagEditor.ExtendedTags", systemImage: "list.bullet.rectangle") {
+                    if hasUnsavedChanges {
+                        showsSaveBeforeExtendedTags = true
+                    } else {
+                        showsExtendedTags = true
+                    }
+                }
+            }
+            Button("TagEditor.RemoveAllTags", systemImage: "trash", role: .destructive) {
+                showsRemoveTagsConfirmation = true
+            }
+        } label: {
+            Label("TagEditor.MoreActions", systemImage: "ellipsis")
+        }
+        .disabled(saveState == .saving || isReadingTags)
+    }
+
+    var hasUnsavedChanges: Bool {
+        tagData != loadedTagData || isAlbumArtRemoved
+    }
+
+    func changeSaveState(to newState: SaveState) {
+        withAnimation(.snappy.speed(2)) {
+            saveState = newState
+        }
+    }
+
+    var tintForSaveState: Color {
+        switch saveState {
+        case .notSaved: return .accentColor
+        case .saving: return .orange
+        case .saved: return .green
+        }
+    }
+}
+struct ProgressDonut: View {
+    var progress: Double
+    var lineWidth: CGFloat = 3.0
+
+    var body: some View {
+        ZStack {
+            Circle()
+                .stroke(Color.white.opacity(0.3), lineWidth: lineWidth)
+            Circle()
+                .trim(from: 0, to: max(0, min(1, progress)))
+                .stroke(Color.white,
+                        style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
+                .rotationEffect(.degrees(-90))
+        }
+    }
+}
+
+struct SaveButtonStyleModifier: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .glassEffect(.regular.interactive())
+    }
+}
+
+extension TagEditorView {
+
+    var keyboardBar: some View {
+        HStack {
+            if files.count > 1, let field = focusedField {
+                // Puts a field back to keeping each file's own value
+                Button("BatchEdit.DontChange") {
+                    tagData[keyPath: field.keyPath] = nil
+                }
+                .disabled(tagData[keyPath: field.keyPath] == nil)
+            }
+            Spacer()
+            Button("Shared.DismissKeyboard", systemImage: "keyboard.chevron.compact.down") {
+                focusedField = nil
+            }
+            .labelStyle(.iconOnly)
+        }
+        .buttonStyle(.glass)
+        .controlSize(.large)
     }
 }
