@@ -20,6 +20,8 @@ class ExternalFoldersManager {
     @ObservationIgnored private let legacyStorageKey = "ExternalFolderBookmark"
 
     var bookmarks: [ExternalFolderBookmark] = []
+    /// URLs of bookmarks that have been resolved and are being accessed, keyed by bookmark ID
+    @ObservationIgnored private(set) var resolvedURLs: [UUID: URL] = [:]
 
     init() {
         loadBookmarks()
@@ -96,6 +98,7 @@ class ExternalFoldersManager {
             ) {
                 url.stopAccessingSecurityScopedResource()
             }
+            resolvedURLs.removeValue(forKey: bookmarks[offset].id)
         }
         bookmarks.remove(atOffsets: offsets)
         saveBookmarks()
@@ -129,6 +132,7 @@ class ExternalFoldersManager {
                 debugPrint("Failed to access security-scoped resource for: \(url)")
                 return nil
             }
+            resolvedURLs[bookmark.id] = url
             return url
         } catch {
             debugPrint("Failed to resolve bookmark: \(error)")

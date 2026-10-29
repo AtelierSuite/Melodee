@@ -17,11 +17,23 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
     @ObservationIgnored let videoPlayer = AVPlayer()
     @ObservationIgnored let videoPlayerController: AVPlayerViewController
     @ObservationIgnored var downloadManager: FileDownloadManager?
+    @ObservationIgnored var stateStore: PlaybackStateStore?
     var isPlaybackActive: Bool = false
     var isPaused: Bool = true
-    var repeatMode: RepeatMode = .none
-    var queue: [FSFile] = []
-    var currentlyPlayingID: String = ""
+    var repeatMode: RepeatMode = .none {
+        didSet { if !isRestoringState { stateStore?.saveRepeatMode(repeatMode) } }
+    }
+    var queue: [FSFile] = [] {
+        didSet { scheduleQueueSave() }
+    }
+    var currentlyPlayingID: String = "" {
+        didSet {
+            if currentlyPlayingID != oldValue {
+                // The engine may still report the previous file's duration, so leave it out
+                savePlaybackPosition(at: 0.0, includesTotalTime: false)
+            }
+        }
+    }
     var metadataRefreshTrigger: UUID = UUID()
     var videoAspectRatio: CGFloat?
 
@@ -33,6 +45,14 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
     @ObservationIgnored private var videoItemStatusObservation: NSKeyValueObservation?
     @ObservationIgnored private var videoTimeControlObservation: NSKeyValueObservation?
     @ObservationIgnored private var videoPresentationSizeObservation: NSKeyValueObservation?
+
+    // Restored position that is applied once the engine loads the current file
+    @ObservationIgnored private var pendingResumeTime: TimeInterval?
+    @ObservationIgnored private var pendingTotalTime: TimeInterval?
+    @ObservationIgnored private var isRestoringState: Bool = false
+    @ObservationIgnored private var hasRestoredState: Bool = false
+    @ObservationIgnored private var isQueueSaveScheduled: Bool = false
+    @ObservationIgnored private var positionSaveTimer: Timer?
 
     override init() {
         // The same controller instance is reused by the Now Playing sheet so that
@@ -64,6 +84,21 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
             }
         }
         setUpRemoteCommands()
+        // Save the playback position when the app may be suspended or terminated
+        notificationCenter.addObserver(self,
+                                       selector: #selector(applicationWillSuspend(_:)),
+                                       name: UIApplication.didEnterBackgroundNotification,
+                                       object: nil)
+        notificationCenter.addObserver(self,
+                                       selector: #selector(applicationWillSuspend(_:)),
+                                       name: UIApplication.willTerminateNotification,
+                                       object: nil)
+        // The app can be killed while playing in the background without notice, so save periodically
+        positionSaveTimer = Timer.scheduledTimer(timeInterval: 5.0,
+                                                 target: self,
+                                                 selector: #selector(positionSaveTimerFired(_:)),
+                                                 userInfo: nil,
+                                                 repeats: true)
     }
 
     private func setUpRemoteCommands() {
@@ -176,6 +211,9 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
     }
 
     func supportsSeeking() -> Bool {
+        if pendingResumeTime != nil {
+            return true
+        }
         if isCurrentlyPlayingVideo() {
             return videoPlayer.currentItem != nil
         }
@@ -183,6 +221,11 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
     }
 
     func playbackTime() -> (currentTime: TimeInterval, totalTime: TimeInterval)? {
+        // The restored file isn't loaded until playback starts, so report the saved position
+        if let pendingResumeTime {
+            guard let pendingTotalTime, pendingTotalTime > 0 else { return nil }
+            return (min(pendingResumeTime, pendingTotalTime), pendingTotalTime)
+        }
         if isCurrentlyPlayingVideo() {
             guard let item = videoPlayer.currentItem else { return nil }
             let totalTime = item.duration.seconds
@@ -215,6 +258,7 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
         // Stop any playback that is in progress
         audioPlayer.stop()
         videoPlayer.pause()
+        clearPendingResume()
         // Queue and/or play new file
         let currentlyPlayingIndex = currentlyPlayingIndex()
         if addToQueue {
@@ -240,9 +284,10 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
         loadAndPlay(file)
     }
 
-    private func loadAndPlay(_ file: FSFile) {
+    private func loadAndPlay(_ file: FSFile, from startTime: TimeInterval? = nil) {
         activateAudioSession()
         let url = URL(fileURLWithPath: file.path)
+        let startTime = startTime.flatMap { $0 > 0 ? $0 : nil }
         if file.type == .video {
             audioPlayer.stop()
             let item = AVPlayerItem(url: url)
@@ -268,6 +313,11 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
                 }
             }
             videoPlayer.replaceCurrentItem(with: item)
+            if let startTime {
+                videoPlayer.seek(to: CMTime(seconds: startTime, preferredTimescale: 600),
+                                 toleranceBefore: .zero,
+                                 toleranceAfter: .zero)
+            }
             videoPlayer.play()
             isPlaybackActive = true
             isPaused = false
@@ -278,7 +328,7 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
         videoPresentationSizeObservation = nil
         videoAspectRatio = nil
         do {
-            try audioPlayer.play(url)
+            try playAudio(at: url, from: startTime)
             isPlaybackActive = true
             isPaused = false
             setNowPlaying()
@@ -286,6 +336,29 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
             debugPrint("Failed to start playback: \(error.localizedDescription)")
             handlePlaybackFailure()
         }
+    }
+
+    private func playAudio(at url: URL, from startTime: TimeInterval?) throws {
+        if let startTime {
+            try audioPlayer.play(try decoder(for: url, startingAt: startTime))
+        } else {
+            try audioPlayer.play(url)
+        }
+    }
+
+    /// Opens a decoder positioned at the given time, so playback resumes there without an audible jump.
+    private func decoder(for url: URL, startingAt startTime: TimeInterval) throws -> AudioDecoder {
+        let decoder = try AudioDecoder(url: url)
+        try decoder.open()
+        let frame = AVAudioFramePosition(startTime * decoder.processingFormat.sampleRate)
+        if decoder.supportsSeeking, frame > 0, frame < decoder.length {
+            do {
+                try decoder.seek(to: frame)
+            } catch {
+                debugPrint("Failed to seek restored file: \(error.localizedDescription)")
+            }
+        }
+        return decoder
     }
 
     private func handlePlaybackFailure() {
@@ -345,15 +418,17 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
         guard !queue.isEmpty, index < queue.count else { return }
         let file = queue[index]
         currentlyPlayingID = file.playbackQueueID
+        let resumeTime = pendingResumeTime
+        clearPendingResume()
         if file.isEvicted(), let downloadManager {
             isPlaybackActive = true
             isPaused = true
             downloadManager.startDownload(for: file) { [weak self] in
                 self?.invalidateMetadataCache()
-                self?.loadAndPlay(file)
+                self?.loadAndPlay(file, from: resumeTime)
             }
         } else {
-            loadAndPlay(file)
+            loadAndPlay(file, from: resumeTime)
         }
     }
 
@@ -373,6 +448,7 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
         audioPlayer.pause()
         videoPlayer.pause()
         isPaused = true
+        savePlaybackPosition()
     }
 
     func stop() {
@@ -381,6 +457,7 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
         videoItemStatusObservation = nil
         videoPresentationSizeObservation = nil
         videoAspectRatio = nil
+        clearPendingResume()
         queue.removeAll()
         currentlyPlayingID = ""
         nowPlayingInfoCenter.nowPlayingInfo = nil
@@ -405,16 +482,23 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
     }
 
     func seekTo(_ time: TimeInterval) {
+        if pendingResumeTime != nil {
+            pendingResumeTime = time
+            savePlaybackPosition(at: time)
+            return
+        }
         if isCurrentlyPlayingVideo() {
             videoPlayer.seek(to: CMTime(seconds: time, preferredTimescale: 600),
                              toleranceBefore: .zero,
                              toleranceAfter: .zero)
             setNowPlaying()
+            savePlaybackPosition(at: time)
             return
         }
         guard audioPlayer.supportsSeeking else { return }
         audioPlayer.seek(time: time)
         setNowPlaying()
+        savePlaybackPosition(at: time)
     }
 
     func setQueueIDs() {
@@ -470,6 +554,79 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
             }
         }
         return UIImage(named: "Album.Generic") ?? UIImage()
+    }
+
+    // MARK: - State persistence
+
+    /// Restores the queue and position saved in a previous session, paused at the saved time.
+    func restorePlaybackState() {
+        guard !hasRestoredState, let stateStore else { return }
+        hasRestoredState = true
+        isRestoringState = true
+        repeatMode = stateStore.restoreRepeatMode()
+        guard queue.isEmpty else {
+            isRestoringState = false
+            return
+        }
+        guard let state = stateStore.restore() else {
+            isRestoringState = false
+            stateStore.saveQueue([])
+            stateStore.savePosition(nil)
+            return
+        }
+        queue = state.queue
+        currentlyPlayingID = state.currentlyPlayingID
+        pendingResumeTime = state.currentTime ?? 0.0
+        pendingTotalTime = state.totalTime
+        isPlaybackActive = true
+        isPaused = true
+        isRestoringState = false
+        // Files that are no longer available were dropped, so save the cleaned up queue
+        stateStore.saveQueue(queue)
+        savePlaybackPosition()
+        invalidateMetadataCache()
+        setNowPlaying()
+    }
+
+    private func clearPendingResume() {
+        pendingResumeTime = nil
+        pendingTotalTime = nil
+    }
+
+    private func scheduleQueueSave() {
+        guard !isRestoringState, !isQueueSaveScheduled, stateStore != nil else { return }
+        // Coalesce the many mutations made while editing the queue into a single write
+        isQueueSaveScheduled = true
+        nonisolated(unsafe) let managerRef = self
+        Task { @MainActor in
+            managerRef.isQueueSaveScheduled = false
+            managerRef.stateStore?.saveQueue(managerRef.queue)
+            managerRef.savePlaybackPosition()
+        }
+    }
+
+    private func savePlaybackPosition(at time: TimeInterval? = nil, includesTotalTime: Bool = true) {
+        guard !isRestoringState, let stateStore else { return }
+        guard !queue.isEmpty, currentlyPlayingFile() != nil else {
+            stateStore.savePosition(nil)
+            return
+        }
+        let playbackTime = playbackTime()
+        stateStore.savePosition(PersistedPlaybackPosition(
+            currentlyPlayingID: currentlyPlayingID,
+            currentTime: time ?? playbackTime?.currentTime ?? 0.0,
+            totalTime: includesTotalTime ? (playbackTime?.totalTime ?? pendingTotalTime) : nil
+        ))
+    }
+
+    @objc private func applicationWillSuspend(_ notification: Notification) {
+        savePlaybackPosition()
+    }
+
+    @objc private func positionSaveTimerFired(_ timer: Timer) {
+        if isEnginePlaying() {
+            savePlaybackPosition()
+        }
     }
 
     // MARK: - Video playback events
@@ -556,6 +713,7 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
                 nowPlayingInfoCenter.nowPlayingInfo = nil
                 isPlaybackActive = false
                 isPaused = true
+                savePlaybackPosition(at: 0.0)
             } else {
                 debugPrint("Playing next file...")
                 playImmediately(queue[index + 1], addToQueue: false)
