@@ -22,6 +22,12 @@ struct MelodeeApp: App {
                     debugPrint("Creating placeholder files")
                     fileManager.createPlaceholders()
                     mediaPlayerManager.downloadManager = fileDownloadManager
+                    mediaPlayerManager.stateStore = PlaybackStateStore(
+                        documentsDirectoryURL: fileManager.documentsDirectoryURL,
+                        cloudDocumentsDirectoryURL: fileManager.cloudDocumentsDirectoryURL,
+                        externalFolders: externalFoldersManager
+                    )
+                    mediaPlayerManager.restorePlaybackState()
                 }
                 .environment(fileManager)
                 .environment(mediaPlayerManager)

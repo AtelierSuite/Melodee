@@ -1,6 +1,6 @@
 import Foundation
 
-enum RepeatMode {
+enum RepeatMode: String {
     case none
     case single
     case all
