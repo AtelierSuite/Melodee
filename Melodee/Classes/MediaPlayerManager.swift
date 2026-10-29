@@ -321,7 +321,9 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
             setNowPlaying()
             return
         }
-        if audioPlayer.isPaused {
+        // A route change or audio session interruption (e.g. AirPods) can stop the engine
+        // while keeping the current decoder, so resume it rather than reloading from the start.
+        if audioPlayer.isPaused || (audioPlayer.isStopped && audioPlayer.nowPlaying != nil) {
             do {
                 try audioPlayer.play()
                 isPlaybackActive = true
