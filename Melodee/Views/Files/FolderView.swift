@@ -149,14 +149,6 @@ struct FolderView: View {
         }
         .listStyle(.plain)
         .playbackBarContentInset()
-        .scrollContentBackground(.hidden)
-        .background(
-            .linearGradient(
-                colors: [.backgroundGradientTop, .backgroundGradientBottom],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-        )
         .toolbar {
             ToolbarItemGroup(placement: .topBarTrailing) {
                 Menu {
