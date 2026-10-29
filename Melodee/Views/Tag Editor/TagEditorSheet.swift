@@ -33,3 +33,32 @@ struct TagEditorSheet: View {
         }
     }
 }
+
+extension View {
+    /// Presents the tag editor as a sheet, or full screen in wide windows such as on iPad so it gets the
+    /// desktop layout.
+    func tagEditorPresentation(_ presentation: Binding<TagEditorPresentation?>) -> some View {
+        modifier(TagEditorPresentationModifier(presentation: presentation))
+    }
+}
+
+struct TagEditorPresentationModifier: ViewModifier {
+
+    @Binding var presentation: TagEditorPresentation?
+
+    @Environment(\.horizontalSizeClass) var horizontalSizeClass
+
+    var isWide: Bool {
+        horizontalSizeClass == .regular
+    }
+
+    func body(content: Content) -> some View {
+        content
+            .sheet(item: isWide ? .constant(nil) : $presentation) { presentation in
+                TagEditorSheet(files: presentation.files)
+            }
+            .fullScreenCover(item: isWide ? $presentation : .constant(nil)) { presentation in
+                TagEditorSheet(files: presentation.files)
+            }
+    }
+}

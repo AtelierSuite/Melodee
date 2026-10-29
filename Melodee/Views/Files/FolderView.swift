@@ -284,9 +284,7 @@ struct FolderView: View {
             sortFiles()
         }
         .fileBrowserAlerts(state: $state, refreshFiles: refreshFiles)
-        .sheet(item: $state.tagEditorPresentation) { presentation in
-            TagEditorSheet(files: presentation.files)
-        }
+        .tagEditorPresentation($state.tagEditorPresentation)
         .sheet(isPresented: $isCreatingPlaylist) {
             CreatePlaylistSheet(
                 scopeRootURL: scopeRootURL(),
