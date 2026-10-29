@@ -11,7 +11,8 @@
 		E4DB2A632AB3FFA800C5810D /* Zoomy in Frameworks */ = {isa = PBXBuildFile; productRef = E4DB2A622AB3FFA800C5810D /* Zoomy */; };
 		E4DB2A682AB4032900C5810D /* VariableBlurView in Frameworks */ = {isa = PBXBuildFile; productRef = E4DB2A672AB4032900C5810D /* VariableBlurView */; };
 		E4F736B02F38010000A203FE /* SFBAudioEngine in Frameworks */ = {isa = PBXBuildFile; productRef = E4F736AF2F38010000A203FE /* SFBAudioEngine */; };
-		E4F736B12F38010000A203FE /* taglib in Frameworks */ = {isa = PBXBuildFile; productRef = E4F736B32F38010000A203FE /* taglib */; };
+		E4F736B12F38010000A203FE /* Prelude in Frameworks */ = {isa = PBXBuildFile; productRef = E4F736B32F38010000A203FE /* Prelude */; };
+		E4F736B42F38010000A203FE /* PreludeLookup in Frameworks */ = {isa = PBXBuildFile; productRef = E4F736B52F38010000A203FE /* PreludeLookup */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -58,7 +59,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				E4F736B02F38010000A203FE /* SFBAudioEngine in Frameworks */,
-				E4F736B12F38010000A203FE /* taglib in Frameworks */,
+				E4F736B12F38010000A203FE /* Prelude in Frameworks */,
+				E4F736B42F38010000A203FE /* PreludeLookup in Frameworks */,
 				E43C847A2AB009B300D87A5F /* ZIPFoundation in Frameworks */,
 				E4DB2A632AB3FFA800C5810D /* Zoomy in Frameworks */,
 				E4DB2A682AB4032900C5810D /* VariableBlurView in Frameworks */,
@@ -119,7 +121,8 @@
 				E4DB2A622AB3FFA800C5810D /* Zoomy */,
 				E4DB2A672AB4032900C5810D /* VariableBlurView */,
 				E4F736AF2F38010000A203FE /* SFBAudioEngine */,
-				E4F736B32F38010000A203FE /* taglib */,
+				E4F736B32F38010000A203FE /* Prelude */,
+				E4F736B52F38010000A203FE /* PreludeLookup */,
 			);
 			productName = Melodee;
 			productReference = E4A4D6472AAEF11F0062D12C /* Melodee.app */;
@@ -158,7 +161,7 @@
 				E4DB2A612AB3FFA800C5810D /* XCRemoteSwiftPackageReference "Zoomy" */,
 				E4DB2A662AB4032900C5810D /* XCRemoteSwiftPackageReference "VariableBlurView" */,
 				E4F736AE2F38010000A203FE /* XCRemoteSwiftPackageReference "SFBAudioEngine" */,
-				E4F736B22F38010000A203FE /* XCRemoteSwiftPackageReference "CXXTagLib" */,
+				E4F736B22F38010000A203FE /* XCRemoteSwiftPackageReference "Tunetag" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = E4A4D6482AAEF11F0062D12C /* Products */;
@@ -392,7 +395,6 @@
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 2.2.6;
-				SWIFT_OBJC_BRIDGING_HEADER = "Melodee/Melodee-Bridging-Header.h";
 				PRODUCT_BUNDLE_IDENTIFIER = com.tsubuzaki.Melodee;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
@@ -441,7 +443,6 @@
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 2.2.6;
-				SWIFT_OBJC_BRIDGING_HEADER = "Melodee/Melodee-Bridging-Header.h";
 				PRODUCT_BUNDLE_IDENTIFIER = com.tsubuzaki.Melodee;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
@@ -509,12 +510,12 @@
 				minimumVersion = 0.12.1;
 			};
 		};
-		E4F736B22F38010000A203FE /* XCRemoteSwiftPackageReference "CXXTagLib" */ = {
+		E4F736B22F38010000A203FE /* XCRemoteSwiftPackageReference "Tunetag" */ = {
 			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/sbooth/CXXTagLib";
+			repositoryURL = "https://github.com/katagaki/Tunetag";
 			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 2.3.2;
+				branch = main;
+				kind = branch;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
@@ -540,10 +541,15 @@
 			package = E4F736AE2F38010000A203FE /* XCRemoteSwiftPackageReference "SFBAudioEngine" */;
 			productName = SFBAudioEngine;
 		};
-		E4F736B32F38010000A203FE /* taglib */ = {
+		E4F736B32F38010000A203FE /* Prelude */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = E4F736B22F38010000A203FE /* XCRemoteSwiftPackageReference "CXXTagLib" */;
-			productName = taglib;
+			package = E4F736B22F38010000A203FE /* XCRemoteSwiftPackageReference "Tunetag" */;
+			productName = Prelude;
+		};
+		E4F736B52F38010000A203FE /* PreludeLookup */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = E4F736B22F38010000A203FE /* XCRemoteSwiftPackageReference "Tunetag" */;
+			productName = PreludeLookup;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
