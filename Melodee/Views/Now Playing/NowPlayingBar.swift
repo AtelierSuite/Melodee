@@ -56,6 +56,7 @@ struct NowPlayingBar: View {
                 }
             }
             .frame(maxHeight: 32.0)
+            .tint(.primary)
             .disabled(!mediaPlayer.canStartPlayback())
         }
         .padding()
