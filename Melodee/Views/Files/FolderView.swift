@@ -153,12 +153,23 @@ struct FolderView: View {
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
                 Menu {
-                    if folderContainsTaggableFiles() {
+                    if folderContainsTaggableFiles() || folderContainsFiles() {
                         Section {
-                            Button {
-                                state.tagEditorPresentation = TagEditorPresentation(files: taggableFiles())
-                            } label: {
-                                Label("Shared.EditTag.All", systemImage: "tag")
+                            if folderContainsTaggableFiles() {
+                                Button {
+                                    state.tagEditorPresentation = TagEditorPresentation(files: taggableFiles())
+                                } label: {
+                                    Label("Shared.EditTag.All", systemImage: "tag")
+                                }
+                            }
+                            if folderContainsFiles() {
+                                Button {
+                                    state.batchRenamePresentation = BatchRenamePresentation(
+                                        files: files.compactMap { $0 as? FSFile }
+                                    )
+                                } label: {
+                                    Label("BatchRename.All", systemImage: "pencil.and.list.clipboard")
+                                }
                             }
                         }
                     }
@@ -285,6 +296,15 @@ struct FolderView: View {
         }
         .fileBrowserAlerts(state: $state, refreshFiles: refreshFiles)
         .tagEditorPresentation($state.tagEditorPresentation)
+        .sheet(item: $state.batchRenamePresentation) { presentation in
+            BatchRenameView(
+                files: presentation.files,
+                scopeRootURL: scopeRootURL(),
+                fileManager: fileManager
+            ) {
+                refreshFiles()
+            }
+        }
         .sheet(isPresented: $isCreatingPlaylist) {
             CreatePlaylistSheet(
                 scopeRootURL: scopeRootURL(),
@@ -511,6 +531,10 @@ struct FolderView: View {
 
     func folderContainsPlayableMedia() -> Bool {
         files.contains { ($0 as? FSFile)?.isPlayableMedia() ?? false }
+    }
+
+    func folderContainsFiles() -> Bool {
+        files.contains { $0 is FSFile }
     }
 
     func folderContainsTaggableFiles() -> Bool {
