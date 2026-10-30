@@ -84,6 +84,11 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
             }
         }
         setUpRemoteCommands()
+        // Pause when headphones are disconnected (e.g. AirPods removed or put back in the case)
+        notificationCenter.addObserver(self,
+                                       selector: #selector(audioSessionRouteDidChange(_:)),
+                                       name: AVAudioSession.routeChangeNotification,
+                                       object: audioSession)
         // Save the playback position when the app may be suspended or terminated
         notificationCenter.addObserver(self,
                                        selector: #selector(applicationWillSuspend(_:)),
@@ -110,11 +115,9 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
             return .commandFailed
         }
         remoteCommandCenter.pauseCommand.addTarget { _ in
-            if self.isEnginePlaying() {
-                self.pause()
-                return .success
-            }
-            return .commandFailed
+            // Always pause so the Now Playing state is corrected even if the engine already stopped
+            self.pause()
+            return .success
         }
         remoteCommandCenter.togglePlayPauseCommand.addTarget { _ in
             if self.isEnginePlaying() {
@@ -448,6 +451,7 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
         audioPlayer.pause()
         videoPlayer.pause()
         isPaused = true
+        setNowPlaying()
         savePlaybackPosition()
     }
 
@@ -649,6 +653,21 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
         }
     }
 
+    // MARK: - Audio session events
+
+    @objc private func audioSessionRouteDidChange(_ notification: Notification) {
+        guard let reasonValue = notification.userInfo?[AVAudioSessionRouteChangeReasonKey] as? UInt,
+              AVAudioSession.RouteChangeReason(rawValue: reasonValue) == .oldDeviceUnavailable else {
+            return
+        }
+        nonisolated(unsafe) let managerRef = self
+        Task { @MainActor in
+            guard managerRef.isPlaybackActive, !managerRef.isPaused else { return }
+            debugPrint("Audio output device became unavailable, pausing playback.")
+            managerRef.pause()
+        }
+    }
+
     // MARK: - Video playback events
 
     @objc private func videoPlayerItemDidPlayToEnd(_ notification: Notification) {
@@ -685,6 +704,19 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
             managerRef.isPaused = isNowPaused
             if playbackState == .playing {
                 managerRef.isPlaybackActive = true
+            }
+            managerRef.setNowPlaying()
+        }
+    }
+
+    func audioPlayer(_ audioPlayer: AudioPlayer, audioEngineConfigurationChange userInfo: [AnyHashable: Any]?) {
+        nonisolated(unsafe) let managerRef = self
+        Task { @MainActor in
+            guard !managerRef.isCurrentlyPlayingVideo() else { return }
+            // The engine restores its previous state after a route change without reporting it,
+            // which can undo a pause that arrived while it was reconfiguring
+            if managerRef.isPaused, managerRef.audioPlayer.isPlaying {
+                managerRef.audioPlayer.pause()
             }
             managerRef.setNowPlaying()
         }
