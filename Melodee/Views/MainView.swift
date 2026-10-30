@@ -40,10 +40,10 @@ struct MainView: View {
                     .ignoresSafeArea()
                 NowPlayingView()
                     .frame(width: nowPlayingColumnWidth)
-                    .transition(.move(edge: .trailing))
             }
         }
-        .animation(.default, value: isTwoColumnLayout)
+        // The column is not animated in: UIKit-backed viewers (text, PDF) keep their text laid out
+        // for the old, wider frame when it shrinks inside an animation, leaving it cut off by the column.
         .onGeometryChange(for: CGSize.self) { proxy in
             proxy.size
         } action: { size in
