@@ -3,25 +3,52 @@ import TipKit
 
 struct MainView: View {
 
+    @Environment(\.horizontalSizeClass) var horizontalSizeClass
     @Environment(ExternalFoldersManager.self) var externalFolders: ExternalFoldersManager
 
     @AppStorage("SelectedLibrarySource") var selectedSource: LibrarySource = .local
     @AppStorage("LastOnboardedVersion") var lastOnboardedVersion: String = ""
     @State var path: [ViewPath] = []
     @State var isOnboardingPresented: Bool = false
+    @State var containerSize: CGSize = .zero
+
+    // Show Now Playing in its own column when iOS reports enough horizontal room and the
+    // window is landscape; otherwise fall back to the floating Now Playing bar.
+    var isTwoColumnLayout: Bool {
+        horizontalSizeClass == .regular && containerSize.width > containerSize.height
+    }
+
+    var nowPlayingColumnWidth: CGFloat {
+        min(max(containerSize.width * 0.4, 360.0), 480.0)
+    }
 
     var body: some View {
         let configuration = rootConfiguration()
-        NavigationStack(path: $path) {
-            FolderView(
-                currentDirectory: configuration.directory,
-                overrideStorageLocation: configuration.storageLocation,
-                isLibraryRoot: true
-            )
-            .id(configuration.source)
-            .hasFileBrowserNavigationDestinations()
+        HStack(spacing: 0.0) {
+            NavigationStack(path: $path) {
+                FolderView(
+                    currentDirectory: configuration.directory,
+                    overrideStorageLocation: configuration.storageLocation,
+                    isLibraryRoot: true
+                )
+                .id(configuration.source)
+                .hasFileBrowserNavigationDestinations()
+            }
+            .playbackBarAccessory(isEnabled: !isTwoColumnLayout)
+            if isTwoColumnLayout {
+                Divider()
+                    .ignoresSafeArea()
+                NowPlayingView()
+                    .frame(width: nowPlayingColumnWidth)
+                    .transition(.move(edge: .trailing))
+            }
         }
-        .playbackBarAccessory()
+        .animation(.default, value: isTwoColumnLayout)
+        .onGeometryChange(for: CGSize.self) { proxy in
+            proxy.size
+        } action: { size in
+            containerSize = size
+        }
         .onChange(of: selectedSource) {
             path.removeAll()
         }

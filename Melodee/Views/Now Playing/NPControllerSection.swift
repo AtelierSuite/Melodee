@@ -6,6 +6,7 @@ struct NPControllerSection: View {
     @Environment(MediaPlayerManager.self) var mediaPlayer
 
     @Binding var albumArt: Image
+    var artworkMaxHeight: CGFloat?
     @State var currentDuration: TimeInterval = .zero
     @State var totalDuration: TimeInterval = .zero
     @State var isSeekbarSeeking: Bool = false
@@ -41,6 +42,7 @@ struct NPControllerSection: View {
                 }
                 .frame(maxWidth: .infinity)
                 .aspectRatio(1.0, contentMode: .fit)
+                .frame(maxHeight: artworkMaxHeight)
                 .padding(.bottom, 4.0)
                 .shadow(color: .black.opacity(0.1), radius: 10.0)
                 .transition(.slide.animation(.default))
