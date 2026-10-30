@@ -3,11 +3,10 @@ import SwiftUI
 @main
 struct MelodeeApp: App {
 
-    @State var fileManager: FilesystemManager = FilesystemManager()
-    @State var mediaPlayerManager: MediaPlayerManager = MediaPlayerManager()
+    @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+
+    let services = AppServices.shared
     @State var nowPlayingBarManager: NowPlayingBarManager = NowPlayingBarManager()
-    @State var fileDownloadManager: FileDownloadManager = FileDownloadManager()
-    @State var externalFoldersManager: ExternalFoldersManager = ExternalFoldersManager()
 
     var body: some Scene {
         WindowGroup {
@@ -18,22 +17,11 @@ struct MelodeeApp: App {
                         scene.windows.forEach { $0.tintColor = .accent }
                     }
                 }
-                .task {
-                    debugPrint("Creating placeholder files")
-                    fileManager.createPlaceholders()
-                    mediaPlayerManager.downloadManager = fileDownloadManager
-                    mediaPlayerManager.stateStore = PlaybackStateStore(
-                        documentsDirectoryURL: fileManager.documentsDirectoryURL,
-                        cloudDocumentsDirectoryURL: fileManager.cloudDocumentsDirectoryURL,
-                        externalFolders: externalFoldersManager
-                    )
-                    mediaPlayerManager.restorePlaybackState()
-                }
-                .environment(fileManager)
-                .environment(mediaPlayerManager)
+                .environment(services.fileManager)
+                .environment(services.mediaPlayerManager)
                 .environment(nowPlayingBarManager)
-                .environment(fileDownloadManager)
-                .environment(externalFoldersManager)
+                .environment(services.fileDownloadManager)
+                .environment(services.externalFoldersManager)
         }
     }
 }
