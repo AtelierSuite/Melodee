@@ -30,7 +30,9 @@ final class QueueViewController: NSViewController {
         tableView.target = self
         tableView.doubleAction = #selector(playClickedRow(_:))
         tableView.registerForDraggedTypes([.queueRows])
-        tableView.draggingDestinationFeedbackStyle = .gap
+        // An insertion line, rather than a gap, shows exactly where the tracks will land
+        tableView.draggingDestinationFeedbackStyle = .regular
+        tableView.setDraggingSourceOperationMask(.move, forLocal: true)
         tableView.onDelete = { [weak self] in
             self?.removeSelectedTracks()
         }
