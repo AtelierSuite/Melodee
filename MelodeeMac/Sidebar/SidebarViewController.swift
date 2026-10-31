@@ -27,7 +27,32 @@ final class SidebarViewController: NSViewController {
         scrollView.documentView = outlineView
         scrollView.hasVerticalScroller = true
         scrollView.drawsBackground = false
-        view = scrollView
+        let addLabel = MacText.string("Menu.AddFolder")
+        let addButton = NSButton(
+            image: NSImage(systemSymbolName: "plus", accessibilityDescription: addLabel) ?? NSImage(),
+            target: nil,
+            action: #selector(AppDelegate.addFolder(_:))
+        )
+        addButton.isBordered = false
+        addButton.toolTip = addLabel
+        addButton.symbolConfiguration = .init(pointSize: 14, weight: .medium)
+        addButton.contentTintColor = .secondaryLabelColor
+        let container = NSView()
+        for subview in [scrollView, addButton] {
+            subview.translatesAutoresizingMaskIntoConstraints = false
+            container.addSubview(subview)
+        }
+        NSLayoutConstraint.activate([
+            scrollView.topAnchor.constraint(equalTo: container.topAnchor),
+            scrollView.leadingAnchor.constraint(equalTo: container.leadingAnchor),
+            scrollView.trailingAnchor.constraint(equalTo: container.trailingAnchor),
+            scrollView.bottomAnchor.constraint(equalTo: addButton.topAnchor, constant: -8),
+            addButton.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 16),
+            addButton.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -12),
+            addButton.widthAnchor.constraint(equalToConstant: 24),
+            addButton.heightAnchor.constraint(equalToConstant: 24)
+        ])
+        view = container
         locationsObserver = NotificationCenter.default.addObserver(
             forName: .libraryLocationsDidChange, object: nil, queue: .main
         ) { [weak self] _ in

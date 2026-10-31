@@ -19,11 +19,15 @@ enum LibraryLocation: Hashable {
         }
     }
 
+    /// Folders use the name Finder shows, such as a localized name for the Music folder.
+    @MainActor
     var title: String {
         switch self {
         case .local: MacText.string("Sidebar.OnMyMac")
         case .cloud: MacText.string("Sidebar.iCloudDrive")
-        case .folder(let bookmark): bookmark.name
+        case .folder(let bookmark):
+            MacServices.shared.externalFolders.resolvedURLs[bookmark.id]
+                .map { FileManager.default.displayName(atPath: $0.path(percentEncoded: false)) } ?? bookmark.name
         }
     }
 

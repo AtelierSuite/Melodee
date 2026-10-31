@@ -47,7 +47,7 @@ final class BrowserViewController: NSViewController {
         guard let folderURL, let location else { return location?.title ?? "" }
         return folderURL.standardizedFileURL == location.rootURL?.standardizedFileURL
             ? location.title
-            : folderURL.lastPathComponent
+            : FileManager.default.displayName(atPath: folderURL.path(percentEncoded: false))
     }
 
     override func loadView() {
