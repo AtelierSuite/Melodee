@@ -24,11 +24,19 @@ final class ThumbnailCache {
     }
 
     func thumbnail(for item: BrowserItem, size: CGFloat, scale: CGFloat) async -> NSImage? {
-        if let cached = cachedThumbnail(for: item) {
+        guard let file = item.file else { return nil }
+        return await thumbnail(for: file, size: size, scale: scale)
+    }
+
+    func cachedThumbnail(for file: FSFile) -> NSImage? {
+        cache.object(forKey: URL(filePath: file.path).path as NSString)
+    }
+
+    func thumbnail(for file: FSFile, size: CGFloat, scale: CGFloat) async -> NSImage? {
+        let url = URL(filePath: file.path)
+        if let cached = cache.object(forKey: url.path as NSString) {
             return cached
         }
-        guard let file = item.file else { return nil }
-        let url = item.url
         let isTaggable = file.isTaggableAudio()
         let image: NSImage? = await Task.detached(priority: .utility) {
             if isTaggable, let data = AudioFile.read(for: file)?.coverArtData, let image = NSImage(data: data) {
