@@ -4,17 +4,15 @@ import SwiftUI
 struct FBFileLabel: View {
 
     var file: FSFile
-    var subtitle: String?
     var layout: FileBrowserLayout
 
     var body: some View {
         switch layout {
         case .list:
-            ListFileRow(file: .constant(file), subtitle: subtitle)
+            ListFileRow(file: .constant(file))
                 .tint(.primary)
         case .grid:
-            GridFileCell(file: file, subtitle: subtitle)
+            GridFileCell(file: file)
         }
     }
 }
-

@@ -524,7 +524,7 @@ struct FolderView: View {
     @ViewBuilder
     func fileRow(for file: FSFile) -> some View {
         switch file.type {
-        case .audio: FBAudioFileRow(file: file, layout: layout, sortOption: state.sortOption)
+        case .audio: FBAudioFileRow(file: file, layout: layout)
         case .video: FBVideoFileRow(file: file, layout: layout)
         case .image: FBImageFileRow(file: file, layout: layout)
         case .text: FBTextFileRow(file: file, layout: layout)
