@@ -6,14 +6,13 @@ struct GridFileCell: View {
     @Environment(\.displayScale) var displayScale
 
     var file: FSFile
-    var subtitle: String?
     @State var thumbnail: UIImage?
     @State var isThumbnailFetchCompleted: Bool = false
     @State var isEvicted: Bool = false
-    @State var fileSizeText: String = ""
+    @State var subtitle: String?
 
     var body: some View {
-        GridCellLayout(title: file.name, subtitle: subtitle ?? fileSizeText) {
+        GridCellLayout(title: file.name, subtitle: subtitle) {
             // Color.clear keeps the badges pinned to the square tile, since a scaled-to-fill thumbnail overflows it
             Color.clear
                 .overlay {
@@ -46,7 +45,7 @@ struct GridFileCell: View {
             await loadFileMetadata()
         }
         .onChange(of: downloadManager.isDownloading(file)) { wasDownloading, isDownloading in
-            // When a download finishes, refresh eviction state, size and thumbnail
+            // When a download finishes, refresh eviction state, subtitle and thumbnail
             if wasDownloading && !isDownloading {
                 isThumbnailFetchCompleted = false
                 Task { await loadFileMetadata() }
@@ -76,18 +75,12 @@ struct GridFileCell: View {
         }
     }
 
-    /// Reads eviction status and file size off the main thread and caches them in state.
+    /// Reads eviction status and the metadata subtitle off the main thread and caches them in state.
     private func loadFileMetadata() async {
-        let path = file.path
-        let wantSize = (subtitle == nil)
-        let result = await Task.detached(priority: .utility) { () -> (evicted: Bool, sizeText: String) in
-            let evicted = FSFile.isEvicted(atPath: path)
-            let sizeText = wantSize ? URL(filePath: path).fileSizeString : ""
-            return (evicted, sizeText)
-        }.value
-        isEvicted = result.evicted
-        fileSizeText = result.sizeText
-        if !result.evicted && !isThumbnailFetchCompleted {
+        let result = await FileSubtitleLoader.load(for: file)
+        isEvicted = result.isEvicted
+        subtitle = result.subtitle
+        if !result.isEvicted && !isThumbnailFetchCompleted {
             isThumbnailFetchCompleted = true
             if let thumbnail = await FileThumbnailLoader.thumbnail(
                 for: file,

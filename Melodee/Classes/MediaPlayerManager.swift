@@ -68,6 +68,9 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
         }
         super.init()
         audioPlayer.delegate = self
+        // By default AVPlayer pauses a video when the app is backgrounded or the screen is
+        // locked unless Picture in Picture is active, so keep its audio playing instead
+        videoPlayer.audiovisualBackgroundPlaybackPolicy = .continuesIfPossible
         // Advance the queue when a video finishes playing
         notificationCenter.addObserver(self,
                                        selector: #selector(videoPlayerItemDidPlayToEnd(_:)),
