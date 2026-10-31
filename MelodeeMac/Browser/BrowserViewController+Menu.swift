@@ -39,6 +39,17 @@ extension BrowserViewController: NSMenuDelegate {
             add("Browser.PlayLast", #selector(playTargetsLast(_:)))
             menu.addItem(.separator())
         }
+        // Track information can be edited when every file has tags Melodee can write
+        if targets.allSatisfy({ $0.file?.isTaggableAudio() ?? false }) {
+            let editItem = NSMenuItem(
+                title: MacText.shared(targets.count == 1 ? "Shared.EditTag.Single" : "Shared.EditTag.All"),
+                action: #selector(editTargetTags(_:)),
+                keyEquivalent: ""
+            )
+            editItem.target = self
+            menu.addItem(editItem)
+            menu.addItem(.separator())
+        }
         if targets.contains(where: { !$0.isPlayable }) {
             add("Browser.Open", #selector(openTargets(_:)))
             menu.addItem(.separator())
@@ -58,6 +69,10 @@ extension BrowserViewController: NSMenuDelegate {
 
     @objc func playTargetsLast(_ sender: Any?) {
         MacServices.shared.player.playLast(contextMenuTargets.filter(\.isPlayable).compactMap(\.file))
+    }
+
+    @objc func editTargetTags(_ sender: Any?) {
+        onEditTags?(contextMenuTargets.compactMap(\.file))
     }
 
     @objc func openTargets(_ sender: Any?) {

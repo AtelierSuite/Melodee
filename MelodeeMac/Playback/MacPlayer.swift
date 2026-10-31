@@ -129,6 +129,13 @@ final class MacPlayer: NSObject {
         notifyChange()
     }
 
+    /// Reads the playing track's tags again if they were just edited.
+    func refreshMetadata(forPaths paths: Set<String>) {
+        guard let currentFile, paths.contains(currentFile.path) else { return }
+        metadata = TrackMetadata(file: currentFile)
+        notifyChange()
+    }
+
     func clearQueue() {
         stop()
     }

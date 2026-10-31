@@ -19,6 +19,10 @@ final class ThumbnailCache {
         cache.object(forKey: item.url.path as NSString)
     }
 
+    func removeThumbnails(forPaths paths: Set<String>) {
+        paths.forEach { cache.removeObject(forKey: $0 as NSString) }
+    }
+
     func thumbnail(for item: BrowserItem, size: CGFloat, scale: CGFloat) async -> NSImage? {
         if let cached = cachedThumbnail(for: item) {
             return cached

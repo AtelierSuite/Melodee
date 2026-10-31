@@ -24,6 +24,8 @@ final class BrowserViewController: NSViewController {
     var contextMenuTargets: [BrowserItem] = []
     /// What the browser shows: the folder's contents, or search results while searching.
     var items: [BrowserItem] = []
+    /// Called with the files chosen with Edit Track Information.
+    var onEditTags: (([FSFile]) -> Void)?
     /// Called whenever the folder, history or search changes, so the window can update its title and toolbar.
     var onNavigate: (() -> Void)?
 
@@ -189,6 +191,14 @@ final class BrowserViewController: NSViewController {
         select(selection)
         emptyLabel.stringValue = MacText.string(isSearching ? "Browser.NoResults" : "Browser.Empty")
         emptyLabel.isHidden = !items.isEmpty
+    }
+
+    /// Redraws the items for these files, such as after their album art changed.
+    func reloadItems(atPaths paths: Set<String>) {
+        let indexes = IndexSet(items.indices.filter { paths.contains(items[$0].url.path(percentEncoded: false)) })
+        guard !indexes.isEmpty else { return }
+        collectionView.reloadItems(at: Set(indexes.map { IndexPath(item: $0, section: 0) }))
+        tableView.reloadData(forRowIndexes: indexes, columnIndexes: IndexSet(integersIn: 0..<tableView.numberOfColumns))
     }
 
     // MARK: - Selection
