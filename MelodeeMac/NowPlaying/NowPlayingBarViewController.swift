@@ -76,7 +76,7 @@ final class NowPlayingBarViewController: NSViewController {
         ])
         barStack.spacing = 14
         barStack.alignment = .centerY
-        barStack.edgeInsets = NSEdgeInsets(top: 10, left: 14, bottom: 10, right: 14)
+        barStack.edgeInsets = NSEdgeInsets(top: 0, left: 16, bottom: 0, right: 16)
         barStack.setCustomSpacing(10, after: artworkView)
         barStack.setCustomSpacing(8, after: repeatButton)
         barStack.setHuggingPriority(.defaultLow, for: .horizontal)
@@ -94,8 +94,8 @@ final class NowPlayingBarViewController: NSViewController {
             separator.topAnchor.constraint(equalTo: container.topAnchor),
             separator.leadingAnchor.constraint(equalTo: container.leadingAnchor),
             separator.trailingAnchor.constraint(equalTo: container.trailingAnchor),
-            barStack.topAnchor.constraint(equalTo: separator.bottomAnchor),
-            barStack.bottomAnchor.constraint(equalTo: container.bottomAnchor),
+            barStack.topAnchor.constraint(equalTo: separator.bottomAnchor, constant: 12),
+            barStack.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -12),
             barStack.leadingAnchor.constraint(equalTo: container.leadingAnchor),
             barStack.trailingAnchor.constraint(equalTo: container.trailingAnchor),
             artworkView.widthAnchor.constraint(equalToConstant: 44),
