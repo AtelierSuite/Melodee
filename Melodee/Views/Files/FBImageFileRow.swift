@@ -3,11 +3,11 @@ import SwiftUI
 struct FBImageFileRow: View {
 
     @State var file: FSFile
+    var layout: FileBrowserLayout = .list
 
     var body: some View {
         NavigationLink(value: ViewPath.imageViewer(file: file)) {
-            ListFileRow(file: .constant(file))
-                .tint(.primary)
+            FBFileLabel(file: file, layout: layout)
         }
         .navigationLinkIndicatorVisibility(.hidden)
     }

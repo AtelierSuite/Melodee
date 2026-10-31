@@ -1,4 +1,3 @@
-@preconcurrency import AVFoundation
 import SwiftUI
 
 struct ListFileRow: View {
@@ -107,56 +106,14 @@ struct ListFileRow: View {
     }
 
     private func fetchThumbnail() {
-        let filePath = file.path
-        let isTaggable = file.isTaggableAudio()
-        let isImage = file.type == .image
-        Task.detached {
-            let fileURL: URL = URL(filePath: filePath)
-            if isTaggable {
-                NSFileCoordinator().coordinate(readingItemAt: fileURL, error: .none) { url in
-                    Task { @MainActor in
-                        let albumArt = await albumArt(at: url)
-                        withAnimation(.default.speed(2)) {
-                            self.thumbnail = albumArt
-                        }
-                    }
-                }
-            } else if isImage {
-                NSFileCoordinator().coordinate(readingItemAt: fileURL, error: .none) { url in
-                    Task { @MainActor in
-                        if let thumbnail = await UIImage(contentsOfFile: url.path(percentEncoded: false))?
-                            .byPreparingThumbnail(ofSize: CGSize(width: 100.0, height: 100.0)) {
-                            withAnimation(.default.speed(2)) {
-                                self.thumbnail = thumbnail
-                            }
-                        }
-                    }
-                }
-            }
-        }
         isThumbnailFetchCompleted = true
-    }
-
-    func albumArt(at url: URL) async -> UIImage {
-        do {
-            let asset = AVURLAsset(url: url)
-            let metadataList = try await asset.load(.metadata)
-            for item in metadataList {
-                switch item.commonKey {
-                case .commonKeyArtwork?:
-                    if let data = try await item.load(.dataValue),
-                       let image = UIImage(data: data),
-                       let thumbnail = await image.byPreparingThumbnail(ofSize: CGSize(width: 100.0,
-                                                                                       height: 100.0)) {
-                        return thumbnail
-                    }
-                default: break
+        guard file.isTaggableAudio() || file.type == .image else { return }
+        Task {
+            if let thumbnail = await FileThumbnailLoader.thumbnail(for: file, size: 100.0, scale: 1.0) {
+                withAnimation(.default.speed(2)) {
+                    self.thumbnail = thumbnail
                 }
             }
-        } catch {
-            debugPrint(error.localizedDescription)
         }
-        return UIImage(named: "Album.Generic") ?? UIImage()
     }
-
 }

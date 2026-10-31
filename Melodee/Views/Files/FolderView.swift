@@ -8,6 +8,7 @@ struct FolderView: View {
     @Environment(MediaPlayerManager.self) var mediaPlayer
 
     @AppStorage("SelectedLibrarySource") var selectedSource: LibrarySource = .local
+    @AppStorage("FileBrowserLayout") var layout: FileBrowserLayout = .list
 
     @State var currentDirectory: FSDirectory?
     @State var files: [any FilesystemObject] = []
@@ -49,86 +50,10 @@ struct FolderView: View {
     @State var isTitleHidden: Bool = false
 
     var body: some View {
-        List {
-            if isSearching {
-                if !searchFolderResults.isEmpty {
-                    Section("Search.Folders") {
-                        ForEach(searchFolderResults, id: \.path) { directory in
-                            fileBrowserRow(for: directory)
-                        }
-                    }
-                }
-                if !searchFileResults.isEmpty {
-                    Section("Search.Files") {
-                        ForEach(searchFileResults, id: \.path) { file in
-                            fileBrowserRow(for: file)
-                        }
-                    }
-                }
-            } else {
-            Section {
-                if !isLibraryRoot {
-                    Text(viewTitle())
-                    .font(.largeTitle)
-                    .textCase(.none)
-                    .bold()
-                    .foregroundColor(.primary)
-                    .textSelection(.enabled)
-                    .onGeometryChange(for: CGFloat.self) { geometry in
-                        geometry.size.height
-                    } action: { height in
-                        heightOfTitle = height
-                    }
-                    .opacity(isTitleHidden ? 0 : 1)
-                    .listRowSeparator(.hidden)
-                    .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 8, trailing: 16))
-                    .listRowBackground(Color.clear)
-                }
-                HStack(alignment: .center, spacing: 8.0) {
-                    Group {
-                        ActionButton(text: "Shared.PlayAll", icon: "Play", isPrimary: true) {
-                            mediaPlayer.stop()
-                            for file in files {
-                                if let file = file as? FSFile, file.isPlayableMedia() {
-                                    mediaPlayer.queueLast(file: file)
-                                }
-                            }
-                            mediaPlayer.play()
-                        }
-                        ActionButton(text: "Shared.Shuffle", icon: "Shuffle", isPrimary: false) {
-                            mediaPlayer.stop()
-                            var filesReordered: [FSFile] = []
-                            for file in files {
-                                if let file = file as? FSFile, file.isPlayableMedia() {
-                                    filesReordered.append(file)
-                                }
-                            }
-                            filesReordered = filesReordered.shuffled()
-                            for file in filesReordered {
-                                mediaPlayer.queueLast(file: file)
-                            }
-                            mediaPlayer.play()
-                        }
-                    }
-                    .frame(maxWidth: .infinity)
-                    .disabled(!folderContainsPlayableMedia())
-                    sortMenu
-                }
-                .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 16, trailing: 16))
-                .listRowBackground(Color.clear)
-                .listRowSeparator(.hidden, edges: .top)
-                .alignmentGuide(.listRowSeparatorLeading) { _ in
-                    return 0.0
-                }
-                .buttonStyle(.plain)
-                .frame(maxWidth: .infinity)
-            }
-            .listSectionSeparator(.hidden, edges: .top)
-            Section {
-                ForEach($files, id: \.path) { $file in
-                    fileBrowserRow(for: file)
-                }
-            }
+        Group {
+            switch layout {
+            case .list: listContent
+            case .grid: gridContent
             }
         }
         .onScrollGeometryChange(for: Bool.self) { geometry in
@@ -147,11 +72,13 @@ struct FolderView: View {
         .onChange(of: searchText) {
             performSearch()
         }
-        .listStyle(.plain)
         .playbackBarContentInset()
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
                 Menu {
+                    Section {
+                        layoutPicker
+                    }
                     if folderContainsTaggableFiles() || folderContainsFiles() {
                         Section {
                             if folderContainsTaggableFiles() {
@@ -337,6 +264,164 @@ struct FolderView: View {
         }
     }
 
+    var listContent: some View {
+        List {
+            if isSearching {
+                if !searchFolderResults.isEmpty {
+                    Section("Search.Folders") {
+                        ForEach(searchFolderResults, id: \.path) { directory in
+                            fileBrowserRow(for: directory)
+                        }
+                    }
+                }
+                if !searchFileResults.isEmpty {
+                    Section("Search.Files") {
+                        ForEach(searchFileResults, id: \.path) { file in
+                            fileBrowserRow(for: file)
+                        }
+                    }
+                }
+            } else {
+                Section {
+                    if !isLibraryRoot {
+                        folderTitle
+                            .listRowSeparator(.hidden)
+                            .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 8, trailing: 16))
+                            .listRowBackground(Color.clear)
+                    }
+                    folderActions
+                        .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 16, trailing: 16))
+                        .listRowBackground(Color.clear)
+                        .listRowSeparator(.hidden, edges: .top)
+                        .alignmentGuide(.listRowSeparatorLeading) { _ in
+                            return 0.0
+                        }
+                }
+                .listSectionSeparator(.hidden, edges: .top)
+                Section {
+                    ForEach(files, id: \.path) { file in
+                        fileBrowserRow(for: file)
+                    }
+                }
+            }
+        }
+        .listStyle(.plain)
+    }
+
+    var gridContent: some View {
+        ScrollView {
+            LazyVStack(alignment: .leading, spacing: 0.0) {
+                if isSearching {
+                    if !searchFolderResults.isEmpty {
+                        gridSection("Search.Folders", items: searchFolderResults)
+                    }
+                    if !searchFileResults.isEmpty {
+                        gridSection("Search.Files", items: searchFileResults)
+                    }
+                } else {
+                    if !isLibraryRoot {
+                        folderTitle
+                            .padding(EdgeInsets(top: 4, leading: 16, bottom: 8, trailing: 16))
+                    }
+                    folderActions
+                        .padding(EdgeInsets(top: 8, leading: 16, bottom: 16, trailing: 16))
+                    fileGrid(files)
+                }
+            }
+        }
+    }
+
+    func gridSection(_ title: LocalizedStringKey, items: [any FilesystemObject]) -> some View {
+        Section {
+            fileGrid(items)
+        } header: {
+            Text(title)
+                .font(.headline)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(EdgeInsets(top: 16, leading: 16, bottom: 8, trailing: 16))
+        }
+    }
+
+    func fileGrid(_ items: [any FilesystemObject]) -> some View {
+        LazyVGrid(
+            columns: [GridItem(
+                .adaptive(minimum: GridCell.minimumWidth,
+                          maximum: GridCell.maximumWidth),
+                spacing: 12.0,
+                alignment: .top
+            )],
+            alignment: .leading,
+            spacing: 16.0
+        ) {
+            ForEach(items, id: \.path) { file in
+                fileBrowserRow(for: file)
+            }
+        }
+        .buttonStyle(.plain)
+        .padding(.horizontal, 16.0)
+        .padding(.bottom, 16.0)
+    }
+
+    var folderTitle: some View {
+        Text(viewTitle())
+            .font(.largeTitle)
+            .textCase(.none)
+            .bold()
+            .foregroundColor(.primary)
+            .textSelection(.enabled)
+            .onGeometryChange(for: CGFloat.self) { geometry in
+                geometry.size.height
+            } action: { height in
+                heightOfTitle = height
+            }
+            .opacity(isTitleHidden ? 0 : 1)
+    }
+
+    var folderActions: some View {
+        HStack(alignment: .center, spacing: 8.0) {
+            Group {
+                ActionButton(text: "Shared.PlayAll", icon: "Play", isPrimary: true) {
+                    mediaPlayer.stop()
+                    for file in files {
+                        if let file = file as? FSFile, file.isPlayableMedia() {
+                            mediaPlayer.queueLast(file: file)
+                        }
+                    }
+                    mediaPlayer.play()
+                }
+                ActionButton(text: "Shared.Shuffle", icon: "Shuffle", isPrimary: false) {
+                    mediaPlayer.stop()
+                    var filesReordered: [FSFile] = []
+                    for file in files {
+                        if let file = file as? FSFile, file.isPlayableMedia() {
+                            filesReordered.append(file)
+                        }
+                    }
+                    filesReordered = filesReordered.shuffled()
+                    for file in filesReordered {
+                        mediaPlayer.queueLast(file: file)
+                    }
+                    mediaPlayer.play()
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .disabled(!folderContainsPlayableMedia())
+            sortMenu
+        }
+        .buttonStyle(.plain)
+        .frame(maxWidth: .infinity)
+    }
+
+    var layoutPicker: some View {
+        Picker("FileBrowser.Layout", selection: $layout) {
+            Label("FileBrowser.Layout.Grid", systemImage: "square.grid.2x2")
+                .tag(FileBrowserLayout.grid)
+            Label("FileBrowser.Layout.List", systemImage: "list.bullet")
+                .tag(FileBrowserLayout.list)
+        }
+        .pickerStyle(.palette)
+    }
+
     var sortMenu: some View {
         Menu {
             Section("Sort.Title") {
@@ -381,11 +466,12 @@ struct FolderView: View {
     func fileBrowserRow(for file: any FilesystemObject) -> some View {
         Group {
             if let directory = file as? FSDirectory {
-                FBDirectoryRow(directory: directory, storageLocation: storageLocation)
+                FBDirectoryRow(directory: directory, storageLocation: storageLocation, layout: layout)
             } else if let file = file as? FSFile {
                 fileRow(for: file)
             }
         }
+        .contentShape(.contextMenuPreview, RoundedRectangle(cornerRadius: layout == .grid ? 10.0 : 0.0))
         .contextMenu {
             FBContextMenu(state: $state, file: file, extractZIPAction: {
                 if let file = file as? FSFile {
@@ -401,14 +487,14 @@ struct FolderView: View {
     @ViewBuilder
     func fileRow(for file: FSFile) -> some View {
         switch file.type {
-        case .audio: FBAudioFileRow(file: file, sortOption: state.sortOption)
-        case .video: FBVideoFileRow(file: file)
-        case .image: FBImageFileRow(file: file)
-        case .text: FBTextFileRow(file: file)
-        case .pdf: FBPdfFileRow(file: file)
-        case .zip: FBZipFileRow(file: file) { extractZIP(file: file) }
-        case .playlist: FBPlaylistFileRow(file: file, scopeRootURL: scopeRootURL())
-        default: ListFileRow(file: .constant(file))
+        case .audio: FBAudioFileRow(file: file, layout: layout, sortOption: state.sortOption)
+        case .video: FBVideoFileRow(file: file, layout: layout)
+        case .image: FBImageFileRow(file: file, layout: layout)
+        case .text: FBTextFileRow(file: file, layout: layout)
+        case .pdf: FBPdfFileRow(file: file, layout: layout)
+        case .zip: FBZipFileRow(file: file, layout: layout) { extractZIP(file: file) }
+        case .playlist: FBPlaylistFileRow(file: file, layout: layout, scopeRootURL: scopeRootURL())
+        default: FBFileLabel(file: file, layout: layout)
         }
     }
 
