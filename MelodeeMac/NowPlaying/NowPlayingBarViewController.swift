@@ -135,7 +135,11 @@ final class NowPlayingBarViewController: NSViewController {
     /// Keeps the glass a capsule at whatever height the bar ends up.
     override func viewDidLayout() {
         super.viewDidLayout()
-        (view as? NSGlassEffectView)?.cornerRadius = view.bounds.height / 2
+        // Setting the radius lays the bar out again, so only set it when it changes
+        let radius = view.bounds.height / 2
+        if let glass = view as? NSGlassEffectView, glass.cornerRadius != radius {
+            glass.cornerRadius = radius
+        }
     }
 
     private static func button(_ symbolName: String, _ labelKey: String) -> NSButton {

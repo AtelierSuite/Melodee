@@ -27,15 +27,17 @@ extension MainWindowController: NSToolbarDelegate {
     func toolbarDefaultItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
         [
             .toggleSidebar,
-            .flexibleSpace,
-            .addFolder,
             .sidebarTrackingSeparator,
+            // An item above the sidebar kept the toolbar laying itself out forever, which slowed the whole window
+            .addFolder,
             .navigation,
             .flexibleSpace,
             .playAll,
             .shuffle,
             .viewMode,
-            .search
+            .search,
+            // Keeps the browser's items over the browser when the tag inspector opens
+            .inspectorTrackingSeparator
         ]
     }
 
@@ -94,21 +96,8 @@ extension MainWindowController: NSToolbarDelegate {
         return item
     }
 
-    /// Sits above the sidebar. It hosts its own button, because a plain item there never sent its action.
     private func addFolderItem() -> NSToolbarItem {
-        let label = MacText.string("Menu.AddFolder")
-        let button = NSButton(
-            image: NSImage(systemSymbolName: "plus", accessibilityDescription: label) ?? NSImage(),
-            target: self,
-            action: #selector(addFolder(_:))
-        )
-        button.bezelStyle = .toolbar
-        button.setAccessibilityLabel(label)
-        let item = NSToolbarItem(itemIdentifier: .addFolder)
-        item.view = button
-        item.label = label
-        item.toolTip = label
-        return item
+        buttonItem(.addFolder, "Menu.AddFolder", "plus", #selector(addFolder(_:)))
     }
 
     private func viewModeItem() -> NSToolbarItem {
