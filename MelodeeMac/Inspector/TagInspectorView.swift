@@ -18,6 +18,16 @@ struct TagInspectorView: View {
                 TagInspectorForm(model: model)
             }
         }
+        .sheet(isPresented: $model.isShowingOnlineLookup) {
+            OnlineLookupSheet(files: model.loadedFiles,
+                              artist: model.loadedTag.albumArtist ?? model.loadedTag.artist ?? "",
+                              album: model.loadedTag.album ?? "") {
+                model.didApplyOnlineLookup()
+            }
+        }
+        .alert(MacText.shared("OnlineLookup.SaveFirst"), isPresented: $model.isShowingSaveBeforeOnlineLookup) {
+            Button(MacText.shared("Shared.OK"), role: .cancel) { }
+        }
         .alert(MacText.shared("TagEditor.SaveFailed.Message"), isPresented: $model.isShowingSaveError) {
             Button(MacText.shared("Shared.OK"), role: .cancel) { }
         }

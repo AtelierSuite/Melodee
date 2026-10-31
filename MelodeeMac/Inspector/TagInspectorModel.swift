@@ -24,6 +24,8 @@ final class TagInspectorModel {
     var isShowingSaveError = false
     var isShowingRemoveTagsError = false
     var isShowingUnsupportedKeys = false
+    var isShowingOnlineLookup = false
+    var isShowingSaveBeforeOnlineLookup = false
     var tag = Tag() {
         didSet { notifyDirtyChangeIfNeeded() }
     }
@@ -109,6 +111,23 @@ final class TagInspectorModel {
                 self.isShowingSaveError = true
             }
         }
+    }
+
+    /// Opens the online lookup, which writes to the files directly, so unsaved edits have to be saved first.
+    func lookUpOnline() {
+        guard !loadedFiles.isEmpty, !isLoading, !isSaving else { return }
+        if isDirty {
+            isShowingSaveBeforeOnlineLookup = true
+        } else {
+            isShowingOnlineLookup = true
+        }
+    }
+
+    /// Reads the files again after the online lookup wrote to them, keeping the inspector open to show the result.
+    func didApplyOnlineLookup() {
+        let appliedFiles = loadedFiles
+        edit(appliedFiles)
+        onSave?(appliedFiles, false)
     }
 
     func addExtendedField(key: String, value: String) {

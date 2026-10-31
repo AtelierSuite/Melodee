@@ -15,6 +15,7 @@
 		E4F736B42F38010000A203FE /* PreludeLookup in Frameworks */ = {isa = PBXBuildFile; productRef = E4F736B52F38010000A203FE /* PreludeLookup */; };
 		4D454C4F4D41430000000005 /* SFBAudioEngine in Frameworks */ = {isa = PBXBuildFile; productRef = 4D454C4F4D41430000000008 /* SFBAudioEngine */; };
 		4D454C4F4D41430000000006 /* Prelude in Frameworks */ = {isa = PBXBuildFile; productRef = 4D454C4F4D41430000000009 /* Prelude */; };
+		4D454C4F4D41430000000020 /* PreludeLookup in Frameworks */ = {isa = PBXBuildFile; productRef = 4D454C4F4D41430000000021 /* PreludeLookup */; };
 		4D454C4F4D41430000000007 /* ZIPFoundation in Frameworks */ = {isa = PBXBuildFile; productRef = 4D454C4F4D4143000000000A /* ZIPFoundation */; };
 /* End PBXBuildFile section */
 
@@ -97,6 +98,7 @@
 			files = (
 				4D454C4F4D41430000000005 /* SFBAudioEngine in Frameworks */,
 				4D454C4F4D41430000000006 /* Prelude in Frameworks */,
+				4D454C4F4D41430000000020 /* PreludeLookup in Frameworks */,
 				4D454C4F4D41430000000007 /* ZIPFoundation in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -155,6 +157,7 @@
 			packageProductDependencies = (
 				4D454C4F4D41430000000008 /* SFBAudioEngine */,
 				4D454C4F4D41430000000009 /* Prelude */,
+				4D454C4F4D41430000000021 /* PreludeLookup */,
 				4D454C4F4D4143000000000A /* ZIPFoundation */,
 			);
 			productName = Melodee;
@@ -547,6 +550,7 @@
 				DEAD_CODE_STRIPPING = YES;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				ENABLE_USER_SELECTED_FILES = readwrite;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -583,6 +587,7 @@
 				DEAD_CODE_STRIPPING = YES;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				ENABLE_USER_SELECTED_FILES = readwrite;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -722,6 +727,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = E4F736B22F38010000A203FE /* XCRemoteSwiftPackageReference "Tunetag" */;
 			productName = Prelude;
+		};
+		4D454C4F4D41430000000021 /* PreludeLookup */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = E4F736B22F38010000A203FE /* XCRemoteSwiftPackageReference "Tunetag" */;
+			productName = PreludeLookup;
 		};
 		4D454C4F4D4143000000000A /* ZIPFoundation */ = {
 			isa = XCSwiftPackageProductDependency;

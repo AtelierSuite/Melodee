@@ -24,6 +24,10 @@ struct InspectorActionBar: View {
                 TokensPopover()
             }
             Menu {
+                Button(MacText.string("Inspector.LookUpOnline"), systemImage: "magnifyingglass") {
+                    model.lookUpOnline()
+                }
+                Divider()
                 Button(MacText.shared("TagEditor.RemoveAllTags"), systemImage: "trash", role: .destructive) {
                     isConfirmingRemoveAllTags = true
                 }

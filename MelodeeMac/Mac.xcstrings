@@ -616,6 +616,88 @@
         }
       }
     },
+    "Inspector.LookUpOnline" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Look Up Online…"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "オンラインで検索…"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "온라인에서 찾기…"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tra cứu trực tuyến…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在线查找…"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "線上查詢…"
+          }
+        }
+      }
+    },
+    "Inspector.LookupMatches.Footer" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recognized files are matched to their tracks. Other files are matched by their disc and track numbers, then in order. Choose a different track from a file's menu."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "認識されたファイルは該当するトラックと照合されます。その他のファイルはディスク番号とトラック番号、次に順番で照合されます。別のトラックは、ファイルのメニューから選択できます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "인식된 파일은 해당 트랙과 연결됩니다. 다른 파일은 디스크 번호와 트랙 번호, 그다음 순서대로 연결됩니다. 다른 트랙은 파일의 메뉴에서 선택하세요."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Các tệp được nhận dạng sẽ được ghép với bài hát tương ứng. Các tệp khác được ghép theo số đĩa và số bài, sau đó theo thứ tự. Chọn bài hát khác từ menu của tệp."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已识别的文件会与对应的曲目匹配。其他文件会先按光盘编号和曲目编号、再按顺序匹配。可从文件的菜单中选择其他曲目。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已辨識的檔案會與對應的曲目配對。其他檔案會先依光碟編號與曲目編號、再依順序配對。可從檔案的選單中選擇其他曲目。"
+          }
+        }
+      }
+    },
     "Inspector.RemoveAlbumArt" : {
       "extractionState" : "manual",
       "localizations" : {
