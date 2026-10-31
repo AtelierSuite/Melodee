@@ -22,6 +22,7 @@ struct FolderView: View {
     @State var searchText: String = ""
     @State var searchFolderResults: [FSDirectory] = []
     @State var searchFileResults: [FSFile] = []
+    @State var dropTargetPath: String?
 
     var overrideStorageLocation: StorageLocation?
     var isLibraryRoot: Bool = false
@@ -464,13 +465,32 @@ struct FolderView: View {
 
     @ViewBuilder
     func fileBrowserRow(for file: any FilesystemObject) -> some View {
+        let isDropTarget = dropTargetPath == file.path
         Group {
             if let directory = file as? FSDirectory {
                 FBDirectoryRow(directory: directory, storageLocation: storageLocation, layout: layout)
+                    // Dropping files and folders on a folder moves them into it
+                    .dropDestination(for: URL.self) { urls, _ in
+                        moveItems(urls, into: directory)
+                    } isTargeted: { isTargeted in
+                        if isTargeted {
+                            dropTargetPath = directory.path
+                        } else if dropTargetPath == directory.path {
+                            dropTargetPath = nil
+                        }
+                    }
             } else if let file = file as? FSFile {
                 fileRow(for: file)
             }
         }
+        .background {
+            if layout == .grid && isDropTarget {
+                RoundedRectangle(cornerRadius: 12.0)
+                    .fill(Color.accentColor.opacity(0.2))
+                    .padding(-4.0)
+            }
+        }
+        .draggable(URL(fileURLWithPath: file.path))
         .contentShape(.contextMenuPreview, RoundedRectangle(cornerRadius: layout == .grid ? 10.0 : 0.0))
         .contextMenu {
             FBContextMenu(state: $state, file: file, extractZIPAction: {
@@ -481,7 +501,24 @@ struct FolderView: View {
                 refreshFiles()
             })
         }
-        .listRowBackground(Color.clear)
+        .listRowBackground(isDropTarget ? Color.accentColor.opacity(0.2) : Color.clear)
+    }
+
+    /// Moves items dragged from this library into a folder. Items from other apps aren't moved.
+    func moveItems(_ urls: [URL], into directory: FSDirectory) -> Bool {
+        let scopePath = FilesystemManager.normalizedPath(scopeRootURL().path(percentEncoded: false))
+        let libraryURLs = urls.filter { url in
+            url.isFileURL && FilesystemManager.normalizedPath(url.path(percentEncoded: false)).hasPrefix(scopePath + "/")
+        }
+        guard !libraryURLs.isEmpty else { return false }
+        let result = FilesystemManager.move(libraryURLs, into: URL(fileURLWithPath: directory.path))
+        mediaPlayer.updateQueuedFilePaths(afterMoving: result.movedPaths)
+        refreshFiles()
+        if let failure = result.failures.first {
+            state.errorText = failure.localizedDescription
+            state.isErrorAlertPresenting = true
+        }
+        return !result.movedPaths.isEmpty
     }
 
     @ViewBuilder

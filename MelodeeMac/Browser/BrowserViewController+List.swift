@@ -29,6 +29,7 @@ extension BrowserViewController: NSTableViewDataSource, NSTableViewDelegate {
         }
         tableView.registerForDraggedTypes([.fileURL])
         tableView.setDraggingSourceOperationMask(.copy, forLocal: false)
+        tableView.setDraggingSourceOperationMask([.move, .copy], forLocal: true)
         let columns: [(NSUserInterfaceItemIdentifier, String, CGFloat)] = [
             (.nameColumn, "Column.Name", 320),
             (.kindColumn, "Column.Kind", 160),
@@ -161,9 +162,12 @@ extension BrowserViewController: NSTableViewDataSource, NSTableViewDelegate {
         proposedRow row: Int,
         proposedDropOperation dropOperation: NSTableView.DropOperation
     ) -> NSDragOperation {
-        // Files are always added to the folder being shown, so highlight the whole list
+        if let folder = dropTargetFolder(row: row, dropOperation: dropOperation) {
+            return validateFileDrop(info, onto: folder)
+        }
+        // Other files are added to the folder being shown, so highlight the whole list
         tableView.setDropRow(-1, dropOperation: .on)
-        return validateFileDrop(info)
+        return validateFileDrop(info, onto: nil)
     }
 
     func tableView(
@@ -172,6 +176,11 @@ extension BrowserViewController: NSTableViewDataSource, NSTableViewDelegate {
         row: Int,
         dropOperation: NSTableView.DropOperation
     ) -> Bool {
-        acceptFileDrop(info)
+        acceptFileDrop(info, onto: dropTargetFolder(row: row, dropOperation: dropOperation))
+    }
+
+    private func dropTargetFolder(row: Int, dropOperation: NSTableView.DropOperation) -> BrowserItem? {
+        guard dropOperation == .on, items.indices.contains(row), items[row].isFolder else { return nil }
+        return items[row]
     }
 }

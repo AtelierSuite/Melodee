@@ -34,7 +34,7 @@ final class BrowserGridItem: NSCollectionViewItem {
 
     private var isHighlighted: Bool {
         switch highlightState {
-        case .forSelection: true
+        case .forSelection, .asDropTarget: true
         case .forDeselection: false
         default: isSelected
         }

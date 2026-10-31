@@ -27,6 +27,7 @@ extension BrowserViewController: NSCollectionViewDataSource, NSCollectionViewDel
         }
         collectionView.registerForDraggedTypes([.fileURL])
         collectionView.setDraggingSourceOperationMask(.copy, forLocal: false)
+        collectionView.setDraggingSourceOperationMask([.move, .copy], forLocal: true)
     }
 
     func collectionView(_ collectionView: NSCollectionView, numberOfItemsInSection section: Int) -> Int {
@@ -92,8 +93,12 @@ extension BrowserViewController: NSCollectionViewDataSource, NSCollectionViewDel
         proposedIndexPath proposedDropIndexPath: AutoreleasingUnsafeMutablePointer<NSIndexPath>,
         dropOperation proposedDropOperation: UnsafeMutablePointer<NSCollectionView.DropOperation>
     ) -> NSDragOperation {
+        let indexPath = proposedDropIndexPath.pointee as IndexPath
+        if let folder = dropTargetFolder(at: indexPath, dropOperation: proposedDropOperation.pointee) {
+            return validateFileDrop(draggingInfo, onto: folder)
+        }
         proposedDropOperation.pointee = .before
-        return validateFileDrop(draggingInfo)
+        return validateFileDrop(draggingInfo, onto: nil)
     }
 
     func collectionView(
@@ -102,6 +107,13 @@ extension BrowserViewController: NSCollectionViewDataSource, NSCollectionViewDel
         indexPath: IndexPath,
         dropOperation: NSCollectionView.DropOperation
     ) -> Bool {
-        acceptFileDrop(draggingInfo)
+        acceptFileDrop(draggingInfo, onto: dropTargetFolder(at: indexPath, dropOperation: dropOperation))
+    }
+
+    private func dropTargetFolder(at indexPath: IndexPath, dropOperation: NSCollectionView.DropOperation) -> BrowserItem? {
+        guard dropOperation == .on, items.indices.contains(indexPath.item), items[indexPath.item].isFolder else {
+            return nil
+        }
+        return items[indexPath.item]
     }
 }

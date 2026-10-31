@@ -117,6 +117,18 @@ final class MacPlayer: NSObject {
         notifyChange()
     }
 
+    /// Points queued tracks at their new locations after files or folders have been moved.
+    func updateQueuedPaths(afterMoving movedPaths: [String: String]) {
+        guard !movedPaths.isEmpty else { return }
+        for index in queue.indices {
+            if let newPath = FilesystemManager.movedPath(for: queue[index].path, in: movedPaths) {
+                queue[index].path = newPath
+                queue[index].name = URL(filePath: newPath).deletingPathExtension().lastPathComponent
+            }
+        }
+        notifyChange()
+    }
+
     func clearQueue() {
         stop()
     }

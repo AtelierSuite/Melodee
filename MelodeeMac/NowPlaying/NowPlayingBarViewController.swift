@@ -96,8 +96,18 @@ final class NowPlayingBarViewController: NSViewController {
         let contentView = NSView()
         barStack.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(barStack)
-        let container = NSGlassEffectView()
+        let container = DropGlassView()
         container.contentView = contentView
+        // Dropping audio files and folders on the bar adds them to the end of the queue
+        container.canDrop = { urls in
+            !FilesystemManager.playableFiles(for: urls, types: [.audio]).isEmpty
+        }
+        container.onDrop = { [weak self] urls in
+            let files = FilesystemManager.playableFiles(for: urls, types: [.audio])
+            guard !files.isEmpty else { return false }
+            self?.player.playLast(files)
+            return true
+        }
         NSLayoutConstraint.activate([
             barStack.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 8),
             barStack.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -8),
