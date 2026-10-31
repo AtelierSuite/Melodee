@@ -9,6 +9,9 @@ struct FolderView: View {
 
     @AppStorage("SelectedLibrarySource") var selectedSource: LibrarySource = .local
     @AppStorage("FileBrowserLayout") var layout: FileBrowserLayout = .list
+    @AppStorage("FileBrowserGridColumns") var gridColumns: Int = GridCell.defaultPhoneColumns
+    @AppStorage("FileBrowserGridCellSize") var gridCellSize: Double = GridCell.defaultPadCellSize
+    @State var gridZoomStart: (columns: Int, cellSize: Double)?
 
     @State var currentDirectory: FSDirectory?
     @State var files: [any FilesystemObject] = []
@@ -330,6 +333,53 @@ struct FolderView: View {
                 }
             }
         }
+        .simultaneousGesture(gridZoomGesture)
+    }
+
+    /// Pinching changes the number of columns on iPhone, and the cell size on iPad.
+    var gridZoomGesture: some Gesture {
+        MagnifyGesture()
+            .onChanged { value in
+                let start = gridZoomStart ?? (gridColumns, gridCellSize)
+                if gridZoomStart == nil {
+                    gridZoomStart = start
+                }
+                let magnification = max(value.magnification, 0.01)
+                if GridCell.usesFixedColumns {
+                    let range = GridCell.phoneColumnRange
+                    let columns = min(max(Int((Double(start.columns) / magnification).rounded()),
+                                          range.lowerBound), range.upperBound)
+                    if columns != gridColumns {
+                        withAnimation(.snappy) {
+                            gridColumns = columns
+                        }
+                    }
+                } else {
+                    let range = GridCell.padCellSizeRange
+                    let size = min(max(start.cellSize * magnification, range.lowerBound), range.upperBound)
+                    // Step the size so the grid doesn't relayout on every tiny movement
+                    let steppedSize = (size / 4.0).rounded() * 4.0
+                    if steppedSize != gridCellSize {
+                        gridCellSize = steppedSize
+                    }
+                }
+            }
+            .onEnded { _ in
+                gridZoomStart = nil
+            }
+    }
+
+    var gridColumnItems: [GridItem] {
+        if GridCell.usesFixedColumns {
+            let columns = min(max(gridColumns, GridCell.phoneColumnRange.lowerBound),
+                              GridCell.phoneColumnRange.upperBound)
+            let spacing: CGFloat = columns > 3 ? 8.0 : 12.0
+            return Array(repeating: GridItem(.flexible(), spacing: spacing, alignment: .top), count: columns)
+        } else {
+            let size = min(max(gridCellSize, GridCell.padCellSizeRange.lowerBound),
+                           GridCell.padCellSizeRange.upperBound)
+            return [GridItem(.adaptive(minimum: size, maximum: size * 1.25), spacing: 12.0, alignment: .top)]
+        }
     }
 
     func gridSection(_ title: LocalizedStringKey, items: [any FilesystemObject]) -> some View {
@@ -345,12 +395,7 @@ struct FolderView: View {
 
     func fileGrid(_ items: [any FilesystemObject]) -> some View {
         LazyVGrid(
-            columns: [GridItem(
-                .adaptive(minimum: GridCell.minimumWidth,
-                          maximum: GridCell.maximumWidth),
-                spacing: 12.0,
-                alignment: .top
-            )],
+            columns: gridColumnItems,
             alignment: .leading,
             spacing: 16.0
         ) {
