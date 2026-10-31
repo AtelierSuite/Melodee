@@ -6,6 +6,7 @@
 import AppKit
 
 extension NSToolbarItem.Identifier {
+    static let addFolder = NSToolbarItem.Identifier("AddFolder")
     static let navigation = NSToolbarItem.Identifier("Navigation")
     static let playAll = NSToolbarItem.Identifier("PlayAll")
     static let shuffle = NSToolbarItem.Identifier("Shuffle")
@@ -26,6 +27,8 @@ extension MainWindowController: NSToolbarDelegate {
     func toolbarDefaultItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
         [
             .toggleSidebar,
+            .flexibleSpace,
+            .addFolder,
             .sidebarTrackingSeparator,
             .navigation,
             .flexibleSpace,
@@ -46,6 +49,7 @@ extension MainWindowController: NSToolbarDelegate {
         willBeInsertedIntoToolbar flag: Bool
     ) -> NSToolbarItem? {
         switch itemIdentifier {
+        case .addFolder: addFolderItem()
         case .navigation: navigationItem()
         case .playAll: buttonItem(.playAll, "Toolbar.PlayAll", "play.fill", #selector(playAll(_:)))
         case .shuffle: buttonItem(.shuffle, "Toolbar.Shuffle", "shuffle", #selector(shuffleAll(_:)))
@@ -87,6 +91,13 @@ extension MainWindowController: NSToolbarDelegate {
         item.toolTip = label
         item.target = self
         item.action = action
+        return item
+    }
+
+    /// Sits above the sidebar, and goes to the app delegate so it works however the window is set up.
+    private func addFolderItem() -> NSToolbarItem {
+        let item = buttonItem(.addFolder, "Menu.AddFolder", "plus", #selector(AppDelegate.addFolder(_:)))
+        item.target = nil
         return item
     }
 
