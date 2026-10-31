@@ -25,9 +25,6 @@ extension BrowserViewController: NSCollectionViewDataSource, NSCollectionViewDel
         collectionView.onOpen = { [weak self] indexes in
             self?.openItems(at: indexes)
         }
-        collectionView.onMagnify = { [weak self] magnification in
-            self?.zoomGrid(by: magnification)
-        }
         collectionView.registerForDraggedTypes([.fileURL])
         collectionView.setDraggingSourceOperationMask(.copy, forLocal: false)
     }
@@ -49,9 +46,20 @@ extension BrowserViewController: NSCollectionViewDataSource, NSCollectionViewDel
     }
 
     /// Pinching scales the icons, as in Finder's icon view.
-    func zoomGrid(by magnification: CGFloat) {
+    @objc func handlePinch(_ recognizer: NSMagnificationGestureRecognizer) {
+        switch recognizer.state {
+        case .began:
+            pinchStartIconSize = gridIconSize
+        case .changed, .ended:
+            setGridIconSize(pinchStartIconSize * (1 + recognizer.magnification))
+        default:
+            break
+        }
+    }
+
+    func setGridIconSize(_ size: CGFloat) {
         let range = BrowserGridItem.iconSizeRange
-        let newSize = min(max(gridIconSize * (1 + magnification), range.lowerBound), range.upperBound)
+        let newSize = min(max(size, range.lowerBound), range.upperBound).rounded()
         guard newSize != gridIconSize else { return }
         gridIconSize = newSize
         (collectionView.collectionViewLayout as? NSCollectionViewFlowLayout)?.itemSize =

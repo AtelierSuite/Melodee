@@ -77,6 +77,14 @@ final class MainWindowController: NSWindowController, NSWindowDelegate {
         setViewMode(.list)
     }
 
+    @objc func makeIconsBigger(_ sender: Any?) {
+        browser.setGridIconSize(browser.gridIconSize + 16)
+    }
+
+    @objc func makeIconsSmaller(_ sender: Any?) {
+        browser.setGridIconSize(browser.gridIconSize - 16)
+    }
+
     @objc func changeViewMode(_ sender: NSToolbarItemGroup) {
         setViewMode(sender.selectedIndex == 0 ? .grid : .list)
     }
@@ -152,6 +160,10 @@ extension MainWindowController: NSMenuItemValidation {
             menuItem.state = browser.viewMode == .grid ? .on : .off
         case #selector(showAsList(_:)):
             menuItem.state = browser.viewMode == .list ? .on : .off
+        case #selector(makeIconsBigger(_:)):
+            return browser.viewMode == .grid && browser.gridIconSize < BrowserGridItem.iconSizeRange.upperBound
+        case #selector(makeIconsSmaller(_:)):
+            return browser.viewMode == .grid && browser.gridIconSize > BrowserGridItem.iconSizeRange.lowerBound
         case #selector(playAll(_:)), #selector(shuffleAll(_:)):
             return browser.containsPlayableItems
         case #selector(openSelection(_:)), #selector(moveSelectionToTrash(_:)):

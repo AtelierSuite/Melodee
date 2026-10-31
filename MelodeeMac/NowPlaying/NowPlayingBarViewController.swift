@@ -17,7 +17,7 @@ final class NowPlayingBarViewController: NSViewController {
     private let nextButton = NowPlayingBarViewController.button("forward.fill", "NowPlaying.Next")
     private let elapsedLabel = NSTextField(labelWithString: "")
     private let remainingLabel = NSTextField(labelWithString: "")
-    private let progressSlider = NSSlider(value: 0, minValue: 0, maxValue: 1, target: nil, action: nil)
+    private let progressBar = FlatProgressBar()
     private let repeatButton = NowPlayingBarViewController.button("repeat", "NowPlaying.Repeat")
     private let queueButton = NowPlayingBarViewController.button("list.bullet", "NowPlaying.Queue")
     private var playerObserver: NSObjectProtocol?
@@ -44,17 +44,21 @@ final class NowPlayingBarViewController: NSViewController {
             label.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
         }
         for label in [elapsedLabel, remainingLabel] {
-            label.font = .monospacedDigitSystemFont(ofSize: NSFont.smallSystemFontSize, weight: .regular)
+            label.font = .monospacedDigitSystemFont(ofSize: NSFont.smallSystemFontSize, weight: .semibold)
             label.textColor = .secondaryLabelColor
         }
+        remainingLabel.alignment = .right
         playPauseButton.symbolConfiguration = .init(pointSize: 20, weight: .regular)
-        progressSlider.controlSize = .small
-        progressSlider.isContinuous = true
+        progressBar.onScrub = { [weak self] time in
+            self?.showTimes(currentTime: time)
+        }
+        progressBar.onSeek = { [weak self] time in
+            self?.player.seek(to: time)
+        }
         let targets: [(NSControl, Selector)] = [
             (previousButton, #selector(previousTrack(_:))),
             (playPauseButton, #selector(togglePlayPause(_:))),
             (nextButton, #selector(nextTrack(_:))),
-            (progressSlider, #selector(seek(_:))),
             (repeatButton, #selector(cycleRepeatMode(_:))),
             (queueButton, #selector(toggleQueue(_:)))
         ]
@@ -67,12 +71,13 @@ final class NowPlayingBarViewController: NSViewController {
         let titleRow = NSStackView(views: [titleLabel, subtitleLabel])
         titleRow.spacing = 6
         titleRow.alignment = .firstBaseline
-        let progressStack = NSStackView(views: [elapsedLabel, progressSlider, remainingLabel])
-        progressStack.spacing = 6
+        let progressStack = NSStackView(views: [elapsedLabel, progressBar, remainingLabel])
+        progressStack.spacing = 8
+        progressStack.alignment = .centerY
         let infoStack = NSStackView(views: [titleRow, progressStack])
         infoStack.orientation = .vertical
         infoStack.alignment = .leading
-        infoStack.spacing = 0
+        infoStack.spacing = 4
         infoStack.setHuggingPriority(NSLayoutConstraint.Priority(1), for: .horizontal)
         let transportStack = NSStackView(views: [previousButton, playPauseButton, nextButton])
         transportStack.spacing = 10
@@ -86,7 +91,7 @@ final class NowPlayingBarViewController: NSViewController {
         for fixedView in [transportStack, artworkView, repeatButton, queueButton] {
             fixedView.setContentHuggingPriority(.required, for: .horizontal)
         }
-        progressSlider.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        progressBar.setContentHuggingPriority(.defaultLow, for: .horizontal)
 
         let contentView = NSView()
         barStack.translatesAutoresizingMaskIntoConstraints = false
@@ -102,9 +107,9 @@ final class NowPlayingBarViewController: NSViewController {
             artworkView.heightAnchor.constraint(equalToConstant: 40),
             progressStack.widthAnchor.constraint(equalTo: infoStack.widthAnchor),
             infoStack.widthAnchor.constraint(greaterThanOrEqualToConstant: 200),
-            progressSlider.widthAnchor.constraint(greaterThanOrEqualToConstant: 120),
-            elapsedLabel.widthAnchor.constraint(greaterThanOrEqualToConstant: 36),
-            remainingLabel.widthAnchor.constraint(greaterThanOrEqualToConstant: 40)
+            progressBar.widthAnchor.constraint(greaterThanOrEqualToConstant: 120),
+            elapsedLabel.widthAnchor.constraint(equalToConstant: 40),
+            remainingLabel.widthAnchor.constraint(equalToConstant: 44)
         ])
         view = container
         playerObserver = NotificationCenter.default.addObserver(
@@ -169,19 +174,24 @@ final class NowPlayingBarViewController: NSViewController {
 
     private func updateProgress() {
         guard let time = player.playbackTime else {
-            progressSlider.doubleValue = 0
-            progressSlider.isEnabled = false
-            elapsedLabel.stringValue = ""
-            remainingLabel.stringValue = ""
+            progressBar.doubleValue = 0
+            progressBar.isEnabled = false
+            elapsedLabel.stringValue = "--:--"
+            remainingLabel.stringValue = "--:--"
             return
         }
-        progressSlider.isEnabled = player.supportsSeeking
-        progressSlider.maxValue = time.totalTime
-        if NSEvent.pressedMouseButtons == 0 {
-            progressSlider.doubleValue = time.currentTime
-        }
-        elapsedLabel.stringValue = Self.timeFormatter.string(from: time.currentTime) ?? ""
-        remainingLabel.stringValue = "-" + (Self.timeFormatter.string(from: time.totalTime - time.currentTime) ?? "")
+        progressBar.isEnabled = player.supportsSeeking
+        progressBar.maxValue = time.totalTime
+        // Leave the bar and times alone while they're being dragged
+        guard !progressBar.isDragging else { return }
+        progressBar.doubleValue = time.currentTime
+        showTimes(currentTime: time.currentTime)
+    }
+
+    private func showTimes(currentTime: TimeInterval) {
+        let totalTime = progressBar.maxValue
+        elapsedLabel.stringValue = Self.timeFormatter.string(from: currentTime) ?? ""
+        remainingLabel.stringValue = "-" + (Self.timeFormatter.string(from: max(totalTime - currentTime, 0)) ?? "")
     }
 
     private func startProgressTimer() {
@@ -203,10 +213,6 @@ final class NowPlayingBarViewController: NSViewController {
 
     @objc private func nextTrack(_ sender: Any?) {
         player.skipToNextTrack()
-    }
-
-    @objc private func seek(_ sender: NSSlider) {
-        player.seek(to: sender.doubleValue)
     }
 
     @objc private func cycleRepeatMode(_ sender: Any?) {

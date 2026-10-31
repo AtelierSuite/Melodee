@@ -12,6 +12,9 @@ extension MainMenuBuilder {
         menu.addItem(item("ViewMode.Grid", action: #selector(MainWindowController.showAsGrid(_:)), keyEquivalent: "1"))
         menu.addItem(item("ViewMode.List", action: #selector(MainWindowController.showAsList(_:)), keyEquivalent: "2"))
         menu.addItem(.separator())
+        menu.addItem(item("Menu.BiggerIcons", action: #selector(MainWindowController.makeIconsBigger(_:)), keyEquivalent: "+"))
+        menu.addItem(item("Menu.SmallerIcons", action: #selector(MainWindowController.makeIconsSmaller(_:)), keyEquivalent: "-"))
+        menu.addItem(.separator())
         menu.addItem(item(
             "Menu.ShowSidebar",
             action: #selector(NSSplitViewController.toggleSidebar(_:)),

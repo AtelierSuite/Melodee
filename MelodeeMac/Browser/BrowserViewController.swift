@@ -37,6 +37,7 @@ final class BrowserViewController: NSViewController {
     var gridIconSize: CGFloat = Preferences.gridIconSize {
         didSet { Preferences.gridIconSize = gridIconSize }
     }
+    var pinchStartIconSize: CGFloat = BrowserGridItem.defaultIconSize
 
     var canGoBack: Bool { !backStack.isEmpty }
     var canGoForward: Bool { !forwardStack.isEmpty }
@@ -54,6 +55,9 @@ final class BrowserViewController: NSViewController {
         configureGrid()
         configureList()
         gridScrollView.documentView = collectionView
+        gridScrollView.addGestureRecognizer(NSMagnificationGestureRecognizer(
+            target: self, action: #selector(handlePinch(_:))
+        ))
         listScrollView.documentView = tableView
         emptyLabel.font = .preferredFont(forTextStyle: .title3)
         emptyLabel.textColor = .secondaryLabelColor
