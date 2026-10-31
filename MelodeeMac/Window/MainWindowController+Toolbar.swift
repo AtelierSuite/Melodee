@@ -37,7 +37,9 @@ extension MainWindowController: NSToolbarDelegate {
             .viewMode,
             .search,
             // Keeps the browser's items over the browser when the tag inspector opens
-            .inspectorTrackingSeparator
+            .inspectorTrackingSeparator,
+            // Gives the inspector its own toolbar section, so the bar runs across it like the sidebar's
+            .flexibleSpace
         ]
     }
 
