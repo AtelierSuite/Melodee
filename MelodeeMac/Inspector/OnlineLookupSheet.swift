@@ -77,6 +77,8 @@ struct OnlineLookupSheet: View {
                         ContentUnavailableView(MacText.shared("OnlineLookup.NotRecognized"),
                                                systemImage: "music.note",
                                                description: Text(MacText.shared("OnlineLookup.NotRecognized.Description")))
+                            // Form rows hug the leading edge, so the view has to fill the row to sit in the middle
+                            .frame(maxWidth: .infinity)
                     }
                 } else {
                     Section(MacText.shared("OnlineLookup.Results")) {
