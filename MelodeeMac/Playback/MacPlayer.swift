@@ -103,6 +103,20 @@ final class MacPlayer: NSObject {
         }
     }
 
+    /// Moves tracks to a new place in the queue, keeping the playing track playing.
+    func moveQueueItems(at indexes: IndexSet, to destination: Int) {
+        var entries = Array(queue.enumerated())
+        let moved = indexes.sorted().map { entries[$0] }
+        let insertionIndex = destination - indexes.count(in: 0..<destination)
+        entries.remove(atOffsets: indexes)
+        entries.insert(contentsOf: moved, at: min(insertionIndex, entries.count))
+        queue = entries.map(\.element)
+        if let currentIndex {
+            self.currentIndex = entries.firstIndex { $0.offset == currentIndex }
+        }
+        notifyChange()
+    }
+
     func clearQueue() {
         stop()
     }

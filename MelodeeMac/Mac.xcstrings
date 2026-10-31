@@ -1688,37 +1688,37 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Show Up Next"
+            "value" : "Show Queue"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "次はこちらを表示"
+            "value" : "再生キューを表示"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "다음 재생 보기"
+            "value" : "대기열 보기"
           }
         },
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Hiển thị Tiếp theo"
+            "value" : "Hiển thị hàng đợi"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "显示待播清单"
+            "value" : "显示队列"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "顯示待播清單"
+            "value" : "顯示佇列"
           }
         }
       }
@@ -2180,37 +2180,37 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Up Next"
+            "value" : "Queue"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "次はこちら"
+            "value" : "再生キュー"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "다음 재생"
+            "value" : "대기열"
           }
         },
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tiếp theo"
+            "value" : "Hàng đợi"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "待播清单"
+            "value" : "队列"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "待播清單"
+            "value" : "佇列"
           }
         }
       }
@@ -2262,37 +2262,37 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Clear Up Next"
+            "value" : "Clear Queue"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "次はこちらを消去"
+            "value" : "再生キューをクリア"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "다음 재생 지우기"
+            "value" : "대기열 지우기"
           }
         },
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Xóa Tiếp theo"
+            "value" : "Xóa hàng đợi"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "清除待播清单"
+            "value" : "清空队列"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "清除待播清單"
+            "value" : "清空佇列"
           }
         }
       }
@@ -2303,37 +2303,37 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Up Next"
+            "value" : "Queue"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "次はこちら"
+            "value" : "再生キュー"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "다음 재생"
+            "value" : "대기열"
           }
         },
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tiếp theo"
+            "value" : "Hàng đợi"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "待播清单"
+            "value" : "队列"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "待播清單"
+            "value" : "佇列"
           }
         }
       }

@@ -5,7 +5,7 @@
 
 import AppKit
 
-/// Lists the play queue. Double-clicking a track plays it, and Delete removes it.
+/// Lists the play queue. Double-clicking a track plays it, dragging reorders it, and Delete removes it.
 final class QueueViewController: NSViewController {
 
     private let player = MacServices.shared.player
@@ -29,6 +29,8 @@ final class QueueViewController: NSViewController {
         tableView.delegate = self
         tableView.target = self
         tableView.doubleAction = #selector(playClickedRow(_:))
+        tableView.registerForDraggedTypes([.queueRows])
+        tableView.draggingDestinationFeedbackStyle = .gap
         tableView.onDelete = { [weak self] in
             self?.removeSelectedTracks()
         }
@@ -95,6 +97,44 @@ extension QueueViewController: NSTableViewDataSource, NSTableViewDelegate {
         cell.imageView?.contentTintColor = isCurrent ? .controlAccentColor : .secondaryLabelColor
         return cell
     }
+
+    // MARK: - Reordering
+
+    func tableView(_ tableView: NSTableView, pasteboardWriterForRow row: Int) -> (any NSPasteboardWriting)? {
+        let item = NSPasteboardItem()
+        item.setString(String(row), forType: .queueRows)
+        return item
+    }
+
+    func tableView(
+        _ tableView: NSTableView,
+        validateDrop info: any NSDraggingInfo,
+        proposedRow row: Int,
+        proposedDropOperation dropOperation: NSTableView.DropOperation
+    ) -> NSDragOperation {
+        guard info.draggingSource as? NSTableView === tableView else { return [] }
+        if dropOperation == .on {
+            tableView.setDropRow(row, dropOperation: .above)
+        }
+        return .move
+    }
+
+    func tableView(
+        _ tableView: NSTableView,
+        acceptDrop info: any NSDraggingInfo,
+        row: Int,
+        dropOperation: NSTableView.DropOperation
+    ) -> Bool {
+        let rows = info.draggingPasteboard.pasteboardItems?
+            .compactMap { $0.string(forType: .queueRows).flatMap(Int.init) } ?? []
+        guard !rows.isEmpty else { return false }
+        player.moveQueueItems(at: IndexSet(rows), to: row)
+        return true
+    }
+}
+
+extension NSPasteboard.PasteboardType {
+    static let queueRows = NSPasteboard.PasteboardType("com.tsubuzaki.Melodee.queue-rows")
 }
 
 final class QueueTableView: NSTableView {
