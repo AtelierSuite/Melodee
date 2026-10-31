@@ -14,30 +14,33 @@ struct GridFileCell: View {
 
     var body: some View {
         GridCellLayout(title: file.name, subtitle: subtitle ?? fileSizeText) {
-            Group {
-                if let thumbnail {
-                    Image(uiImage: thumbnail)
-                        .resizable()
-                        .scaledToFill()
-                } else {
-                    GridCellIcon(image: file.type.icon(), color: file.type.iconColor)
+            // Color.clear keeps the badges pinned to the square tile, since a scaled-to-fill thumbnail overflows it
+            Color.clear
+                .overlay {
+                    if let thumbnail {
+                        Image(uiImage: thumbnail)
+                            .resizable()
+                            .scaledToFill()
+                    } else {
+                        GridCellIcon(image: file.type.icon(), color: file.type.iconColor)
+                    }
                 }
-            }
-            .overlay(alignment: .topTrailing) {
-                downloadStatus
-                    .padding(6.0)
-            }
-            .overlay(alignment: .bottomTrailing) {
-                if file.type == .audio {
-                    Text(file.extension.uppercased())
-                        .font(.caption2)
-                        .fontWeight(.semibold)
-                        .padding(.horizontal, 6.0)
-                        .padding(.vertical, 3.0)
-                        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 4.0))
+                .overlay(alignment: .topTrailing) {
+                    downloadStatus
                         .padding(6.0)
                 }
-            }
+                .overlay(alignment: .bottomTrailing) {
+                    if file.type == .audio {
+                        Text(file.extension.uppercased())
+                            .font(.caption2)
+                            .fontWeight(.semibold)
+                            .lineLimit(1)
+                            .padding(.horizontal, 5.0)
+                            .padding(.vertical, 2.0)
+                            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 4.0))
+                            .padding(5.0)
+                    }
+                }
         }
         .task(id: file.path) {
             await loadFileMetadata()
@@ -88,7 +91,7 @@ struct GridFileCell: View {
             isThumbnailFetchCompleted = true
             if let thumbnail = await FileThumbnailLoader.thumbnail(
                 for: file,
-                size: GridCell.maximumWidth,
+                size: GridCell.thumbnailSize,
                 scale: displayScale,
                 includesDocuments: true
             ) {
@@ -111,9 +114,22 @@ struct GridFolderCell: View {
     }
 }
 
+@MainActor
 enum GridCell {
-    static let minimumWidth: CGFloat = 96.0
-    static let maximumWidth: CGFloat = 160.0
+    /// The point size thumbnails are rendered at, large enough for the biggest cell.
+    static let thumbnailSize: CGFloat = 220.0
+
+    /// On iPhone, the grid is a fixed number of columns that pinching changes.
+    static let phoneColumnRange: ClosedRange<Int> = 2...5
+    static let defaultPhoneColumns: Int = 3
+
+    /// On iPad, the grid fits as many cells of roughly this size as it can, and pinching resizes them.
+    static let padCellSizeRange: ClosedRange<Double> = 100.0...220.0
+    static let defaultPadCellSize: Double = 140.0
+
+    static var usesFixedColumns: Bool {
+        UIDevice.current.userInterfaceIdiom == .phone
+    }
 }
 
 /// A square artwork tile with the title and an optional subtitle centered below it, like the icon view in Files.
@@ -161,14 +177,16 @@ struct GridCellIcon: View {
     var color: Color
 
     var body: some View {
-        ZStack {
-            Rectangle()
-                .fill(color.opacity(0.12))
-            image
-                .resizable()
-                .scaledToFit()
-                .foregroundStyle(color)
-                .padding(28.0)
+        GeometryReader { geometry in
+            ZStack {
+                Rectangle()
+                    .fill(color.opacity(0.12))
+                image
+                    .resizable()
+                    .scaledToFit()
+                    .foregroundStyle(color)
+                    .padding(geometry.size.width * 0.25)
+            }
         }
     }
 }
