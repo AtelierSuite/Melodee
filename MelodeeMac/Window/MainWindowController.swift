@@ -53,6 +53,10 @@ final class MainWindowController: NSWindowController, NSWindowDelegate {
 
     // MARK: - Actions
 
+    @objc func addFolder(_ sender: Any?) {
+        (NSApp.delegate as? AppDelegate)?.addFolder(sender)
+    }
+
     @objc func goBack(_ sender: Any?) {
         browser.goBack()
     }

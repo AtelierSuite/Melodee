@@ -94,10 +94,20 @@ extension MainWindowController: NSToolbarDelegate {
         return item
     }
 
-    /// Sits above the sidebar, and goes to the app delegate so it works however the window is set up.
+    /// Sits above the sidebar. It hosts its own button, because a plain item there never sent its action.
     private func addFolderItem() -> NSToolbarItem {
-        let item = buttonItem(.addFolder, "Menu.AddFolder", "plus", #selector(AppDelegate.addFolder(_:)))
-        item.target = nil
+        let label = MacText.string("Menu.AddFolder")
+        let button = NSButton(
+            image: NSImage(systemSymbolName: "plus", accessibilityDescription: label) ?? NSImage(),
+            target: self,
+            action: #selector(addFolder(_:))
+        )
+        button.bezelStyle = .toolbar
+        button.setAccessibilityLabel(label)
+        let item = NSToolbarItem(itemIdentifier: .addFolder)
+        item.view = button
+        item.label = label
+        item.toolTip = label
         return item
     }
 
