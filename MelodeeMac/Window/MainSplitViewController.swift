@@ -63,15 +63,27 @@ private final class ContentViewController: NSViewController {
             subview.translatesAutoresizingMaskIntoConstraints = false
             container.addSubview(subview)
         }
+        // The bar floats over the bottom of the browser, which scrolls beneath it
         NSLayoutConstraint.activate([
             browser.view.topAnchor.constraint(equalTo: container.topAnchor),
+            browser.view.bottomAnchor.constraint(equalTo: container.bottomAnchor),
             browser.view.leadingAnchor.constraint(equalTo: container.leadingAnchor),
             browser.view.trailingAnchor.constraint(equalTo: container.trailingAnchor),
-            nowPlayingBar.view.topAnchor.constraint(equalTo: browser.view.bottomAnchor),
-            nowPlayingBar.view.leadingAnchor.constraint(equalTo: container.leadingAnchor),
-            nowPlayingBar.view.trailingAnchor.constraint(equalTo: container.trailingAnchor),
-            nowPlayingBar.view.bottomAnchor.constraint(equalTo: container.bottomAnchor)
+            nowPlayingBar.view.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: Self.barMargin),
+            nowPlayingBar.view.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -Self.barMargin),
+            nowPlayingBar.view.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -Self.barMargin)
         ])
         view = container
+    }
+
+    private static let barMargin: CGFloat = 12
+
+    /// Lets the browser's last row scroll clear of the bar.
+    override func viewDidLayout() {
+        super.viewDidLayout()
+        let inset = nowPlayingBar.view.frame.height + Self.barMargin * 2
+        if browser.view.additionalSafeAreaInsets.bottom != inset {
+            browser.view.additionalSafeAreaInsets.bottom = inset
+        }
     }
 }

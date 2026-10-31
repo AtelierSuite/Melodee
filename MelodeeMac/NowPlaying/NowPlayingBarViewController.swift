@@ -63,46 +63,46 @@ final class NowPlayingBarViewController: NSViewController {
             control.action = action
         }
 
-        let titleStack = NSStackView(views: [titleLabel, subtitleLabel])
-        titleStack.orientation = .vertical
-        titleStack.alignment = .leading
-        titleStack.spacing = 2
-        let transportStack = NSStackView(views: [previousButton, playPauseButton, nextButton])
-        transportStack.spacing = 12
+        // Title and artist on one line above the seek bar, as in Music's playback area
+        let titleRow = NSStackView(views: [titleLabel, subtitleLabel])
+        titleRow.spacing = 6
+        titleRow.alignment = .firstBaseline
         let progressStack = NSStackView(views: [elapsedLabel, progressSlider, remainingLabel])
         progressStack.spacing = 6
-        let barStack = NSStackView(views: [
-            artworkView, titleStack, transportStack, progressStack, repeatButton, queueButton
-        ])
+        let infoStack = NSStackView(views: [titleRow, progressStack])
+        infoStack.orientation = .vertical
+        infoStack.alignment = .leading
+        infoStack.spacing = 0
+        infoStack.setHuggingPriority(NSLayoutConstraint.Priority(1), for: .horizontal)
+        let transportStack = NSStackView(views: [previousButton, playPauseButton, nextButton])
+        transportStack.spacing = 10
+        let barStack = NSStackView(views: [transportStack, artworkView, infoStack, repeatButton, queueButton])
         barStack.spacing = 14
         barStack.alignment = .centerY
-        barStack.edgeInsets = NSEdgeInsets(top: 0, left: 16, bottom: 0, right: 16)
+        barStack.distribution = .fill
         barStack.setCustomSpacing(10, after: artworkView)
-        barStack.setCustomSpacing(8, after: repeatButton)
-        barStack.setHuggingPriority(.defaultLow, for: .horizontal)
-
-        let separator = NSBox()
-        separator.boxType = .separator
-        let container = NSVisualEffectView()
-        container.material = .titlebar
-        container.blendingMode = .withinWindow
-        for subview in [separator, barStack] {
-            subview.translatesAutoresizingMaskIntoConstraints = false
-            container.addSubview(subview)
+        barStack.setCustomSpacing(10, after: repeatButton)
+        // Only the title and seek bar stretch, so the controls stay packed at the edges
+        for fixedView in [transportStack, artworkView, repeatButton, queueButton] {
+            fixedView.setContentHuggingPriority(.required, for: .horizontal)
         }
+        progressSlider.setContentHuggingPriority(.defaultLow, for: .horizontal)
+
+        let contentView = NSView()
+        barStack.translatesAutoresizingMaskIntoConstraints = false
+        contentView.addSubview(barStack)
+        let container = NSGlassEffectView()
+        container.contentView = contentView
         NSLayoutConstraint.activate([
-            separator.topAnchor.constraint(equalTo: container.topAnchor),
-            separator.leadingAnchor.constraint(equalTo: container.leadingAnchor),
-            separator.trailingAnchor.constraint(equalTo: container.trailingAnchor),
-            barStack.topAnchor.constraint(equalTo: separator.bottomAnchor, constant: 12),
-            barStack.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -12),
-            barStack.leadingAnchor.constraint(equalTo: container.leadingAnchor),
-            barStack.trailingAnchor.constraint(equalTo: container.trailingAnchor),
-            artworkView.widthAnchor.constraint(equalToConstant: 44),
-            artworkView.heightAnchor.constraint(equalToConstant: 44),
-            titleStack.widthAnchor.constraint(greaterThanOrEqualToConstant: 120),
-            progressSlider.widthAnchor.constraint(greaterThanOrEqualToConstant: 140),
-            progressSlider.widthAnchor.constraint(lessThanOrEqualToConstant: 360),
+            barStack.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 8),
+            barStack.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -8),
+            barStack.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
+            barStack.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20),
+            artworkView.widthAnchor.constraint(equalToConstant: 40),
+            artworkView.heightAnchor.constraint(equalToConstant: 40),
+            progressStack.widthAnchor.constraint(equalTo: infoStack.widthAnchor),
+            infoStack.widthAnchor.constraint(greaterThanOrEqualToConstant: 200),
+            progressSlider.widthAnchor.constraint(greaterThanOrEqualToConstant: 120),
             elapsedLabel.widthAnchor.constraint(greaterThanOrEqualToConstant: 36),
             remainingLabel.widthAnchor.constraint(greaterThanOrEqualToConstant: 40)
         ])
@@ -115,6 +115,12 @@ final class NowPlayingBarViewController: NSViewController {
             }
         }
         updatePlayerState()
+    }
+
+    /// Keeps the glass a capsule at whatever height the bar ends up.
+    override func viewDidLayout() {
+        super.viewDidLayout()
+        (view as? NSGlassEffectView)?.cornerRadius = view.bounds.height / 2
     }
 
     private static func button(_ symbolName: String, _ labelKey: String) -> NSButton {
