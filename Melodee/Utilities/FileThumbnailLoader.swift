@@ -6,7 +6,7 @@ enum FileThumbnailLoader {
 
     /// Loads a square thumbnail for a file off the main thread.
     /// Taggable audio files use their album art, falling back to a generic album image, and images are downscaled.
-    /// Videos, PDFs and text files only get a Quick Look thumbnail when `includesDocuments` is true.
+    /// Videos get a Quick Look thumbnail. PDFs and text files only get one when `includesDocuments` is true.
     static func thumbnail(
         for file: FSFile,
         size: CGFloat,
@@ -24,7 +24,7 @@ enum FileThumbnailLoader {
             } else if type == .image {
                 return await UIImage(contentsOfFile: fileURL.path(percentEncoded: false))?
                     .byPreparingThumbnail(ofSize: pixelSize)
-            } else if includesDocuments, type == .video || type == .pdf || type == .text {
+            } else if type == .video || (includesDocuments && (type == .pdf || type == .text)) {
                 let request = QLThumbnailGenerator.Request(
                     fileAt: fileURL,
                     size: CGSize(width: size, height: size),

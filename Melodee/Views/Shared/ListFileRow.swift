@@ -12,10 +12,13 @@ struct ListFileRow: View {
     @State var isEvicted: Bool = false
     @State var fileSizeText: String = ""
 
+    private var hasThumbnail: Bool {
+        file.isTaggableAudio() || file.type == .image || file.type == .video
+    }
+
     var body: some View {
         HStack(alignment: .center, spacing: 16.0) {
-            if file.isTaggableAudio() || file.type == .image,
-               let thumbnail = thumbnail {
+            if hasThumbnail, let thumbnail {
                 Image(uiImage: thumbnail)
                     .resizable()
                     .scaledToFill()
@@ -107,7 +110,7 @@ struct ListFileRow: View {
 
     private func fetchThumbnail() {
         isThumbnailFetchCompleted = true
-        guard file.isTaggableAudio() || file.type == .image else { return }
+        guard hasThumbnail else { return }
         Task {
             if let thumbnail = await FileThumbnailLoader.thumbnail(for: file, size: 100.0, scale: 1.0) {
                 withAnimation(.default.speed(2)) {
