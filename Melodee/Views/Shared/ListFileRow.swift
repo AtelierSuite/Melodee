@@ -25,14 +25,6 @@ struct ListFileRow: View {
                             .stroke(.primary, lineWidth: 1/3)
                             .opacity(0.3)
                     )
-                    .overlay(alignment: .bottomTrailing) {
-                        file.type.icon()
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 16.0, height: 16.0)
-                            .foregroundStyle(file.type.iconColor)
-                            .offset(x: 6.0, y: 6.0)
-                    }
             } else {
                 file.type.icon()
                     .resizable()
