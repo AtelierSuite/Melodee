@@ -108,6 +108,27 @@ extension QueueViewController: NSTableViewDataSource, NSTableViewDelegate {
         return item
     }
 
+    /// Keeps the dragged rows under the pointer. Inside the popover, AppKit otherwise places them above it.
+    func tableView(
+        _ tableView: NSTableView,
+        draggingSession session: NSDraggingSession,
+        willBeginAt screenPoint: NSPoint,
+        forRowIndexes rowIndexes: IndexSet
+    ) {
+        guard let window = tableView.window else { return }
+        let pointer = tableView.convert(window.convertPoint(fromScreen: screenPoint), from: nil)
+        let rowHeight = tableView.rowHeight + tableView.intercellSpacing.height
+        var index = 0
+        session.enumerateDraggingItems(
+            options: [], for: tableView, classes: [NSPasteboardItem.self], searchOptions: [:]
+        ) { draggingItem, _, _ in
+            var frame = draggingItem.draggingFrame
+            frame.origin.y = pointer.y - frame.height / 2 + CGFloat(index) * rowHeight
+            draggingItem.draggingFrame = frame
+            index += 1
+        }
+    }
+
     func tableView(
         _ tableView: NSTableView,
         validateDrop info: any NSDraggingInfo,
