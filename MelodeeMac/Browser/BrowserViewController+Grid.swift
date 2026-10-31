@@ -9,7 +9,7 @@ extension BrowserViewController: NSCollectionViewDataSource, NSCollectionViewDel
 
     func configureGrid() {
         let layout = NSCollectionViewFlowLayout()
-        layout.itemSize = NSSize(width: 128, height: 144)
+        layout.itemSize = BrowserGridItem.itemSize(forIconSize: gridIconSize)
         layout.minimumInteritemSpacing = 8
         layout.minimumLineSpacing = 12
         layout.sectionInset = NSEdgeInsets(top: 16, left: 16, bottom: 16, right: 16)
@@ -25,6 +25,9 @@ extension BrowserViewController: NSCollectionViewDataSource, NSCollectionViewDel
         collectionView.onOpen = { [weak self] indexes in
             self?.openItems(at: indexes)
         }
+        collectionView.onMagnify = { [weak self] magnification in
+            self?.zoomGrid(by: magnification)
+        }
         collectionView.registerForDraggedTypes([.fileURL])
         collectionView.setDraggingSourceOperationMask(.copy, forLocal: false)
     }
@@ -39,9 +42,23 @@ extension BrowserViewController: NSCollectionViewDataSource, NSCollectionViewDel
     ) -> NSCollectionViewItem {
         let item = collectionView.makeItem(withIdentifier: BrowserGridItem.identifier, for: indexPath)
         if let gridItem = item as? BrowserGridItem {
+            gridItem.iconSize = gridIconSize
             gridItem.configure(with: items[indexPath.item])
         }
         return item
+    }
+
+    /// Pinching scales the icons, as in Finder's icon view.
+    func zoomGrid(by magnification: CGFloat) {
+        let range = BrowserGridItem.iconSizeRange
+        let newSize = min(max(gridIconSize * (1 + magnification), range.lowerBound), range.upperBound)
+        guard newSize != gridIconSize else { return }
+        gridIconSize = newSize
+        (collectionView.collectionViewLayout as? NSCollectionViewFlowLayout)?.itemSize =
+            BrowserGridItem.itemSize(forIconSize: newSize)
+        for case let item as BrowserGridItem in collectionView.visibleItems() {
+            item.iconSize = newSize
+        }
     }
 
     func collectionView(_ collectionView: NSCollectionView, didSelectItemsAt indexPaths: Set<IndexPath>) {

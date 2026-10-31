@@ -34,6 +34,10 @@ final class BrowserViewController: NSViewController {
         }
     }
 
+    var gridIconSize: CGFloat = Preferences.gridIconSize {
+        didSet { Preferences.gridIconSize = gridIconSize }
+    }
+
     var canGoBack: Bool { !backStack.isEmpty }
     var canGoForward: Bool { !forwardStack.isEmpty }
     var isSearching: Bool { !searchQuery.isEmpty }

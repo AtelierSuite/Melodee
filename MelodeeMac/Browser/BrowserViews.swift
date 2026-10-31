@@ -9,6 +9,11 @@ import AppKit
 final class BrowserCollectionView: NSCollectionView {
 
     var onOpen: ((IndexSet) -> Void)?
+    var onMagnify: ((CGFloat) -> Void)?
+
+    override func magnify(with event: NSEvent) {
+        onMagnify?(event.magnification)
+    }
 
     override func mouseDown(with event: NSEvent) {
         super.mouseDown(with: event)
