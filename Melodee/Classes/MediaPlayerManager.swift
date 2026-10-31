@@ -21,7 +21,10 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
     var isPlaybackActive: Bool = false
     var isPaused: Bool = true
     var repeatMode: RepeatMode = .none {
-        didSet { if !isRestoringState { stateStore?.saveRepeatMode(repeatMode) } }
+        didSet {
+            if !isRestoringState { stateStore?.saveRepeatMode(repeatMode) }
+            remoteCommandCenter.changeRepeatModeCommand.currentRepeatType = repeatMode.remoteRepeatType
+        }
     }
     var queue: [FSFile] = [] {
         didSet { scheduleQueueSave() }
@@ -140,6 +143,13 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
         remoteCommandCenter.changePlaybackPositionCommand.addTarget { event in
             if let event = event as? MPChangePlaybackPositionCommandEvent {
                 self.seekTo(event.positionTime)
+                return .success
+            }
+            return .commandFailed
+        }
+        remoteCommandCenter.changeRepeatModeCommand.addTarget { event in
+            if let event = event as? MPChangeRepeatModeCommandEvent {
+                self.repeatMode = RepeatMode(remoteRepeatType: event.repeatType)
                 return .success
             }
             return .commandFailed
@@ -563,6 +573,10 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
             nowPlayingInfo[MPMediaItemPropertyPlaybackDuration] = time.totalTime
         }
         nowPlayingInfo[MPNowPlayingInfoPropertyPlaybackRate] = playing ? 1.0 : 0.0
+        if !queue.isEmpty {
+            nowPlayingInfo[MPNowPlayingInfoPropertyPlaybackQueueIndex] = currentlyPlayingIndex()
+            nowPlayingInfo[MPNowPlayingInfoPropertyPlaybackQueueCount] = queue.count
+        }
         nowPlayingInfoCenter.nowPlayingInfo = nowPlayingInfo
     }
 
