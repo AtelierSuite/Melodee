@@ -5,7 +5,7 @@ extension FilesystemManager {
     /// Renames the files in a batch rename preview, skipping files that are unchanged or have problems.
     /// Renames are ordered so that files can take over names freed up by other files in the batch,
     /// and files that swap names are moved through a temporary name.
-    func batchRename(_ items: [BatchRenameItem]) -> BatchRenameResult { // swiftlint:disable:this function_body_length
+    func batchRename(_ items: [BatchRenameItem]) -> BatchRenameResult {
         struct PendingRename {
             let originalPath: String
             var currentURL: URL

@@ -5,7 +5,6 @@ import Foundation
 import SFBAudioEngine
 import UIKit
 
-// swiftlint:disable type_body_length
 @Observable
 class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
 
@@ -798,4 +797,3 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
         }
     }
 }
-// swiftlint:enable type_body_length

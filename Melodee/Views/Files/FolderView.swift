@@ -2,7 +2,6 @@ import SFBAudioEngine
 import SwiftUI
 import TipKit
 
-// swiftlint:disable:next type_body_length
 struct FolderView: View {
 
     @State var fileManager: FilesystemManager
@@ -545,7 +544,7 @@ struct FolderView: View {
         files.compactMap { $0 as? FSFile }.filter { $0.isTaggableAudio() }
     }
 
-    func sortFiles() { // swiftlint:disable:this function_body_length
+    func sortFiles() {
         // Separate into groups: folders > playlists > audio tracks > other files
         var directories = files.filter { $0 is FSDirectory }
         let allFiles = files.compactMap { $0 as? FSFile }
