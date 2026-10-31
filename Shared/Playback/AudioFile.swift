@@ -1,6 +1,5 @@
 import Foundation
 import SFBAudioEngine
-import UIKit
 
 extension AudioFile {
 
@@ -25,12 +24,6 @@ extension AudioFile {
     var composer: String? { metadata.composer }
     var trackNumber: Int? { metadata.trackNumber }
     var discNumber: Int? { metadata.discNumber }
-
-    /// Cover art as a UIImage, if any attached picture is present.
-    var coverImage: UIImage? {
-        guard let data = coverArtData else { return nil }
-        return UIImage(data: data)
-    }
 
     /// Cover art as raw image data (whatever bytes the tag contained — typically JPEG or PNG).
     var coverArtData: Data? {

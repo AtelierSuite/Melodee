@@ -16,7 +16,10 @@ struct PlaybackBarAccessory: ViewModifier {
 
     var isEnabled: Bool = true
 
+    @Environment(MediaPlayerManager.self) var mediaPlayer: MediaPlayerManager
+
     @State var isPopupPresented: Bool = false
+    @State var isDropTargeted: Bool = false
     @Namespace var namespace
 
     func body(content: Content) -> some View {
@@ -32,6 +35,15 @@ struct PlaybackBarAccessory: ViewModifier {
                     }
                     .buttonStyle(.plain)
                     .glassEffect(.regular.interactive(), in: .capsule)
+                    // Dropping audio and video files on the bar adds them to the end of the queue
+                    .dropDestination(for: URL.self) { urls, _ in
+                        queue(urls)
+                    } isTargeted: { isTargeted in
+                        withAnimation(.default.speed(2)) {
+                            isDropTargeted = isTargeted
+                        }
+                    }
+                    .scaleEffect(isDropTargeted ? 1.04 : 1.0)
                     .popoverTip(NPQueueTip(), arrowEdge: .bottom)
                     .padding(.horizontal, 12.0)
                     .padding(.bottom, 8.0)
@@ -53,6 +65,17 @@ struct PlaybackBarAccessory: ViewModifier {
                         .zoom(sourceID: "NowPlayingBar", in: namespace)
                     )
             }
+    }
+
+    func queue(_ urls: [URL]) -> Bool {
+        let files = FilesystemManager.playableFiles(for: urls, types: [.audio, .video])
+        guard !files.isEmpty else { return false }
+        withAnimation(.default.speed(2)) {
+            for file in files {
+                mediaPlayer.queueLast(file: file)
+            }
+        }
+        return true
     }
 }
 

@@ -5,7 +5,6 @@ import Foundation
 import SFBAudioEngine
 import UIKit
 
-// swiftlint:disable type_body_length
 @Observable
 class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
 
@@ -535,6 +534,17 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
         }
     }
 
+    /// Points queued files at their new locations after files or folders have been moved.
+    func updateQueuedFilePaths(afterMoving movedPaths: [String: String]) {
+        var renamedPaths: [String: String] = [:]
+        for file in queue {
+            if let newPath = FilesystemManager.movedPath(for: file.path, in: movedPaths) {
+                renamedPaths[FilesystemManager.normalizedPath(file.path)] = newPath
+            }
+        }
+        updateQueuedFilePaths(renamedPaths)
+    }
+
     func setQueueIDs() {
         for index in 0..<queue.count where queue[index].playbackQueueID.isEmpty {
             queue[index].playbackQueueID = UUID().uuidString
@@ -798,4 +808,3 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
         }
     }
 }
-// swiftlint:enable type_body_length

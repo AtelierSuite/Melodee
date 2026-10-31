@@ -6,6 +6,7 @@ struct FBAudioFileRow: View {
     @Environment(MediaPlayerManager.self) var mediaPlayer
 
     @State var file: FSFile
+    var layout: FileBrowserLayout = .list
     var sortOption: SortOption = .fileName
     @State var tagSubtitle: String?
 
@@ -13,8 +14,7 @@ struct FBAudioFileRow: View {
         Button {
             mediaPlayer.playImmediately(file)
         } label: {
-            ListFileRow(file: .constant(file), subtitle: tagSubtitle)
-                .tint(.primary)
+            FBFileLabel(file: file, subtitle: tagSubtitle, layout: layout)
         }
         .task(id: sortOption) {
             // Don't read tags from evicted iCloud files

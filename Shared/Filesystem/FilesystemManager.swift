@@ -271,6 +271,94 @@ class FilesystemManager {
         }
     }
 
+    /// A file for a URL dropped into the app, if Melodee recognizes its type.
+    static func file(at url: URL) -> FSFile? {
+        let type = fileType(forExtension: url.pathExtension.lowercased())
+        guard type != .notSet else { return nil }
+        return FSFile(name: url.deletingPathExtension().lastPathComponent,
+                      extension: url.pathExtension.lowercased(),
+                      path: url.path(percentEncoded: false),
+                      type: type)
+    }
+
+    /// The files to queue for URLs dropped on the Now Playing bar: playable files, and the playable files
+    /// directly inside dropped folders.
+    static func playableFiles(for urls: [URL], types: Set<FileType>) -> [FSFile] {
+        urls.flatMap { url -> [FSFile] in
+            if (try? url.resourceValues(forKeys: [.isDirectoryKey]))?.isDirectory == true {
+                let contents = (try? FileManager.default.contentsOfDirectory(at: url, includingPropertiesForKeys: nil)) ?? []
+                return contents
+                    .sorted { $0.lastPathComponent.localizedStandardCompare($1.lastPathComponent) == .orderedAscending }
+                    .compactMap(file(at:))
+                    .filter { types.contains($0.type) }
+            }
+            return file(at: url).map { types.contains($0.type) ? [$0] : [] } ?? []
+        }
+    }
+
+    // MARK: - Moving
+
+    /// Moves files and folders into a folder, giving each a numbered name if the folder already has one with
+    /// the same name. Items already in the folder, and folders dropped into themselves, are skipped.
+    /// Returns the normalized old path of each moved item mapped to its new path.
+    @discardableResult
+    static func move(_ urls: [URL], into folderURL: URL) -> (movedPaths: [String: String], failures: [Error]) {
+        var movedPaths: [String: String] = [:]
+        var failures: [Error] = []
+        let folderPath = normalizedPath(folderURL.path(percentEncoded: false))
+        for url in urls {
+            let path = normalizedPath(url.path(percentEncoded: false))
+            let parentPath = normalizedPath(url.deletingLastPathComponent().path(percentEncoded: false))
+            guard parentPath != folderPath, folderPath != path, !folderPath.hasPrefix(path + "/") else { continue }
+            let destination = uniqueDestination(for: url, in: folderURL)
+            do {
+                try FileManager.default.moveItem(at: url, to: destination)
+                movedPaths[path] = destination.path(percentEncoded: false)
+            } catch {
+                failures.append(error)
+            }
+        }
+        return (movedPaths, failures)
+    }
+
+    /// A URL in the folder for the item, adding a number to its name when the name is taken.
+    static func uniqueDestination(for url: URL, in folderURL: URL) -> URL {
+        let baseName = url.deletingPathExtension().lastPathComponent
+        let pathExtension = url.pathExtension
+        var destination = folderURL.appending(path: url.lastPathComponent)
+        var copyNumber = 2
+        while FileManager.default.fileExists(atPath: destination.path(percentEncoded: false)) {
+            let name = pathExtension.isEmpty ? "\(baseName) \(copyNumber)" : "\(baseName) \(copyNumber).\(pathExtension)"
+            destination = folderURL.appending(path: name)
+            copyNumber += 1
+        }
+        return destination
+    }
+
+    /// Where a path ends up after a move, including files inside a moved folder. Nil if it didn't move.
+    static func movedPath(for path: String, in movedPaths: [String: String]) -> String? {
+        let path = normalizedPath(path)
+        if let newPath = movedPaths[path] {
+            return newPath
+        }
+        for (oldPath, newPath) in movedPaths where path.hasPrefix(oldPath + "/") {
+            return newPath + path.dropFirst(oldPath.count)
+        }
+        return nil
+    }
+
+    /// Normalizes a path so that paths to the same file compare equal.
+    static func normalizedPath(_ path: String) -> String {
+        var path = URL(filePath: path).standardizedFileURL.path(percentEncoded: false)
+        if path.hasPrefix("/private/var/") {
+            path = String(path.dropFirst("/private".count))
+        }
+        if path.count > 1 && path.hasSuffix("/") {
+            path = String(path.dropLast())
+        }
+        return path
+    }
+
     func delete(_ file: any FilesystemObject) {
         do {
             try manager.removeItem(atPath: file.path)

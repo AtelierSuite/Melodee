@@ -221,14 +221,7 @@ enum BatchRenamePlanner {
 
     /// Normalizes a path so that paths to the same file compare equal.
     static func normalizedPath(_ path: String) -> String {
-        var path = URL(filePath: path).standardizedFileURL.path(percentEncoded: false)
-        if path.hasPrefix("/private/var/") {
-            path = String(path.dropFirst("/private".count))
-        }
-        if path.count > 1 && path.hasSuffix("/") {
-            path = String(path.dropLast())
-        }
-        return path
+        FilesystemManager.normalizedPath(path)
     }
 }
 

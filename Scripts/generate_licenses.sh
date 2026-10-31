@@ -3,7 +3,7 @@ set -euo pipefail
 
 RESOLVED="${SRCROOT}/Melodee.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved"
 CHECKOUTS="${BUILD_DIR%Build/*}SourcePackages/checkouts"
-OUTPUT="${SRCROOT}/Melodee/Licenses.plist"
+OUTPUT="${1:-${SRCROOT}/Melodee/Licenses.plist}"
 
 mkdir -p "$(dirname "$OUTPUT")"
 

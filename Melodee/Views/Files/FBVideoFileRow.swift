@@ -5,13 +5,13 @@ struct FBVideoFileRow: View {
     @Environment(MediaPlayerManager.self) var mediaPlayer
 
     @State var file: FSFile
+    var layout: FileBrowserLayout = .list
 
     var body: some View {
         Button {
             mediaPlayer.playImmediately(file)
         } label: {
-            ListFileRow(file: .constant(file))
-                .tint(.primary)
+            FBFileLabel(file: file, layout: layout)
         }
         .swipeActions(edge: .leading, allowsFullSwipe: true) {
             Button {

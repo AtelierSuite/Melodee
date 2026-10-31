@@ -13,6 +13,10 @@
 		E4F736B02F38010000A203FE /* SFBAudioEngine in Frameworks */ = {isa = PBXBuildFile; productRef = E4F736AF2F38010000A203FE /* SFBAudioEngine */; };
 		E4F736B12F38010000A203FE /* Prelude in Frameworks */ = {isa = PBXBuildFile; productRef = E4F736B32F38010000A203FE /* Prelude */; };
 		E4F736B42F38010000A203FE /* PreludeLookup in Frameworks */ = {isa = PBXBuildFile; productRef = E4F736B52F38010000A203FE /* PreludeLookup */; };
+		4D454C4F4D41430000000005 /* SFBAudioEngine in Frameworks */ = {isa = PBXBuildFile; productRef = 4D454C4F4D41430000000008 /* SFBAudioEngine */; };
+		4D454C4F4D41430000000006 /* Prelude in Frameworks */ = {isa = PBXBuildFile; productRef = 4D454C4F4D41430000000009 /* Prelude */; };
+		4D454C4F4D41430000000020 /* PreludeLookup in Frameworks */ = {isa = PBXBuildFile; productRef = 4D454C4F4D41430000000021 /* PreludeLookup */; };
+		4D454C4F4D41430000000007 /* ZIPFoundation in Frameworks */ = {isa = PBXBuildFile; productRef = 4D454C4F4D4143000000000A /* ZIPFoundation */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -30,6 +34,7 @@
 
 /* Begin PBXFileReference section */
 		E4A4D6472AAEF11F0062D12C /* Melodee.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Melodee.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		4D454C4F4D41430000000004 /* Melodee.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Melodee.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -40,6 +45,13 @@
 			);
 			target = E4A4D6462AAEF11F0062D12C /* Melodee */;
 		};
+		4D454C4F4D41430000000003 /* Exceptions for "MelodeeMac" folder in "Melodee for Mac" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 4D454C4F4D4143000000000F /* Melodee for Mac */;
+		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -49,6 +61,19 @@
 				E45DF29A2E21E47D0010814B /* Exceptions for "Melodee" folder in "Melodee" target */,
 			);
 			path = Melodee;
+			sourceTree = "<group>";
+		};
+		4D454C4F4D41430000000002 /* MelodeeMac */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				4D454C4F4D41430000000003 /* Exceptions for "MelodeeMac" folder in "Melodee for Mac" target */,
+			);
+			path = MelodeeMac;
+			sourceTree = "<group>";
+		};
+		4D454C4F4D41430000000001 /* Shared */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Shared;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -67,6 +92,17 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		4D454C4F4D4143000000000D /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				4D454C4F4D41430000000005 /* SFBAudioEngine in Frameworks */,
+				4D454C4F4D41430000000006 /* Prelude in Frameworks */,
+				4D454C4F4D41430000000020 /* PreludeLookup in Frameworks */,
+				4D454C4F4D41430000000007 /* ZIPFoundation in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -74,6 +110,8 @@
 			isa = PBXGroup;
 			children = (
 				E45DF2542E21E47C0010814B /* Melodee */,
+				4D454C4F4D41430000000002 /* MelodeeMac */,
+				4D454C4F4D41430000000001 /* Shared */,
 				E4FDF15F2DD8B67E008BF313 /* Frameworks */,
 				E4A4D6482AAEF11F0062D12C /* Products */,
 			);
@@ -83,6 +121,7 @@
 			isa = PBXGroup;
 			children = (
 				E4A4D6472AAEF11F0062D12C /* Melodee.app */,
+				4D454C4F4D41430000000004 /* Melodee.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -97,6 +136,34 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		4D454C4F4D4143000000000F /* Melodee for Mac */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 4D454C4F4D41430000000010 /* Build configuration list for PBXNativeTarget "Melodee for Mac" */;
+			buildPhases = (
+				4D454C4F4D4143000000000B /* Generate Licenses */,
+				4D454C4F4D4143000000000C /* Sources */,
+				4D454C4F4D4143000000000D /* Frameworks */,
+				4D454C4F4D4143000000000E /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				4D454C4F4D41430000000002 /* MelodeeMac */,
+				4D454C4F4D41430000000001 /* Shared */,
+			);
+			name = "Melodee for Mac";
+			packageProductDependencies = (
+				4D454C4F4D41430000000008 /* SFBAudioEngine */,
+				4D454C4F4D41430000000009 /* Prelude */,
+				4D454C4F4D41430000000021 /* PreludeLookup */,
+				4D454C4F4D4143000000000A /* ZIPFoundation */,
+			);
+			productName = Melodee;
+			productReference = 4D454C4F4D41430000000004 /* Melodee.app */;
+			productType = "com.apple.product-type.application";
+		};
 		E4A4D6462AAEF11F0062D12C /* Melodee */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = E4A4D6562AAEF1200062D12C /* Build configuration list for PBXNativeTarget "Melodee" */;
@@ -105,7 +172,6 @@
 				E4A4D6432AAEF11F0062D12C /* Sources */,
 				E4A4D6442AAEF11F0062D12C /* Frameworks */,
 				E4A4D6452AAEF11F0062D12C /* Resources */,
-				E43C845A2AAF08AF00D87A5F /* ShellScript */,
 				E4FDF1632DD8B69D008BF313 /* Embed Frameworks */,
 			);
 			buildRules = (
@@ -114,6 +180,7 @@
 			);
 			fileSystemSynchronizedGroups = (
 				E45DF2542E21E47C0010814B /* Melodee */,
+				4D454C4F4D41430000000001 /* Shared */,
 			);
 			name = Melodee;
 			packageProductDependencies = (
@@ -140,6 +207,9 @@
 				TargetAttributes = {
 					E4A4D6462AAEF11F0062D12C = {
 						CreatedOnToolsVersion = 15.0;
+					};
+					4D454C4F4D4143000000000F = {
+						CreatedOnToolsVersion = 26.0;
 					};
 				};
 			};
@@ -169,6 +239,7 @@
 			projectRoot = "";
 			targets = (
 				E4A4D6462AAEF11F0062D12C /* Melodee */,
+				4D454C4F4D4143000000000F /* Melodee for Mac */,
 			);
 		};
 /* End PBXProject section */
@@ -181,27 +252,16 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-/* End PBXResourcesBuildPhase section */
-
-/* Begin PBXShellScriptBuildPhase section */
-		E43C845A2AAF08AF00D87A5F /* ShellScript */ = {
-			isa = PBXShellScriptBuildPhase;
-			alwaysOutOfDate = 1;
+		4D454C4F4D4143000000000E /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-			);
-			outputFileListPaths = (
-			);
-			outputPaths = (
-			);
 			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "export PATH=\"$PATH:/opt/homebrew/bin\"\nif which swiftlint > /dev/null; then\n  swiftlint\nelse\n  echo \"warning: SwiftLint not installed, download from https://github.com/realm/SwiftLint\"\nfi\n";
 		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
 		E45CE7000000000000000001 /* Generate Licenses */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
@@ -223,10 +283,38 @@
 			shellPath = /bin/sh;
 			shellScript = "\"${SRCROOT}/Scripts/generate_licenses.sh\"\n";
 		};
+		4D454C4F4D4143000000000B /* Generate Licenses */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/Melodee.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved",
+				"$(SRCROOT)/Scripts/generate_licenses.sh",
+			);
+			name = "Generate Licenses";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(SRCROOT)/MelodeeMac/Licenses.plist",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${SRCROOT}/Scripts/generate_licenses.sh\" \"${SRCROOT}/MelodeeMac/Licenses.plist\"\n";
+		};
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		E4A4D6432AAEF11F0062D12C /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		4D454C4F4D4143000000000C /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -392,7 +480,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 2.2.7;
+				MARKETING_VERSION = 3.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.tsubuzaki.Melodee;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
@@ -438,7 +526,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 2.2.7;
+				MARKETING_VERSION = 3.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.tsubuzaki.Melodee;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
@@ -447,6 +535,80 @@
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		4D454C4F4D41430000000011 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = MelodeeMac/MelodeeMac.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				ENABLE_USER_SELECTED_FILES = readwrite;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = MelodeeMac/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Melodee;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.music";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_NSPrincipalClass = NSApplication;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 3.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.tsubuzaki.Melodee.MacDebug;
+				PRODUCT_NAME = Melodee;
+				SDKROOT = macosx;
+				SUPPORTED_PLATFORMS = macosx;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		4D454C4F4D41430000000012 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = MelodeeMac/MelodeeMac.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				ENABLE_USER_SELECTED_FILES = readwrite;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = MelodeeMac/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Melodee;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.music";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_NSPrincipalClass = NSApplication;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 3.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.tsubuzaki.Melodee;
+				PRODUCT_NAME = Melodee;
+				SDKROOT = macosx;
+				SUPPORTED_PLATFORMS = macosx;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 6.0;
 			};
 			name = Release;
 		};
@@ -467,6 +629,15 @@
 			buildConfigurations = (
 				E4A4D6572AAEF1200062D12C /* Debug */,
 				E4A4D6582AAEF1200062D12C /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		4D454C4F4D41430000000010 /* Build configuration list for PBXNativeTarget "Melodee for Mac" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				4D454C4F4D41430000000011 /* Debug */,
+				4D454C4F4D41430000000012 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
@@ -546,6 +717,26 @@
 			isa = XCSwiftPackageProductDependency;
 			package = E4F736B22F38010000A203FE /* XCRemoteSwiftPackageReference "Tunetag" */;
 			productName = PreludeLookup;
+		};
+		4D454C4F4D41430000000008 /* SFBAudioEngine */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = E4F736AE2F38010000A203FE /* XCRemoteSwiftPackageReference "SFBAudioEngine" */;
+			productName = SFBAudioEngine;
+		};
+		4D454C4F4D41430000000009 /* Prelude */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = E4F736B22F38010000A203FE /* XCRemoteSwiftPackageReference "Tunetag" */;
+			productName = Prelude;
+		};
+		4D454C4F4D41430000000021 /* PreludeLookup */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = E4F736B22F38010000A203FE /* XCRemoteSwiftPackageReference "Tunetag" */;
+			productName = PreludeLookup;
+		};
+		4D454C4F4D4143000000000A /* ZIPFoundation */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = E43C84782AB009B300D87A5F /* XCRemoteSwiftPackageReference "ZIPFoundation" */;
+			productName = ZIPFoundation;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
