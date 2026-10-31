@@ -53,17 +53,6 @@ struct FSFile: FilesystemObject {
     /// Audio file extensions that TagLib can read and write tags for.
     static let taggableAudioExtensions = Set(TagLibFile.supportedExtensions())
 
-    /// Returns true if this audio file can be converted to other formats
-    func isConvertibleAudio() -> Bool {
-        let convertibleFormats = ["mp3", "m4a", "wav", "alac"]
-        return convertibleFormats.contains(self.extension)
-    }
-
-    /// Returns available conversion formats for this audio file
-    func availableConversionFormats() -> [String] {
-        return AudioConverter.availableFormats(for: self.extension)
-    }
-
     /// Returns true if this file is stored in iCloud and not yet downloaded locally
     func isEvicted() -> Bool {
         return FSFile.isEvicted(atPath: path)

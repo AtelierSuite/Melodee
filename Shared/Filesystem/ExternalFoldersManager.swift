@@ -19,6 +19,15 @@ class ExternalFoldersManager {
     @ObservationIgnored private let storageKey = "ExternalFolderBookmarks"
     @ObservationIgnored private let legacyStorageKey = "ExternalFolderBookmark"
 
+    // The Mac sandbox only grants access to a folder again through a security-scoped bookmark
+#if os(macOS)
+    static let bookmarkCreationOptions: URL.BookmarkCreationOptions = .withSecurityScope
+    static let bookmarkResolutionOptions: URL.BookmarkResolutionOptions = [.withSecurityScope, .withoutUI]
+#else
+    static let bookmarkCreationOptions: URL.BookmarkCreationOptions = .minimalBookmark
+    static let bookmarkResolutionOptions: URL.BookmarkResolutionOptions = .withoutUI
+#endif
+
     var bookmarks: [ExternalFolderBookmark] = []
     /// URLs of bookmarks that have been resolved and are being accessed, keyed by bookmark ID
     @ObservationIgnored private(set) var resolvedURLs: [UUID: URL] = [:]
@@ -56,11 +65,14 @@ class ExternalFoldersManager {
     @discardableResult
     func addBookmark(for url: URL) -> ExternalFolderBookmark? {
         let accessing = url.startAccessingSecurityScopedResource()
+#if !os(macOS)
+        // Folders picked in an open panel on Mac are already accessible
         guard accessing else { return nil }
+#endif
 
         do {
             let bookmarkData = try url.bookmarkData(
-                options: .minimalBookmark,
+                options: Self.bookmarkCreationOptions,
                 includingResourceValuesForKeys: nil,
                 relativeTo: nil
             )
@@ -77,7 +89,9 @@ class ExternalFoldersManager {
             return bookmark
         } catch {
             debugPrint("Failed to create bookmark: \(error)")
-            url.stopAccessingSecurityScopedResource()
+            if accessing {
+                url.stopAccessingSecurityScopedResource()
+            }
             return nil
         }
     }
@@ -92,7 +106,7 @@ class ExternalFoldersManager {
             var isStale = false
             if let url = try? URL(
                 resolvingBookmarkData: bookmarks[offset].bookmarkData,
-                options: .withoutUI,
+                options: Self.bookmarkResolutionOptions,
                 relativeTo: nil,
                 bookmarkDataIsStale: &isStale
             ) {
@@ -109,14 +123,14 @@ class ExternalFoldersManager {
             var isStale = false
             let url = try URL(
                 resolvingBookmarkData: bookmark.bookmarkData,
-                options: .withoutUI,
+                options: Self.bookmarkResolutionOptions,
                 relativeTo: nil,
                 bookmarkDataIsStale: &isStale
             )
             if isStale {
                 // Refresh bookmark data
                 if let newData = try? url.bookmarkData(
-                    options: .minimalBookmark,
+                    options: Self.bookmarkCreationOptions,
                     includingResourceValuesForKeys: nil,
                     relativeTo: nil
                 ), let index = bookmarks.firstIndex(where: { $0.id == bookmark.id }) {
@@ -155,12 +169,12 @@ class ExternalFoldersManager {
             var isStale = false
             let url = try URL(
                 resolvingBookmarkData: oldData,
-                options: .withoutUI,
+                options: Self.bookmarkResolutionOptions,
                 relativeTo: nil,
                 bookmarkDataIsStale: &isStale
             )
             let bookmarkData = isStale
-                ? try url.bookmarkData(options: .minimalBookmark, includingResourceValuesForKeys: nil, relativeTo: nil)
+                ? try url.bookmarkData(options: Self.bookmarkCreationOptions, includingResourceValuesForKeys: nil, relativeTo: nil)
                 : oldData
             let bookmark = ExternalFolderBookmark(name: url.lastPathComponent, bookmarkData: bookmarkData)
             bookmarks = [bookmark]
