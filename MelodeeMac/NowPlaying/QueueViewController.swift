@@ -23,6 +23,7 @@ final class QueueViewController: NSViewController {
         let column = NSTableColumn(identifier: NSUserInterfaceItemIdentifier("QueueColumn"))
         tableView.addTableColumn(column)
         tableView.headerView = nil
+        tableView.rowHeight = QueueCellView.rowHeight
         tableView.style = .inset
         tableView.allowsMultipleSelection = true
         tableView.dataSource = self
@@ -84,19 +85,9 @@ extension QueueViewController: NSTableViewDataSource, NSTableViewDelegate {
 
     func tableView(_ tableView: NSTableView, viewFor tableColumn: NSTableColumn?, row: Int) -> NSView? {
         let identifier = NSUserInterfaceItemIdentifier("QueueCell")
-        let cell = tableView.makeView(withIdentifier: identifier, owner: self) as? SidebarCellView ?? SidebarCellView()
+        let cell = tableView.makeView(withIdentifier: identifier, owner: self) as? QueueCellView ?? QueueCellView()
         cell.identifier = identifier
-        let file = player.queue[row]
-        cell.textField?.stringValue = file.name
-        let isCurrent = row == player.currentIndex
-        cell.textField?.font = isCurrent
-            ? .systemFont(ofSize: NSFont.systemFontSize, weight: .semibold)
-            : .systemFont(ofSize: NSFont.systemFontSize)
-        cell.imageView?.image = NSImage(
-            systemSymbolName: isCurrent ? "speaker.wave.2.fill" : "music.note",
-            accessibilityDescription: nil
-        )
-        cell.imageView?.contentTintColor = isCurrent ? .controlAccentColor : .secondaryLabelColor
+        cell.configure(with: player.queue[row], isCurrent: row == player.currentIndex)
         return cell
     }
 

@@ -15,21 +15,10 @@ struct NPQueueSection: View {
                     Button {
                         mediaPlayer.playImmediately(file, addToQueue: false)
                     } label: {
-                        HStack(alignment: .center, spacing: 8.0) {
-                            if file.playbackQueueID == mediaPlayer.currentlyPlayingID {
-                                Image("Play")
-                                    .resizable()
-                                    .scaledToFit()
-                                    .frame(width: 18.0, height: 18.0)
-                                    .foregroundStyle(.accent)
-                            }
-                            Text(file.name)
-                                .font(.body)
-                                .lineLimit(1)
-                                .truncationMode(.middle)
-                            Spacer()
-                        }
-                        .contentShape(Rectangle())
+                        NPQueueRow(
+                            file: file,
+                            isCurrent: file.playbackQueueID == mediaPlayer.currentlyPlayingID
+                        )
                     }
                     .buttonStyle(.plain)
                     .deleteDisabled(file.playbackQueueID == mediaPlayer.currentlyPlayingID)
