@@ -9,5 +9,6 @@ struct FBTextFileRow: View {
         NavigationLink(value: ViewPath.textViewer(file: file)) {
             FBFileLabel(file: file, layout: layout)
         }
+        .navigationLinkIndicatorVisibility(.hidden)
     }
 }
