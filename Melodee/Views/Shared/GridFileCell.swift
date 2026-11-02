@@ -3,6 +3,7 @@ import SwiftUI
 struct GridFileCell: View {
 
     @Environment(FileDownloadManager.self) var downloadManager
+    @Environment(MediaPlayerManager.self) var mediaPlayer
     @Environment(\.displayScale) var displayScale
 
     var file: FSFile
@@ -11,7 +12,10 @@ struct GridFileCell: View {
     @State var isEvicted: Bool = false
     @State var subtitle: String?
 
+    static let playProgressBarHeight: CGFloat = 4.0
+
     var body: some View {
+        let playProgress = mediaPlayer.savedPlayProgress(for: file)
         GridCellLayout(title: file.name, subtitle: subtitle) {
             // Color.clear keeps the badges pinned to the square tile, since a scaled-to-fill thumbnail overflows it
             Color.clear
@@ -38,6 +42,13 @@ struct GridFileCell: View {
                             .padding(.vertical, 2.0)
                             .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 4.0))
                             .padding(5.0)
+                            // Keep the badge clear of the play progress bar
+                            .padding(.bottom, playProgress == nil ? 0.0 : Self.playProgressBarHeight)
+                    }
+                }
+                .overlay(alignment: .bottom) {
+                    if let playProgress {
+                        playProgressBar(playProgress)
                     }
                 }
         }
@@ -51,6 +62,23 @@ struct GridFileCell: View {
                 Task { await loadFileMetadata() }
             }
         }
+    }
+
+    /// How far through the file playback last got, along the bottom edge of the tile.
+    func playProgressBar(_ progress: Double) -> some View {
+        Rectangle()
+            .fill(.black.opacity(0.35))
+            .overlay(alignment: .leading) {
+                GeometryReader { geometry in
+                    Rectangle()
+                        .fill(Color.accentColor)
+                        .frame(width: geometry.size.width * progress)
+                }
+            }
+            .frame(height: Self.playProgressBarHeight)
+            .accessibilityElement()
+            .accessibilityLabel(Text("Shared.PlayProgress"))
+            .accessibilityValue(Text(progress, format: .percent.precision(.fractionLength(0))))
     }
 
     @ViewBuilder

@@ -16,7 +16,7 @@ struct FBContextMenu: View {
             // File type specific actions
             if file.isPlayableMedia() {
                 Button {
-                    mediaPlayer.playImmediately(file)
+                    mediaPlayer.requestPlay(file)
                 } label: {
                     Label("Shared.Play", systemImage: "play")
                 }

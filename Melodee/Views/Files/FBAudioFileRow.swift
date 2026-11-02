@@ -9,7 +9,7 @@ struct FBAudioFileRow: View {
 
     var body: some View {
         Button {
-            mediaPlayer.playImmediately(file)
+            mediaPlayer.requestPlay(file)
         } label: {
             FBFileLabel(file: file, layout: layout)
         }

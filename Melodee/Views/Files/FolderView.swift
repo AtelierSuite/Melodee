@@ -11,6 +11,7 @@ struct FolderView: View {
     @AppStorage("FileBrowserLayout") var layout: FileBrowserLayout = .list
     @AppStorage("FileBrowserGridColumns") var gridColumns: Int = GridCell.defaultPhoneColumns
     @AppStorage("FileBrowserGridCellSize") var gridCellSize: Double = GridCell.defaultPadCellSize
+    @AppStorage(ResumePlaybackBehavior.storageKey) var resumePlaybackBehavior: ResumePlaybackBehavior = .ask
     @State var gridZoomStart: (columns: Int, cellSize: Double)?
 
     @State var currentDirectory: FSDirectory?
@@ -102,6 +103,9 @@ struct FolderView: View {
                                 }
                             }
                         }
+                    }
+                    Section {
+                        resumePlaybackPicker
                     }
                     Section {
                         Link(destination: URL(string: "https://github.com/AtelierSuite/Melodee")!) {
@@ -466,6 +470,20 @@ struct FolderView: View {
                 .tag(FileBrowserLayout.list)
         }
         .pickerStyle(.palette)
+    }
+
+    var resumePlaybackPicker: some View {
+        Picker(selection: $resumePlaybackBehavior) {
+            Text("ResumePlayback.Ask")
+                .tag(ResumePlaybackBehavior.ask)
+            Text("ResumePlayback.StartFromBeginning")
+                .tag(ResumePlaybackBehavior.startFromBeginning)
+            Text("ResumePlayback.ContinueFromLastPosition")
+                .tag(ResumePlaybackBehavior.continueFromLastPosition)
+        } label: {
+            Label("ResumePlayback.Title", systemImage: "clock.arrow.circlepath")
+        }
+        .pickerStyle(.menu)
     }
 
     var sortMenu: some View {
