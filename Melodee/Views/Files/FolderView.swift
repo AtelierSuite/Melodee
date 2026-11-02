@@ -6,6 +6,7 @@ struct FolderView: View {
 
     @State var fileManager: FilesystemManager
     @Environment(MediaPlayerManager.self) var mediaPlayer
+    @Environment(ExternalFoldersManager.self) var externalFolders
 
     @AppStorage("SelectedLibrarySource") var selectedSource: LibrarySource = .local
     @AppStorage("FileBrowserLayout") var layout: FileBrowserLayout = .list
@@ -201,6 +202,7 @@ struct FolderView: View {
                 storageLocation = overrideStorageLocation
             }
             if !state.isInitialLoadCompleted {
+                restoreSortPreference()
                 refreshFiles()
             }
         }
@@ -220,9 +222,11 @@ struct FolderView: View {
         }
         .onChange(of: state.sortOption) {
             sortFiles()
+            saveSortPreference()
         }
         .onChange(of: state.sortOrder) {
             sortFiles()
+            saveSortPreference()
         }
         .fileBrowserAlerts(state: $state, refreshFiles: refreshFiles)
         .tagEditorPresentation($state.tagEditorPresentation)
@@ -621,6 +625,31 @@ struct FolderView: View {
         case .external:
             return fileManager.directory ?? FileManager.default.temporaryDirectory
         }
+    }
+
+    func sortPreferenceKey() -> String {
+        let folderURL = currentDirectory.map { URL(fileURLWithPath: $0.path) } ?? scopeRootURL()
+        var roots: [(id: String, url: URL)] = []
+        if let documentsDirectoryURL = fileManager.documentsDirectoryURL {
+            roots.append(("local", documentsDirectoryURL))
+        }
+        if let cloudDocumentsDirectoryURL = fileManager.cloudDocumentsDirectoryURL {
+            roots.append(("cloud", cloudDocumentsDirectoryURL))
+        }
+        for (id, url) in externalFolders.resolvedURLs {
+            roots.append(("external:\(id.uuidString)", url))
+        }
+        return FolderSortStore.key(for: folderURL, roots: roots)
+    }
+
+    func restoreSortPreference() {
+        guard let preference = FolderSortStore.preference(for: sortPreferenceKey()) else { return }
+        state.sortOption = preference.option
+        state.sortOrder = preference.order
+    }
+
+    func saveSortPreference() {
+        FolderSortStore.save(option: state.sortOption, order: state.sortOrder, for: sortPreferenceKey())
     }
 
     func updateFileManagerDirectory() {
