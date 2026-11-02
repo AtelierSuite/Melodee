@@ -34,6 +34,7 @@ struct MainView: View {
                 .id(configuration.source)
                 .hasFileBrowserNavigationDestinations()
             }
+            .resumePlaybackAlert(for: .fileBrowser)
             .playbackBarAccessory(isEnabled: !isTwoColumnLayout)
             if isTwoColumnLayout {
                 Divider()

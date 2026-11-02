@@ -13,7 +13,7 @@ struct NPQueueSection: View {
             } else {
                 ForEach($mediaPlayer.queue, id: \.playbackQueueID) { $file in
                     Button {
-                        mediaPlayer.playImmediately(file, addToQueue: false)
+                        mediaPlayer.requestPlay(file, addToQueue: false, source: .queue)
                     } label: {
                         NPQueueRow(
                             file: file,

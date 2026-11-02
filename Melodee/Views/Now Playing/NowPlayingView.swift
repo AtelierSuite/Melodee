@@ -74,6 +74,7 @@ struct NowPlayingView: View {
         .onAppear {
             isClearQueueButtonConfirming = false
         }
+        .resumePlaybackAlert(for: .queue)
         .background {
             // The artwork is laid out as an overlay so its size can't widen the background past
             // this view, which matters when Now Playing sits in a column beside the file browser.

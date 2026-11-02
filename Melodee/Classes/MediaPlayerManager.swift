@@ -16,7 +16,15 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
     @ObservationIgnored let videoPlayer = AVPlayer()
     @ObservationIgnored let videoPlayerController: AVPlayerViewController
     @ObservationIgnored var downloadManager: FileDownloadManager?
-    @ObservationIgnored var stateStore: PlaybackStateStore?
+    @ObservationIgnored var stateStore: PlaybackStateStore? {
+        didSet {
+            stateStore?.onPlayTimesChange = { [weak self] in
+                self?.playTimesRevision += 1
+            }
+        }
+    }
+    /// Changes whenever a saved play time changes, so views showing playback progress refresh.
+    var playTimesRevision: Int = 0
     var isPlaybackActive: Bool = false
     var isPaused: Bool = true
     var repeatMode: RepeatMode = .none {
@@ -38,6 +46,16 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
     }
     var metadataRefreshTrigger: UUID = UUID()
     var videoAspectRatio: CGFloat?
+    /// Set when the user picks a file that was previously stopped partway through, to ask where to start.
+    var resumePrompt: ResumePlaybackPrompt?
+
+    /// Where playback of a file starts.
+    enum StartPosition {
+        /// Continue from the saved play time only if the setting says to always continue.
+        case automatic
+        case beginning
+        case time(TimeInterval)
+    }
 
     @ObservationIgnored private var cachedMetadataID: String = ""
     @ObservationIgnored private var cachedTitle: String?
@@ -55,6 +73,8 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
     @ObservationIgnored private var hasRestoredState: Bool = false
     @ObservationIgnored private var isQueueSaveScheduled: Bool = false
     @ObservationIgnored private var positionSaveTimer: Timer?
+    // The file the engine has loaded, whose play time is tracked so it can be continued later
+    @ObservationIgnored private var playTimeTrackedFile: FSFile?
 
     override init() {
         // The same controller instance is reused by the Now Playing sheet so that
@@ -269,7 +289,50 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
         return currentlyPlayingIndex() > 0
     }
 
-    func playImmediately(_ file: FSFile, addToQueue: Bool = true) {
+    /// How far through the file playback last got, from 0 to 1, if it can be continued.
+    func savedPlayProgress(for file: FSFile) -> Double? {
+        _ = playTimesRevision
+        guard file.type == .audio || file.type == .video else { return nil }
+        return stateStore?.playProgress(for: file)
+    }
+
+    /// Plays a file the user picked, first asking where to start if it was previously stopped partway through.
+    func requestPlay(_ file: FSFile,
+                     addToQueue: Bool = true,
+                     source: ResumePlaybackPrompt.Source = .fileBrowser) {
+        // Save the current file's position first, in case it is the one being played again
+        recordPlayTime()
+        guard let playTime = stateStore?.playTime(for: file) else {
+            playImmediately(file, addToQueue: addToQueue, startingAt: .beginning)
+            return
+        }
+        switch ResumePlaybackBehavior.current {
+        case .ask:
+            resumePrompt = ResumePlaybackPrompt(file: file,
+                                                addToQueue: addToQueue,
+                                                playTime: playTime,
+                                                source: source)
+        case .startFromBeginning:
+            playImmediately(file, addToQueue: addToQueue, startingAt: .beginning)
+        case .continueFromLastPosition:
+            playImmediately(file, addToQueue: addToQueue, startingAt: .time(playTime))
+        }
+    }
+
+    /// Plays the file the resume prompt asked about, from where the user chose.
+    func answerResumePrompt(continueFromLastPosition: Bool) {
+        guard let prompt = resumePrompt else { return }
+        resumePrompt = nil
+        playImmediately(prompt.file,
+                        addToQueue: prompt.addToQueue,
+                        startingAt: continueFromLastPosition ? .time(prompt.playTime) : .beginning)
+    }
+
+    func playImmediately(_ file: FSFile, addToQueue: Bool = true, startingAt position: StartPosition = .automatic) {
+        // Save how far the outgoing file got before stopping it
+        recordPlayTime()
+        playTimeTrackedFile = nil
+        let startTime = startTime(for: file, at: position)
         // Stop any playback that is in progress
         audioPlayer.stop()
         videoPlayer.pause()
@@ -292,11 +355,23 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
             isPaused = true
             downloadManager.startDownload(for: file) { [weak self] in
                 self?.invalidateMetadataCache()
-                self?.loadAndPlay(file)
+                self?.loadAndPlay(file, from: startTime)
             }
             return
         }
-        loadAndPlay(file)
+        loadAndPlay(file, from: startTime)
+    }
+
+    private func startTime(for file: FSFile, at position: StartPosition) -> TimeInterval? {
+        switch position {
+        case .automatic:
+            guard ResumePlaybackBehavior.current == .continueFromLastPosition else { return nil }
+            return stateStore?.playTime(for: file)
+        case .beginning:
+            return nil
+        case .time(let time):
+            return time
+        }
     }
 
     private func loadAndPlay(_ file: FSFile, from startTime: TimeInterval? = nil) {
@@ -334,6 +409,7 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
                                  toleranceAfter: .zero)
             }
             videoPlayer.play()
+            playTimeTrackedFile = file
             isPlaybackActive = true
             isPaused = false
             setNowPlaying()
@@ -344,6 +420,7 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
         videoAspectRatio = nil
         do {
             try playAudio(at: url, from: startTime)
+            playTimeTrackedFile = file
             isPlaybackActive = true
             isPaused = false
             setNowPlaying()
@@ -433,7 +510,9 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
         guard !queue.isEmpty, index < queue.count else { return }
         let file = queue[index]
         currentlyPlayingID = file.playbackQueueID
-        let resumeTime = pendingResumeTime
+        playTimeTrackedFile = nil
+        // A position restored from the previous session takes precedence over the saved play time
+        let resumeTime = pendingResumeTime ?? startTime(for: file, at: .automatic)
         clearPendingResume()
         if file.isEvicted(), let downloadManager {
             isPlaybackActive = true
@@ -465,9 +544,12 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
         isPaused = true
         setNowPlaying()
         savePlaybackPosition()
+        recordPlayTime()
     }
 
     func stop() {
+        recordPlayTime()
+        playTimeTrackedFile = nil
         audioPlayer.stop()
         videoPlayer.replaceCurrentItem(with: nil)
         videoItemStatusObservation = nil
@@ -509,17 +591,41 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
                              toleranceAfter: .zero)
             setNowPlaying()
             savePlaybackPosition(at: time)
+            recordPlayTime(at: time)
             return
         }
         guard audioPlayer.supportsSeeking else { return }
         audioPlayer.seek(time: time)
         setNowPlaying()
         savePlaybackPosition(at: time)
+        recordPlayTime(at: time)
     }
 
     /// Points queued files at their new locations after they have been renamed.
     /// `renamedPaths` maps normalized old paths to new paths.
     func updateQueuedFilePaths(_ renamedPaths: [String: String]) {
+        stateStore?.movePlayTimes { renamedPaths[$0] }
+        applyQueuedPathChanges(renamedPaths)
+    }
+
+    /// Points queued files at their new locations after files or folders have been moved.
+    func updateQueuedFilePaths(afterMoving movedPaths: [String: String]) {
+        stateStore?.movePlayTimes { FilesystemManager.movedPath(for: $0, in: movedPaths) }
+        var renamedPaths: [String: String] = [:]
+        for file in queue {
+            if let newPath = FilesystemManager.movedPath(for: file.path, in: movedPaths) {
+                renamedPaths[FilesystemManager.normalizedPath(file.path)] = newPath
+            }
+        }
+        applyQueuedPathChanges(renamedPaths)
+    }
+
+    /// `renamedPaths` maps normalized old paths to new paths.
+    private func applyQueuedPathChanges(_ renamedPaths: [String: String]) {
+        if let trackedFile = playTimeTrackedFile,
+           let newPath = renamedPaths[FilesystemManager.normalizedPath(trackedFile.path)] {
+            playTimeTrackedFile?.path = newPath
+        }
         var updatedQueue = queue
         var isModified = false
         for index in updatedQueue.indices {
@@ -535,17 +641,6 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
             invalidateMetadataCache()
             setNowPlaying()
         }
-    }
-
-    /// Points queued files at their new locations after files or folders have been moved.
-    func updateQueuedFilePaths(afterMoving movedPaths: [String: String]) {
-        var renamedPaths: [String: String] = [:]
-        for file in queue {
-            if let newPath = FilesystemManager.movedPath(for: file.path, in: movedPaths) {
-                renamedPaths[FilesystemManager.normalizedPath(file.path)] = newPath
-            }
-        }
-        updateQueuedFilePaths(renamedPaths)
     }
 
     func setQueueIDs() {
@@ -670,13 +765,22 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
         ))
     }
 
+    /// Remembers how far into the loaded file playback got, so it can be continued the next time it is played.
+    private func recordPlayTime(at time: TimeInterval? = nil) {
+        guard let file = playTimeTrackedFile, let stateStore,
+              let playbackTime = playbackTime() else { return }
+        stateStore.savePlayTime(time ?? playbackTime.currentTime, totalTime: playbackTime.totalTime, for: file)
+    }
+
     @objc private func applicationWillSuspend(_ notification: Notification) {
         savePlaybackPosition()
+        recordPlayTime()
     }
 
     @objc private func positionSaveTimerFired(_ timer: Timer) {
         if isEnginePlaying() {
             savePlaybackPosition()
+            recordPlayTime()
         }
     }
 
@@ -779,6 +883,11 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
     @MainActor
     private func handleRenderingComplete() {
         debugPrint("SFBAudioEngine finished rendering track.")
+        // The file played to the end, so the next time it is played it starts from the beginning
+        if let finishedFile = playTimeTrackedFile {
+            stateStore?.removePlayTime(for: finishedFile)
+            playTimeTrackedFile = nil
+        }
         let index = currentlyPlayingIndex()
         guard !queue.isEmpty, index < queue.count else {
             debugPrint("Queue is empty or index out of bounds, stopping playback.")
