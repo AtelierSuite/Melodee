@@ -36,11 +36,10 @@ struct FBState {
     var isErrorAlertPresenting: Bool = false
     var errorText: String = ""
 
-    // State handling for audio conversion
-    var isConvertingAudio: Bool = false
-    var fileBeingConverted: FSFile?
+    // State handling for audio and video conversion
+    var isConverting: Bool = false
+    var conversionTitle: String = "Alert.ConvertingAudio.Title"
     var conversionProgress: Double = 0.0
-    var targetConversionFormat: String = ""
 
     // State handling for sort
     var sortOption: SortOption = .fileName

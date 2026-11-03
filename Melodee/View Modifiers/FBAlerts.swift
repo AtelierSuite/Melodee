@@ -57,9 +57,9 @@ struct FileBrowserAlerts: ViewModifier {
                     .replacingOccurrences(of: "%1", with: state.fileOrDirectoryBeingDeleted?.name ?? ""))
             })
             .overlay {
-                if state.isConvertingAudio {
+                if state.isConverting {
                     ProgressAlert(
-                        title: "Alert.ConvertingAudio.Title",
+                        title: state.conversionTitle,
                         message: "Alert.ConvertingAudio.Text",
                         percentage: Binding(
                             get: { Int(state.conversionProgress * 100) },

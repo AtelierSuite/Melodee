@@ -1,4 +1,6 @@
+import Audioglot
 import SwiftUI
+import Videoglot
 
 struct FBContextMenu: View {
 
@@ -61,23 +63,35 @@ struct FBContextMenu: View {
                 }
                 Divider()
             }
-            // Audio conversion menu items
-            if file.isConvertibleAudio() {
-                let availableFormats = file.availableConversionFormats()
-                if !availableFormats.isEmpty {
-                    Menu {
-                        ForEach(availableFormats, id: \.self) { format in
-                            Button {
-                                convertAudio(file: file, to: format)
-                            } label: {
-                                Text(format.uppercased())
+            // Conversion menu items
+            let audioTargets = file.audioConversionTargets()
+            let videoTargets = file.videoConversionTargets()
+            if !audioTargets.isEmpty || !videoTargets.isEmpty {
+                Menu {
+                    ForEach(audioTargets) { format in
+                        Button(format.displayName) {
+                            convert(title: "Alert.ConvertingAudio.Title") { progress in
+                                try await Audioglot.convert(URL(filePath: file.path), to: format, progress: progress)
                             }
                         }
-                    } label: {
-                        Label("Shared.Convert", systemImage: "arrow.triangle.2.circlepath")
                     }
-                    Divider()
+                    ForEach(videoTargets) { format in
+                        Button {
+                            convert(title: "Alert.ConvertingVideo.Title") { progress in
+                                try await Videoglot.convert(URL(filePath: file.path), to: format, progress: progress)
+                            }
+                        } label: {
+                            if format.isAudioOnly {
+                                Text("Shared.Convert.AudioOnly.\(format.displayName)")
+                            } else {
+                                Text(format.displayName)
+                            }
+                        }
+                    }
+                } label: {
+                    Label("Shared.Convert", systemImage: "arrow.triangle.2.circlepath")
                 }
+                Divider()
             }
             // Default item for all files
             Button {
@@ -182,39 +196,24 @@ struct FBContextMenu: View {
         }
     }
 
-    func convertAudio(file: FSFile, to format: String) {
-        state.fileBeingConverted = file
-        state.targetConversionFormat = format
+    func convert(title: String, _ operation: @escaping (@escaping @Sendable (Double) -> Void) async throws -> URL) {
+        state.conversionTitle = title
         state.conversionProgress = 0.0
-        state.isConvertingAudio = true
+        state.isConverting = true
 
         Task {
             do {
-                _ = try await AudioConverter.convert(
-                    file,
-                    to: format,
-                    deleteOriginal: false,
-                    progressHandler: { progress in
-                        DispatchQueue.main.async {
-                            state.conversionProgress = progress
-                        }
+                _ = try await operation { progress in
+                    Task { @MainActor in
+                        state.conversionProgress = progress
                     }
-                )
-
-                DispatchQueue.main.async {
-                    state.isConvertingAudio = false
-                    state.fileBeingConverted = nil
-                    state.conversionProgress = 0.0
-                    refreshFilesAction()
                 }
+                state.isConverting = false
+                refreshFilesAction()
             } catch {
-                DispatchQueue.main.async {
-                    state.isConvertingAudio = false
-                    state.fileBeingConverted = nil
-                    state.conversionProgress = 0.0
-                    state.isErrorAlertPresenting = true
-                    state.errorText = error.localizedDescription
-                }
+                state.isConverting = false
+                state.isErrorAlertPresenting = true
+                state.errorText = error.localizedDescription
             }
         }
     }

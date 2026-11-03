@@ -17,6 +17,8 @@
 		4D454C4F4D41430000000006 /* Prelude in Frameworks */ = {isa = PBXBuildFile; productRef = 4D454C4F4D41430000000009 /* Prelude */; };
 		4D454C4F4D41430000000020 /* PreludeLookup in Frameworks */ = {isa = PBXBuildFile; productRef = 4D454C4F4D41430000000021 /* PreludeLookup */; };
 		4D454C4F4D41430000000007 /* ZIPFoundation in Frameworks */ = {isa = PBXBuildFile; productRef = 4D454C4F4D4143000000000A /* ZIPFoundation */; };
+		A6107C010000000000000005 /* Audioglot in Frameworks */ = {isa = PBXBuildFile; productRef = A6107C010000000000000003 /* Audioglot */; };
+		A6107C010000000000000006 /* Videoglot in Frameworks */ = {isa = PBXBuildFile; productRef = A6107C010000000000000004 /* Videoglot */; };
 		E4F736C02F3A010000A203FE /* VLCKit in Frameworks */ = {isa = PBXBuildFile; productRef = E4F736C12F3A010000A203FE /* VLCKit */; };
 		4D454C4F4D41430000000030 /* VLCKit in Frameworks */ = {isa = PBXBuildFile; productRef = 4D454C4F4D41430000000031 /* VLCKit */; };
 /* End PBXBuildFile section */
@@ -91,6 +93,8 @@
 				E43C847A2AB009B300D87A5F /* ZIPFoundation in Frameworks */,
 				E4DB2A632AB3FFA800C5810D /* Zoomy in Frameworks */,
 				E4DB2A682AB4032900C5810D /* VariableBlurView in Frameworks */,
+				A6107C010000000000000005 /* Audioglot in Frameworks */,
+				A6107C010000000000000006 /* Videoglot in Frameworks */,
 				E4F736C02F3A010000A203FE /* VLCKit in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -195,6 +199,8 @@
 				E4F736AF2F38010000A203FE /* SFBAudioEngine */,
 				E4F736B32F38010000A203FE /* Prelude */,
 				E4F736B52F38010000A203FE /* PreludeLookup */,
+				A6107C010000000000000003 /* Audioglot */,
+				A6107C010000000000000004 /* Videoglot */,
 				E4F736C12F3A010000A203FE /* VLCKit */,
 			);
 			productName = Melodee;
@@ -238,6 +244,8 @@
 				E4DB2A662AB4032900C5810D /* XCRemoteSwiftPackageReference "VariableBlurView" */,
 				E4F736AE2F38010000A203FE /* XCRemoteSwiftPackageReference "SFBAudioEngine" */,
 				E4F736B22F38010000A203FE /* XCRemoteSwiftPackageReference "Tunetag" */,
+				A6107C010000000000000001 /* XCLocalSwiftPackageReference "Packages/Audioglot" */,
+				A6107C010000000000000002 /* XCLocalSwiftPackageReference "Packages/Videoglot" */,
 				E4F736C22F3A010000A203FE /* XCRemoteSwiftPackageReference "VLCKit" */,
 			);
 			preferredProjectObjectVersion = 77;
@@ -651,6 +659,17 @@
 		};
 /* End XCConfigurationList section */
 
+/* Begin XCLocalSwiftPackageReference section */
+		A6107C010000000000000001 /* XCLocalSwiftPackageReference "Packages/Audioglot" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/Audioglot;
+		};
+		A6107C010000000000000002 /* XCLocalSwiftPackageReference "Packages/Videoglot" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/Videoglot;
+		};
+/* End XCLocalSwiftPackageReference section */
+
 /* Begin XCRemoteSwiftPackageReference section */
 		E43C84782AB009B300D87A5F /* XCRemoteSwiftPackageReference "ZIPFoundation" */ = {
 			isa = XCRemoteSwiftPackageReference;
@@ -752,6 +771,16 @@
 			isa = XCSwiftPackageProductDependency;
 			package = E43C84782AB009B300D87A5F /* XCRemoteSwiftPackageReference "ZIPFoundation" */;
 			productName = ZIPFoundation;
+		};
+		A6107C010000000000000003 /* Audioglot */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A6107C010000000000000001 /* XCLocalSwiftPackageReference "Packages/Audioglot" */;
+			productName = Audioglot;
+		};
+		A6107C010000000000000004 /* Videoglot */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A6107C010000000000000002 /* XCLocalSwiftPackageReference "Packages/Videoglot" */;
+			productName = Videoglot;
 		};
 		E4F736C12F3A010000A203FE /* VLCKit */ = {
 			isa = XCSwiftPackageProductDependency;
