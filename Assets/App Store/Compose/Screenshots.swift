@@ -1,9 +1,14 @@
 import AppKit
 
-/// The same screenshots on every device, each from the capture of the same name.
+/// The screenshots for each device, each from the capture of the same name.
 @MainActor
 enum Screenshots {
-    static let all: [Screenshot] = [
+    static func all(for device: Device) -> [Screenshot] {
+        device == .mac ? mac : mobile
+    }
+
+    /// The same screenshots on the iPhone and iPad.
+    static let mobile: [Screenshot] = [
         Screenshot(
             name: "01-library",
             copy: [
@@ -49,6 +54,34 @@ enum Screenshots {
             copy: [
                 "en": Copy(header: "Queue, convert, and more", caption: "Everything is a long press away"),
                 "ja": Copy(header: "キューも変換も", caption: "長押しするだけですぐに操作")
+            ],
+            theme: Palette.nocturne
+        )
+    ]
+
+    /// The Mac shows its window, which holds more at once, so it needs fewer screenshots.
+    static let mac: [Screenshot] = [
+        Screenshot(
+            name: "01-library",
+            copy: [
+                "en": Copy(header: "Your music, your files", caption: "Play straight from your folders"),
+                "ja": Copy(header: "音楽を、ファイルのままで", caption: "フォルダからそのまま再生")
+            ],
+            theme: Palette.nocturne
+        ),
+        Screenshot(
+            name: "02-now-playing",
+            copy: [
+                "en": Copy(header: "Up next, at a glance", caption: "Play a folder and keep an eye on the queue"),
+                "ja": Copy(header: "次の曲もひと目で", caption: "フォルダを再生して、キューをいつでも確認")
+            ],
+            theme: Palette.nocturne
+        ),
+        Screenshot(
+            name: "03-tag-editor",
+            copy: [
+                "en": Copy(header: "Edit tags beside your music", caption: "Titles, artists, albums, and artwork"),
+                "ja": Copy(header: "タグを、その場で編集", caption: "タイトル・アーティスト・アートワークも")
             ],
             theme: Palette.nocturne
         )
