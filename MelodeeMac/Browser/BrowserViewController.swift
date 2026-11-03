@@ -245,7 +245,7 @@ final class BrowserViewController: NSViewController {
 
     // MARK: - Opening
 
-    /// Opens folders in the browser, plays audio files from that point in the list,
+    /// Opens folders in the browser, plays audio and video files from that point in the list,
     /// and opens everything else in the app the Mac uses for it.
     func open(_ openedItems: [BrowserItem]) {
         guard let first = openedItems.first else { return }
@@ -265,7 +265,7 @@ final class BrowserViewController: NSViewController {
         others.forEach { NSWorkspace.shared.open($0.url) }
     }
 
-    /// Plays every audio file in the folder, in order or shuffled.
+    /// Plays every audio and video file in the folder, in order or shuffled.
     func playAll(shuffled: Bool) {
         var files = items.filter(\.isPlayable).compactMap(\.file)
         if shuffled {

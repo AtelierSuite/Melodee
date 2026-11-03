@@ -98,12 +98,12 @@ final class NowPlayingBarViewController: NSViewController {
         contentView.addSubview(barStack)
         let container = DropGlassView()
         container.contentView = contentView
-        // Dropping audio files and folders on the bar adds them to the end of the queue
+        // Dropping audio and video files and folders on the bar adds them to the end of the queue
         container.canDrop = { urls in
-            !FilesystemManager.playableFiles(for: urls, types: [.audio]).isEmpty
+            !FilesystemManager.playableFiles(for: urls, types: [.audio, .video]).isEmpty
         }
         container.onDrop = { [weak self] urls in
-            let files = FilesystemManager.playableFiles(for: urls, types: [.audio])
+            let files = FilesystemManager.playableFiles(for: urls, types: [.audio, .video])
             guard !files.isEmpty else { return false }
             self?.player.playLast(files)
             return true
@@ -158,6 +158,9 @@ final class NowPlayingBarViewController: NSViewController {
         subtitleLabel.stringValue = metadata?.subtitle ?? ""
         subtitleLabel.isHidden = metadata == nil
         artworkView.image = metadata?.artwork ?? NSImage(named: "Album.Generic")
+        if metadata?.artwork == nil, let file = player.currentFile, file.type == .video {
+            showVideoThumbnail(for: file)
+        }
         let isPlaying = player.isPlaying
         let playPauseKey = isPlaying ? "NowPlaying.Pause" : "NowPlaying.Play"
         playPauseButton.image = NSImage(
@@ -177,6 +180,20 @@ final class NowPlayingBarViewController: NSViewController {
             progressTimer = nil
         }
         (queuePopover?.contentViewController as? QueueViewController)?.reload()
+    }
+
+    /// Videos have no album art, so show a frame from the video instead.
+    private func showVideoThumbnail(for file: FSFile) {
+        if let thumbnail = ThumbnailCache.shared.cachedThumbnail(for: file) {
+            artworkView.image = thumbnail
+            return
+        }
+        let scale = view.window?.backingScaleFactor ?? 2
+        Task { [weak self] in
+            let thumbnail = await ThumbnailCache.shared.thumbnail(for: file, size: 40, scale: scale)
+            guard let self, let thumbnail, self.player.currentFile?.path == file.path else { return }
+            self.artworkView.image = thumbnail
+        }
     }
 
     private func updateRepeatButton() {
