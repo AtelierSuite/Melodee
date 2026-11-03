@@ -40,6 +40,7 @@ final class BrowserViewController: NSViewController {
         didSet { Preferences.gridIconSize = gridIconSize }
     }
     var pinchStartIconSize: CGFloat = BrowserGridItem.defaultIconSize
+    private var videoEngineObserver: NSObjectProtocol?
 
     var canGoBack: Bool { !backStack.isEmpty }
     var canGoForward: Bool { !forwardStack.isEmpty }
@@ -86,6 +87,13 @@ final class BrowserViewController: NSViewController {
         ])
         view = container
         updateVisibleView()
+        videoEngineObserver = NotificationCenter.default.addObserver(
+            forName: .videoEngineDidChange, object: nil, queue: .main
+        ) { [weak self] _ in
+            MainActor.assumeIsolated {
+                self?.reload()
+            }
+        }
     }
 
     // MARK: - Navigation

@@ -8,7 +8,8 @@ import AVFoundation
 import SFBAudioEngine
 
 /// Plays a queue of audio and video files and reports its state through `didChangeNotification`.
-/// Audio goes through SFBAudioEngine, and video through AVPlayer, which `VideoWindowController` shows.
+/// Audio goes through SFBAudioEngine, and video through AVPlayer or VLCKit (the Extended video engine),
+/// which `VideoWindowController` shows.
 @MainActor
 final class MacPlayer: NSObject {
 
@@ -16,7 +17,10 @@ final class MacPlayer: NSObject {
 
     let audioPlayer = AudioPlayer()
     let videoPlayer = AVPlayer()
-    /// The natural size of the playing video, once AVPlayer knows it.
+    let extendedVideoPlayer = ExtendedVideoPlayer()
+    /// The engine playing the loaded video, chosen from the setting when the video started.
+    private(set) var activeVideoEngine: VideoEngine?
+    /// The natural size of the playing video, once the video engine knows it.
     var videoSize: CGSize?
     private(set) var queue: [FSFile] = []
     private(set) var currentIndex: Int?
@@ -50,8 +54,14 @@ final class MacPlayer: NSObject {
         currentFile?.type == .video
     }
 
+    /// Whether the current file is a video loaded in VLCKit.
+    var isPlayingExtendedVideo: Bool {
+        isPlayingVideo && activeVideoEngine == .extended
+    }
+
     var isPlaying: Bool {
-        isPlayingVideo ? videoPlayer.timeControlStatus != .paused : audioPlayer.isPlaying
+        if isPlayingExtendedVideo { return extendedVideoPlayer.isPlaying }
+        return isPlayingVideo ? videoPlayer.timeControlStatus != .paused : audioPlayer.isPlaying
     }
 
     var canPlay: Bool {
@@ -69,6 +79,9 @@ final class MacPlayer: NSObject {
 
     var playbackTime: (currentTime: TimeInterval, totalTime: TimeInterval)? {
         guard currentFile != nil else { return nil }
+        if isPlayingExtendedVideo {
+            return extendedVideoPlayer.playbackTime
+        }
         if isPlayingVideo {
             guard let item = videoPlayer.currentItem else { return nil }
             let totalTime = item.duration.seconds
@@ -80,7 +93,8 @@ final class MacPlayer: NSObject {
     }
 
     var supportsSeeking: Bool {
-        isPlayingVideo ? videoPlayer.currentItem?.status == .readyToPlay : audioPlayer.supportsSeeking
+        if isPlayingExtendedVideo { return extendedVideoPlayer.isSeekable }
+        return isPlayingVideo ? videoPlayer.currentItem?.status == .readyToPlay : audioPlayer.supportsSeeking
     }
 
     // MARK: - Queue
@@ -169,11 +183,22 @@ final class MacPlayer: NSObject {
         metadata = TrackMetadata(file: file)
         if file.type == .video {
             audioPlayer.stop()
-            playVideo(at: URL(filePath: file.path))
+            if VideoEngine.current == .extended {
+                stopVideo()
+                activeVideoEngine = .extended
+                videoSize = nil
+                extendedVideoPlayer.play(url: URL(filePath: file.path), from: nil)
+            } else {
+                extendedVideoPlayer.stop()
+                activeVideoEngine = .standard
+                playVideo(at: URL(filePath: file.path))
+            }
             notifyChange()
             return
         }
         stopVideo()
+        extendedVideoPlayer.stop()
+        activeVideoEngine = nil
         do {
             try audioPlayer.play(URL(filePath: file.path))
         } catch {
@@ -193,7 +218,9 @@ final class MacPlayer: NSObject {
     }
 
     func resume() {
-        if isPlayingVideo, let item = videoPlayer.currentItem {
+        if isPlayingExtendedVideo, extendedVideoPlayer.hasMedia {
+            extendedVideoPlayer.resume()
+        } else if isPlayingVideo, let item = videoPlayer.currentItem {
             // Start over if the video already played to the end
             if item.duration.isNumeric, item.currentTime() >= item.duration {
                 videoPlayer.seek(to: .zero)
@@ -212,12 +239,15 @@ final class MacPlayer: NSObject {
     func pause() {
         audioPlayer.pause()
         videoPlayer.pause()
+        extendedVideoPlayer.pause()
         notifyChange()
     }
 
     func stop() {
         audioPlayer.stop()
         stopVideo()
+        extendedVideoPlayer.stop()
+        activeVideoEngine = nil
         queue.removeAll()
         currentIndex = nil
         metadata = nil
@@ -244,7 +274,9 @@ final class MacPlayer: NSObject {
 
     func seek(to time: TimeInterval) {
         guard supportsSeeking else { return }
-        if isPlayingVideo {
+        if isPlayingExtendedVideo {
+            extendedVideoPlayer.seek(to: time)
+        } else if isPlayingVideo {
             videoPlayer.seek(to: CMTime(seconds: time, preferredTimescale: 600),
                              toleranceBefore: .zero, toleranceAfter: .zero) { [weak self] _ in
                 Task { @MainActor in self?.notifyChange() }

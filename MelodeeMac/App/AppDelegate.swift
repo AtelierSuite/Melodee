@@ -102,6 +102,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         player.repeatMode = mode
     }
 
+    @objc func setVideoEngine(_ sender: NSMenuItem) {
+        guard let rawValue = sender.representedObject as? String, let engine = VideoEngine(rawValue: rawValue),
+              engine != VideoEngine.current else {
+            return
+        }
+        UserDefaults.standard.set(engine.rawValue, forKey: VideoEngine.storageKey)
+        // The Extended engine plays more video formats, so the browser lists them again
+        NotificationCenter.default.post(name: .videoEngineDidChange, object: nil)
+    }
+
     @objc func clearQueue(_ sender: Any?) {
         player.clearQueue()
     }
@@ -124,6 +134,8 @@ extension AppDelegate: NSMenuItemValidation {
             return player.canGoToPreviousTrack
         case #selector(setRepeatMode(_:)):
             menuItem.state = (menuItem.representedObject as? String) == player.repeatMode.rawValue ? .on : .off
+        case #selector(setVideoEngine(_:)):
+            menuItem.state = (menuItem.representedObject as? String) == VideoEngine.current.rawValue ? .on : .off
         case #selector(clearQueue(_:)):
             return player.canPlay
         default:

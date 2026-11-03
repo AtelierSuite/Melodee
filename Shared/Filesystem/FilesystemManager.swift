@@ -124,7 +124,7 @@ class FilesystemManager {
     func fileType(for url: URL) -> FileType? {
         let fileExtension = url.pathExtension.lowercased()
         if FilesystemManager.audioExtensions.contains(fileExtension) { return .audio }
-        if FilesystemManager.videoExtensions.contains(fileExtension) { return .video }
+        if FilesystemManager.isVideoExtension(fileExtension) { return .video }
         switch fileExtension {
         case "png", "jpg", "jpeg", "tif", "tiff", "heic": return .image
         case "txt": return .text
@@ -138,7 +138,7 @@ class FilesystemManager {
 
     static func fileType(forExtension fileExtension: String) -> FileType {
         if audioExtensions.contains(fileExtension) { return .audio }
-        if videoExtensions.contains(fileExtension) { return .video }
+        if isVideoExtension(fileExtension) { return .video }
         switch fileExtension {
         case "png", "jpg", "jpeg", "tif", "tiff", "heic": return .image
         case "txt": return .text
@@ -161,6 +161,18 @@ class FilesystemManager {
     static let videoExtensions: Set<String> = [
         "mp4", "m4v", "mov", "3gp", "3g2"
     ]
+
+    /// Additional video file extensions recognized when the Extended (VLCKit) video engine is selected.
+    static let extendedVideoExtensions: Set<String> = [
+        "mkv", "webm", "avi", "divx", "wmv", "asf", "flv", "ogv",
+        "ts", "m2ts", "mts", "mpg", "mpeg", "m2v", "vob", "dv", "rm", "rmvb"
+    ]
+
+    /// Whether files with this extension are shown and played as video with the selected video engine.
+    static func isVideoExtension(_ fileExtension: String) -> Bool {
+        videoExtensions.contains(fileExtension) ||
+            (VideoEngine.current == .extended && extendedVideoExtensions.contains(fileExtension))
+    }
 
     func createDirectory(at directoryPath: String) {
         let url = URL(fileURLWithPath: directoryPath)

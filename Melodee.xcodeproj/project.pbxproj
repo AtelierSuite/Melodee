@@ -17,6 +17,8 @@
 		4D454C4F4D41430000000006 /* Prelude in Frameworks */ = {isa = PBXBuildFile; productRef = 4D454C4F4D41430000000009 /* Prelude */; };
 		4D454C4F4D41430000000020 /* PreludeLookup in Frameworks */ = {isa = PBXBuildFile; productRef = 4D454C4F4D41430000000021 /* PreludeLookup */; };
 		4D454C4F4D41430000000007 /* ZIPFoundation in Frameworks */ = {isa = PBXBuildFile; productRef = 4D454C4F4D4143000000000A /* ZIPFoundation */; };
+		E4F736C02F3A010000A203FE /* VLCKit in Frameworks */ = {isa = PBXBuildFile; productRef = E4F736C12F3A010000A203FE /* VLCKit */; };
+		4D454C4F4D41430000000030 /* VLCKit in Frameworks */ = {isa = PBXBuildFile; productRef = 4D454C4F4D41430000000031 /* VLCKit */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -89,6 +91,7 @@
 				E43C847A2AB009B300D87A5F /* ZIPFoundation in Frameworks */,
 				E4DB2A632AB3FFA800C5810D /* Zoomy in Frameworks */,
 				E4DB2A682AB4032900C5810D /* VariableBlurView in Frameworks */,
+				E4F736C02F3A010000A203FE /* VLCKit in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -100,6 +103,7 @@
 				4D454C4F4D41430000000006 /* Prelude in Frameworks */,
 				4D454C4F4D41430000000020 /* PreludeLookup in Frameworks */,
 				4D454C4F4D41430000000007 /* ZIPFoundation in Frameworks */,
+				4D454C4F4D41430000000030 /* VLCKit in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -159,6 +163,7 @@
 				4D454C4F4D41430000000009 /* Prelude */,
 				4D454C4F4D41430000000021 /* PreludeLookup */,
 				4D454C4F4D4143000000000A /* ZIPFoundation */,
+				4D454C4F4D41430000000031 /* VLCKit */,
 			);
 			productName = Melodee;
 			productReference = 4D454C4F4D41430000000004 /* Melodee.app */;
@@ -190,6 +195,7 @@
 				E4F736AF2F38010000A203FE /* SFBAudioEngine */,
 				E4F736B32F38010000A203FE /* Prelude */,
 				E4F736B52F38010000A203FE /* PreludeLookup */,
+				E4F736C12F3A010000A203FE /* VLCKit */,
 			);
 			productName = Melodee;
 			productReference = E4A4D6472AAEF11F0062D12C /* Melodee.app */;
@@ -232,6 +238,7 @@
 				E4DB2A662AB4032900C5810D /* XCRemoteSwiftPackageReference "VariableBlurView" */,
 				E4F736AE2F38010000A203FE /* XCRemoteSwiftPackageReference "SFBAudioEngine" */,
 				E4F736B22F38010000A203FE /* XCRemoteSwiftPackageReference "Tunetag" */,
+				E4F736C22F3A010000A203FE /* XCRemoteSwiftPackageReference "VLCKit" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = E4A4D6482AAEF11F0062D12C /* Products */;
@@ -685,6 +692,14 @@
 				kind = branch;
 			};
 		};
+		E4F736C22F3A010000A203FE /* XCRemoteSwiftPackageReference "VLCKit" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://code.videolan.org/videolan/VLCKit.git";
+			requirement = {
+				kind = exactVersion;
+				version = "4.0.0-a25";
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -737,6 +752,16 @@
 			isa = XCSwiftPackageProductDependency;
 			package = E43C84782AB009B300D87A5F /* XCRemoteSwiftPackageReference "ZIPFoundation" */;
 			productName = ZIPFoundation;
+		};
+		E4F736C12F3A010000A203FE /* VLCKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = E4F736C22F3A010000A203FE /* XCRemoteSwiftPackageReference "VLCKit" */;
+			productName = VLCKit;
+		};
+		4D454C4F4D41430000000031 /* VLCKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = E4F736C22F3A010000A203FE /* XCRemoteSwiftPackageReference "VLCKit" */;
+			productName = VLCKit;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

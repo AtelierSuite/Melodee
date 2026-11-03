@@ -57,6 +57,14 @@ for ((i = 0; i < PIN_COUNT; i++)); do
     done < <(find "$CHECKOUTS/$ACTUAL_DIR" -maxdepth 1 -type f \
         \( -iname 'LICENSE' -o -iname 'LICENSE.*' -o -iname 'LICENSE-*' \) | sort)
 
+    # Some packages (e.g. VLCKit) ship their license as COPYING instead
+    if [ "${#LICENSE_PATHS[@]}" -eq 0 ]; then
+        while IFS= read -r path; do
+            LICENSE_PATHS+=("$path")
+        done < <(find "$CHECKOUTS/$ACTUAL_DIR" -maxdepth 1 -type f \
+            \( -iname 'COPYING' -o -iname 'COPYING.*' \) | sort)
+    fi
+
     if [ "${#LICENSE_PATHS[@]}" -eq 0 ]; then
         echo "warning: no LICENSE file found for $NAME"
         continue
