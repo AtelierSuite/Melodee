@@ -15,6 +15,7 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
     @ObservationIgnored let audioPlayer = AudioPlayer()
     @ObservationIgnored let videoPlayer = AVPlayer()
     @ObservationIgnored let videoPlayerController: AVPlayerViewController
+    @ObservationIgnored let extendedVideoPlayer = ExtendedVideoPlayer()
     @ObservationIgnored var downloadManager: FileDownloadManager?
     @ObservationIgnored var stateStore: PlaybackStateStore? {
         didSet {
@@ -46,6 +47,8 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
     }
     var metadataRefreshTrigger: UUID = UUID()
     var videoAspectRatio: CGFloat?
+    /// The engine playing the loaded video, chosen from the setting when the video was loaded.
+    var activeVideoEngine: VideoEngine?
     /// Set when the user picks a file that was previously stopped partway through, to ask where to start.
     var resumePrompt: ResumePlaybackPrompt?
 
@@ -103,11 +106,12 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
             nonisolated(unsafe) let managerRef = self
             let isNowPaused = player.timeControlStatus == .paused
             Task { @MainActor in
-                guard managerRef.isCurrentlyPlayingVideo() else { return }
+                guard managerRef.isCurrentlyPlayingVideo(), managerRef.activeVideoEngine == .standard else { return }
                 managerRef.isPaused = isNowPaused
                 managerRef.setNowPlaying()
             }
         }
+        setUpExtendedVideoPlayer()
         setUpRemoteCommands()
         // Pause when headphones are disconnected (e.g. AirPods removed or put back in the case)
         notificationCenter.addObserver(self,
@@ -129,6 +133,29 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
                                                  selector: #selector(positionSaveTimerFired(_:)),
                                                  userInfo: nil,
                                                  repeats: true)
+    }
+
+    private func setUpExtendedVideoPlayer() {
+        extendedVideoPlayer.onFinished = { [weak self] in
+            debugPrint("VLCKit finished playing video.")
+            guard let self else { return }
+            nonisolated(unsafe) let managerRef = self
+            MainActor.assumeIsolated { managerRef.handleRenderingComplete() }
+        }
+        extendedVideoPlayer.onFailed = { [weak self] in
+            guard let self, self.isPlayingExtendedVideo() else { return }
+            debugPrint("VLCKit failed to play video.")
+            self.handlePlaybackFailure()
+        }
+        extendedVideoPlayer.onPausedChanged = { [weak self] isNowPaused in
+            guard let self, self.isPlayingExtendedVideo() else { return }
+            self.isPaused = isNowPaused
+            self.setNowPlaying()
+        }
+        extendedVideoPlayer.onVideoSizeChanged = { [weak self] size in
+            guard let self, self.isPlayingExtendedVideo() else { return }
+            self.videoAspectRatio = size.width / size.height
+        }
     }
 
     private func setUpRemoteCommands() {
@@ -241,13 +268,21 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
         return currentlyPlayingFile()?.type == .video
     }
 
+    /// Whether the current file is a video loaded in VLCKit.
+    private func isPlayingExtendedVideo() -> Bool {
+        return isCurrentlyPlayingVideo() && activeVideoEngine == .extended
+    }
+
     func isEnginePlaying() -> Bool {
-        return audioPlayer.isPlaying || videoPlayer.timeControlStatus != .paused
+        return audioPlayer.isPlaying || videoPlayer.timeControlStatus != .paused || extendedVideoPlayer.isPlaying
     }
 
     func supportsSeeking() -> Bool {
         if pendingResumeTime != nil {
             return true
+        }
+        if isPlayingExtendedVideo() {
+            return extendedVideoPlayer.isSeekable
         }
         if isCurrentlyPlayingVideo() {
             return videoPlayer.currentItem != nil
@@ -260,6 +295,9 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
         if let pendingResumeTime {
             guard let pendingTotalTime, pendingTotalTime > 0 else { return nil }
             return (min(pendingResumeTime, pendingTotalTime), pendingTotalTime)
+        }
+        if isPlayingExtendedVideo() {
+            return extendedVideoPlayer.playbackTime
         }
         if isCurrentlyPlayingVideo() {
             guard let item = videoPlayer.currentItem else { return nil }
@@ -336,6 +374,7 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
         // Stop any playback that is in progress
         audioPlayer.stop()
         videoPlayer.pause()
+        extendedVideoPlayer.pause()
         clearPendingResume()
         // Queue and/or play new file
         let currentlyPlayingIndex = currentlyPlayingIndex()
@@ -378,8 +417,21 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
         activateAudioSession()
         let url = URL(fileURLWithPath: file.path)
         let startTime = startTime.flatMap { $0 > 0 ? $0 : nil }
+        if file.type == .video, VideoEngine.current == .extended {
+            audioPlayer.stop()
+            unloadStandardVideo()
+            activeVideoEngine = .extended
+            extendedVideoPlayer.play(url: url, from: startTime)
+            playTimeTrackedFile = file
+            isPlaybackActive = true
+            isPaused = false
+            setNowPlaying()
+            return
+        }
+        extendedVideoPlayer.stop()
         if file.type == .video {
             audioPlayer.stop()
+            activeVideoEngine = .standard
             let item = AVPlayerItem(url: url)
             videoAspectRatio = nil
             // Size the Now Playing video surface to the video's own aspect ratio
@@ -415,9 +467,8 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
             setNowPlaying()
             return
         }
-        videoPlayer.replaceCurrentItem(with: nil)
-        videoPresentationSizeObservation = nil
-        videoAspectRatio = nil
+        unloadStandardVideo()
+        activeVideoEngine = nil
         do {
             try playAudio(at: url, from: startTime)
             playTimeTrackedFile = file
@@ -428,6 +479,13 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
             debugPrint("Failed to start playback: \(error.localizedDescription)")
             handlePlaybackFailure()
         }
+    }
+
+    private func unloadStandardVideo() {
+        videoPlayer.replaceCurrentItem(with: nil)
+        videoItemStatusObservation = nil
+        videoPresentationSizeObservation = nil
+        videoAspectRatio = nil
     }
 
     private func playAudio(at url: URL, from startTime: TimeInterval?) throws {
@@ -475,6 +533,13 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
 
     func play() {
         activateAudioSession()
+        if isPlayingExtendedVideo(), extendedVideoPlayer.hasMedia {
+            extendedVideoPlayer.resume()
+            isPlaybackActive = true
+            isPaused = false
+            setNowPlaying()
+            return
+        }
         if isCurrentlyPlayingVideo(), let item = videoPlayer.currentItem {
             // Restart from the top if the video previously played to the end
             if item.duration.isValid, !item.duration.isIndefinite, item.currentTime() >= item.duration {
@@ -541,6 +606,7 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
     func pause() {
         audioPlayer.pause()
         videoPlayer.pause()
+        extendedVideoPlayer.pause()
         isPaused = true
         setNowPlaying()
         savePlaybackPosition()
@@ -551,10 +617,9 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
         recordPlayTime()
         playTimeTrackedFile = nil
         audioPlayer.stop()
-        videoPlayer.replaceCurrentItem(with: nil)
-        videoItemStatusObservation = nil
-        videoPresentationSizeObservation = nil
-        videoAspectRatio = nil
+        unloadStandardVideo()
+        extendedVideoPlayer.stop()
+        activeVideoEngine = nil
         clearPendingResume()
         queue.removeAll()
         currentlyPlayingID = ""
@@ -583,6 +648,13 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
         if pendingResumeTime != nil {
             pendingResumeTime = time
             savePlaybackPosition(at: time)
+            return
+        }
+        if isPlayingExtendedVideo() {
+            extendedVideoPlayer.seek(to: time)
+            setNowPlaying()
+            savePlaybackPosition(at: time)
+            recordPlayTime(at: time)
             return
         }
         if isCurrentlyPlayingVideo() {

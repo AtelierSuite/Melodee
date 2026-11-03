@@ -7,12 +7,20 @@ import AppKit
 import AVKit
 
 /// Shows the playing video in its own window, which opens when a video starts and closes when the queue moves on.
-/// Closing the window pauses the video.
+/// Closing the window pauses the video. Videos played with the Extended engine show VLCKit's video
+/// in place of AVKit's player view, and are controlled from the Now Playing bar and Controls menu.
 @MainActor
 final class VideoWindowController: NSWindowController, NSWindowDelegate {
 
     private let player = MacServices.shared.player
     private let playerView = AVPlayerView()
+    /// Holds the view VLCKit draws into.
+    private let extendedVideoContainer: NSView = {
+        let view = NSView()
+        view.wantsLayer = true
+        view.layer?.backgroundColor = NSColor.black.cgColor
+        return view
+    }()
     private var playerObserver: NSObjectProtocol?
     /// The video the window was last sized for, so it's only resized when a new video starts.
     private var sizedVideoPath: String?
@@ -39,6 +47,10 @@ final class VideoWindowController: NSWindowController, NSWindowDelegate {
         playerView.controlsStyle = .floating
         playerView.showsFullScreenToggleButton = true
         playerView.allowsPictureInPicturePlayback = true
+        let extendedVideoView = player.extendedVideoPlayer.videoView
+        extendedVideoView.frame = extendedVideoContainer.bounds
+        extendedVideoView.autoresizingMask = [.width, .height]
+        extendedVideoContainer.addSubview(extendedVideoView)
         window.contentView = playerView
         if !window.setFrameUsingName("VideoWindow") {
             window.center()
@@ -68,6 +80,10 @@ final class VideoWindowController: NSWindowController, NSWindowDelegate {
             return
         }
         window.title = player.metadata?.title ?? file.name
+        let contentView: NSView = player.isPlayingExtendedVideo ? extendedVideoContainer : playerView
+        if window.contentView !== contentView {
+            window.contentView = contentView
+        }
         if let videoSize = player.videoSize, sizedVideoPath != file.path {
             sizedVideoPath = file.path
             fit(window, to: videoSize)

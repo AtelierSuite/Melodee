@@ -19,15 +19,21 @@ struct NPControllerSection: View {
                 ZStack {
                     Color.clear
                     if mediaPlayer.isCurrentlyPlayingVideo() {
-                        NPVideoSurface()
-                            .aspectRatio(mediaPlayer.videoAspectRatio ?? 1.0, contentMode: .fit)
-                            .clipShape(RoundedRectangle(cornerRadius: 16.0))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 16.0)
-                                    .stroke(.primary, lineWidth: 1/3)
-                                    .opacity(0.3)
-                            )
-                            .animation(.default.speed(2), value: mediaPlayer.videoAspectRatio)
+                        Group {
+                            if mediaPlayer.activeVideoEngine == .extended {
+                                NPExtendedVideoSurface()
+                            } else {
+                                NPVideoSurface()
+                            }
+                        }
+                        .aspectRatio(mediaPlayer.videoAspectRatio ?? 1.0, contentMode: .fit)
+                        .clipShape(RoundedRectangle(cornerRadius: 16.0))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 16.0)
+                                .stroke(.primary, lineWidth: 1/3)
+                                .opacity(0.3)
+                        )
+                        .animation(.default.speed(2), value: mediaPlayer.videoAspectRatio)
                     } else {
                         albumArt
                             .resizable()
