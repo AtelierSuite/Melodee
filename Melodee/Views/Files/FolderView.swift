@@ -13,6 +13,7 @@ struct FolderView: View {
     @AppStorage("FileBrowserGridColumns") var gridColumns: Int = GridCell.defaultPhoneColumns
     @AppStorage("FileBrowserGridCellSize") var gridCellSize: Double = GridCell.defaultPadCellSize
     @AppStorage(ResumePlaybackBehavior.storageKey) var resumePlaybackBehavior: ResumePlaybackBehavior = .ask
+    @AppStorage(VideoEngine.storageKey) var videoEngine: VideoEngine = .standard
     @State var gridZoomStart: (columns: Int, cellSize: Double)?
 
     @State var currentDirectory: FSDirectory?
@@ -107,6 +108,7 @@ struct FolderView: View {
                     }
                     Section {
                         resumePlaybackPicker
+                        videoEnginePicker
                     }
                     Section {
                         Link(destination: URL(string: "https://github.com/AtelierSuite/Melodee")!) {
@@ -231,6 +233,10 @@ struct FolderView: View {
         .onChange(of: state.sortOrder) {
             sortFiles()
             saveSortPreference()
+        }
+        .onChange(of: videoEngine) {
+            // The Extended engine plays more video formats, so show or hide those files
+            refreshFiles()
         }
         .fileBrowserAlerts(state: $state, refreshFiles: refreshFiles)
         .tagEditorPresentation($state.tagEditorPresentation)
@@ -474,6 +480,18 @@ struct FolderView: View {
                 .tag(FileBrowserLayout.list)
         }
         .pickerStyle(.palette)
+    }
+
+    var videoEnginePicker: some View {
+        Picker(selection: $videoEngine) {
+            Text("VideoEngine.Default")
+                .tag(VideoEngine.standard)
+            Text("VideoEngine.Extended")
+                .tag(VideoEngine.extended)
+        } label: {
+            Label("VideoEngine.Title", systemImage: "film.stack")
+        }
+        .pickerStyle(.menu)
     }
 
     var resumePlaybackPicker: some View {

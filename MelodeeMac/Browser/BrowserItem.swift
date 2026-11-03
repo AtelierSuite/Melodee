@@ -28,9 +28,9 @@ struct BrowserItem: Sendable {
         if case .folder = kind { true } else { false }
     }
 
-    /// Audio files are played in Melodee. Everything else opens in its own app.
+    /// Audio and video files are played in Melodee. Everything else opens in its own app.
     var isPlayable: Bool {
-        file?.type == .audio
+        file?.isPlayableMedia() ?? false
     }
 
     var sizeDescription: String {

@@ -35,6 +35,16 @@ extension MainMenuBuilder {
         }
         repeatItem.submenu = repeatMenu
         menu.addItem(repeatItem)
+        let videoEngineItem = item("VideoEngine.Title", action: nil)
+        let videoEngineMenu = NSMenu()
+        let engines: [(String, VideoEngine)] = [("VideoEngine.Default", .standard), ("VideoEngine.Extended", .extended)]
+        for (key, engine) in engines {
+            let engineItem = item(key, action: #selector(AppDelegate.setVideoEngine(_:)))
+            engineItem.representedObject = engine.rawValue
+            videoEngineMenu.addItem(engineItem)
+        }
+        videoEngineItem.submenu = videoEngineMenu
+        menu.addItem(videoEngineItem)
         menu.addItem(.separator())
         menu.addItem(item("Queue.Clear", action: #selector(AppDelegate.clearQueue(_:))))
         return menu
