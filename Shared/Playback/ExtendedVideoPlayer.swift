@@ -3,7 +3,7 @@ import VLCKit
 
 #if canImport(UIKit)
 import UIKit
-typealias ExtendedVideoPlatformView = UIView
+typealias ExtendedVideoPlatformView = ExtendedVideoView
 #else
 import AppKit
 typealias ExtendedVideoPlatformView = NSView
@@ -23,6 +23,7 @@ final class ExtendedVideoPlayer: NSObject {
         let view = ExtendedVideoPlatformView()
         #if canImport(UIKit)
         view.backgroundColor = .black
+        view.isUserInteractionEnabled = false
         #else
         view.wantsLayer = true
         view.layer?.backgroundColor = NSColor.black.cgColor
@@ -58,6 +59,10 @@ final class ExtendedVideoPlayer: NSObject {
     }()
 
     private var player: VLCMediaPlayer?
+    #if canImport(UIKit)
+    /// Lets Picture in Picture control playback, and is told when its state changes.
+    private lazy var pictureInPictureMediaController = ExtendedVideoPictureInPictureMediaController(player: self)
+    #endif
     /// The file being parsed before playback starts.
     private var pendingMedia: VLCMedia?
     /// Whether playback should start once parsing finishes, which a pause in the meantime turns off.
@@ -104,6 +109,13 @@ final class ExtendedVideoPlayer: NSObject {
         }
         let player = VLCMediaPlayer(library: Self.library)
         player.delegate = self
+        #if canImport(UIKit)
+        let view = videoView
+        nonisolated(unsafe) let mediaController = pictureInPictureMediaController
+        MainActor.assumeIsolated {
+            view.pictureInPictureMediaController = mediaController
+        }
+        #endif
         player.drawable = videoView
         // Deinterlace the streams VLC detects as interlaced, as desktop VLC does
         player.setDeinterlace(.auto, withFilter: "yadif2x")
@@ -143,6 +155,17 @@ final class ExtendedVideoPlayer: NSObject {
     func seek(to time: TimeInterval) {
         guard let player, player.isSeekable else { return }
         player.time = VLCTime(number: NSNumber(value: Int64(time * 1000)))
+        invalidatePictureInPicturePlaybackState()
+    }
+
+    /// Tells Picture in Picture to refresh its play state and progress.
+    private func invalidatePictureInPicturePlaybackState() {
+        #if canImport(UIKit)
+        let view = videoView
+        MainActor.assumeIsolated {
+            view.pictureInPictureWindowController?.invalidatePlaybackState()
+        }
+        #endif
     }
 
     /// Stops playback and unloads the file.
@@ -151,6 +174,15 @@ final class ExtendedVideoPlayer: NSObject {
     }
 
     private func tearDownPlayer() {
+        #if canImport(UIKit)
+        if player != nil {
+            let view = videoView
+            MainActor.assumeIsolated {
+                view.pictureInPictureWindowController?.stopPictureInPicture()
+                view.pictureInPictureWindowController = nil
+            }
+        }
+        #endif
         if let pendingMedia {
             parser.cancelParsing(for: pendingMedia)
             self.pendingMedia = nil
@@ -232,9 +264,11 @@ extension ExtendedVideoPlayer: VLCMediaPlayerDelegate {
             switch newState {
             case .playing:
                 self.hasStartedPlaying = true
+                self.invalidatePictureInPicturePlaybackState()
                 self.onPausedChanged?(false)
                 self.reportVideoSizeIfNeeded(for: player)
             case .paused:
+                self.invalidatePictureInPicturePlaybackState()
                 self.onPausedChanged?(true)
             case .stopped:
                 // An explicit stop tears the player down first, so a stop here means the file ended
@@ -265,3 +299,79 @@ extension ExtendedVideoPlayer: VLCMediaPlayerDelegate {
         }
     }
 }
+
+#if canImport(UIKit)
+/// The view VLC draws video into on iOS. It has no controls or gestures, and lets VLC move the video
+/// into Picture in Picture, which starts automatically when the app is backgrounded during playback.
+final class ExtendedVideoView: UIView, @preconcurrency VLCPictureInPictureDrawable {
+
+    /// Handles playback requests from the Picture in Picture window.
+    var pictureInPictureMediaController: ExtendedVideoPictureInPictureMediaController?
+    /// Controls the Picture in Picture window of the current video, once VLC has set it up.
+    var pictureInPictureWindowController: (any VLCPictureInPictureWindowControlling)?
+
+    func mediaController() -> any VLCPictureInPictureMediaControlling {
+        pictureInPictureMediaController ?? ExtendedVideoPictureInPictureMediaController(player: nil)
+    }
+
+    func pictureInPictureReady() -> (((any VLCPictureInPictureWindowControlling)?) -> Void)? {
+        return { [weak self] windowController in
+            guard let readyWindowController = windowController else { return }
+            nonisolated(unsafe) let windowController = readyWindowController
+            let update: @Sendable () -> Void = {
+                MainActor.assumeIsolated {
+                    self?.pictureInPictureWindowController = windowController
+                }
+            }
+            if Thread.isMainThread {
+                update()
+            } else {
+                DispatchQueue.main.async(execute: update)
+            }
+        }
+    }
+}
+
+/// Answers the Picture in Picture window's playback requests for the Extended video engine.
+/// Times are in milliseconds.
+final class ExtendedVideoPictureInPictureMediaController: NSObject, VLCPictureInPictureMediaControlling {
+
+    private weak var player: ExtendedVideoPlayer?
+
+    init(player: ExtendedVideoPlayer?) {
+        self.player = player
+    }
+
+    func play() {
+        player?.resume()
+    }
+
+    func pause() {
+        player?.pause()
+    }
+
+    func seek(by offset: Int64, completion: @escaping () -> Void) {
+        if let player, let playbackTime = player.playbackTime {
+            let target = playbackTime.currentTime + TimeInterval(offset) / 1000
+            player.seek(to: min(max(0, target), playbackTime.totalTime))
+        }
+        completion()
+    }
+
+    func mediaLength() -> Int64 {
+        Int64((player?.playbackTime?.totalTime ?? 0) * 1000)
+    }
+
+    func mediaTime() -> Int64 {
+        Int64((player?.playbackTime?.currentTime ?? 0) * 1000)
+    }
+
+    func isMediaSeekable() -> Bool {
+        player?.isSeekable ?? false
+    }
+
+    func isMediaPlaying() -> Bool {
+        player?.isPlaying ?? false
+    }
+}
+#endif

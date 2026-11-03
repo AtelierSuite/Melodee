@@ -8,7 +8,8 @@ import AVKit
 
 /// Shows the playing video in its own window, which opens when a video starts and closes when the queue moves on.
 /// Closing the window pauses the video. Videos played with the Extended engine show VLCKit's video
-/// in place of AVKit's player view, and are controlled from the Now Playing bar and Controls menu.
+/// in place of AVKit's player view. Neither shows its own controls: videos are controlled from the
+/// Now Playing bar and Controls menu.
 @MainActor
 final class VideoWindowController: NSWindowController, NSWindowDelegate {
 
@@ -44,9 +45,8 @@ final class VideoWindowController: NSWindowController, NSWindowDelegate {
         super.init(window: window)
         window.delegate = self
         playerView.player = player.videoPlayer
-        playerView.controlsStyle = .floating
-        playerView.showsFullScreenToggleButton = true
-        playerView.allowsPictureInPicturePlayback = true
+        // Playback is controlled only from the Now Playing bar and Controls menu
+        playerView.controlsStyle = .none
         let extendedVideoView = player.extendedVideoPlayer.videoView
         extendedVideoView.frame = extendedVideoContainer.bounds
         extendedVideoView.autoresizingMask = [.width, .height]
