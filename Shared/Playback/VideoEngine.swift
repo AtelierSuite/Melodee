@@ -2,7 +2,7 @@ import Foundation
 
 /// Which player plays video files.
 enum VideoEngine: String, CaseIterable, Identifiable {
-    /// Apple's AVPlayer, with the system playback controls, Picture in Picture and AirPlay.
+    /// Apple's AVPlayer, with Picture in Picture and AirPlay.
     case standard = "default"
     /// VLCKit, which plays more formats and deinterlaces interlaced video.
     case extended

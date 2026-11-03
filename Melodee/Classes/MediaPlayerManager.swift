@@ -13,8 +13,11 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
     @ObservationIgnored let remoteCommandCenter = MPRemoteCommandCenter.shared()
     @ObservationIgnored let nowPlayingInfoCenter = MPNowPlayingInfoCenter.default()
     @ObservationIgnored let audioPlayer = AudioPlayer()
-    @ObservationIgnored let videoPlayer = AVPlayer()
-    @ObservationIgnored let videoPlayerController: AVPlayerViewController
+    @ObservationIgnored let videoPlayer: AVPlayer
+    /// Draws the standard engine's video. It is reused by the Now Playing sheet so that
+    /// Picture in Picture keeps running when the sheet is dismissed.
+    @ObservationIgnored let videoPlayerView: VideoPlayerView
+    @ObservationIgnored private let videoPictureInPictureController: AVPictureInPictureController?
     @ObservationIgnored let extendedVideoPlayer = ExtendedVideoPlayer()
     @ObservationIgnored var downloadManager: FileDownloadManager?
     @ObservationIgnored var stateStore: PlaybackStateStore? {
@@ -80,15 +83,21 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
     @ObservationIgnored private var playTimeTrackedFile: FSFile?
 
     override init() {
-        // The same controller instance is reused by the Now Playing sheet so that
-        // Picture in Picture keeps running when the sheet is dismissed.
-        videoPlayerController = MainActor.assumeIsolated {
-            let controller = AVPlayerViewController()
-            controller.allowsPictureInPicturePlayback = true
-            controller.canStartPictureInPictureAutomaticallyFromInline = true
-            controller.updatesNowPlayingInfoCenter = false
-            return controller
+        let videoPlayer = AVPlayer()
+        self.videoPlayer = videoPlayer
+        let videoPlayerView = MainActor.assumeIsolated {
+            VideoPlayerView(player: videoPlayer)
         }
+        self.videoPlayerView = videoPlayerView
+        // Move the playing video into Picture in Picture when the app is backgrounded
+        nonisolated(unsafe) var pictureInPictureController: AVPictureInPictureController?
+        MainActor.assumeIsolated {
+            if AVPictureInPictureController.isPictureInPictureSupported() {
+                pictureInPictureController = AVPictureInPictureController(playerLayer: videoPlayerView.playerLayer)
+                pictureInPictureController?.canStartPictureInPictureAutomaticallyFromInline = true
+            }
+        }
+        videoPictureInPictureController = pictureInPictureController
         super.init()
         audioPlayer.delegate = self
         // By default AVPlayer pauses a video when the app is backgrounded or the screen is
@@ -100,7 +109,7 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
                                        name: .AVPlayerItemDidPlayToEndTime,
                                        object: nil)
         // Keep isPaused in sync when the video is paused/resumed from the
-        // native player controls, PiP window, or fullscreen presentation
+        // Picture in Picture window or the system's Now Playing controls
         videoTimeControlObservation = videoPlayer.observe(\.timeControlStatus) { [weak self] player, _ in
             guard let self else { return }
             nonisolated(unsafe) let managerRef = self
