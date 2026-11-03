@@ -34,10 +34,12 @@ enum DeviceFrames {
     static let iPhone = DeviceFrame(name: "iPhone")
     static let iPad = DeviceFrame(name: "iPad", displayOrigin: NSPoint(x: 95, y: 95))
 
-    static func frame(for device: Device) -> DeviceFrame {
+    /// The Mac's screenshots show its window on its own, without hardware.
+    static func frame(for device: Device) -> DeviceFrame? {
         switch device {
         case .iPhone: iPhone
         case .iPad: iPad
+        case .mac: nil
         }
     }
 }

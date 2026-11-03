@@ -2,7 +2,7 @@
 # Composes the App Store screenshots from the captures in Raw/.
 #
 #   ./compose.sh          every device
-#   ./compose.sh iPhone   only the iPhone
+#   ./compose.sh iPhone   only the iPhone (or iPad, or Mac)
 set -euo pipefail
 
 assets_dir=${0:A:h}

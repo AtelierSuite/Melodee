@@ -15,11 +15,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationWillFinishLaunching(_ notification: Notification) {
         NSWindow.allowsAutomaticWindowTabbing = false
         NSApp.mainMenu = MainMenuBuilder.build()
+        #if DEBUG
+        ScreenshotStage.prepare()
+        #endif
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         videoWindowController = VideoWindowController()
         showMainWindow(nil)
+        #if DEBUG
+        if ScreenshotStage.isRequested, let mainWindowController {
+            ScreenshotStage.stage(mainWindowController)
+        }
+        #endif
     }
 
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {

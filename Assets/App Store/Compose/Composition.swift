@@ -27,7 +27,10 @@ func drawBackground(_ screenshot: Screenshot, copy: Copy, in canvas: NSRect, dev
 /// Draws the hardware with the capture clipped to its display.
 @MainActor
 func drawDevice(_ capture: CGImage, device: Device, canvasHeight: CGFloat, copyBottom: CGFloat, context: CGContext) {
-    let frame = DeviceFrames.frame(for: device)
+    guard let frame = DeviceFrames.frame(for: device) else {
+        drawWindow(capture, device: device, canvasHeight: canvasHeight, copyBottom: copyBottom, context: context)
+        return
+    }
     let scale = device.placementWidth / frame.hardwareSize.width
     let size = NSSize(width: frame.hardwareSize.width * scale, height: frame.hardwareSize.height * scale)
     let center = NSPoint(x: device.canvasSize.width / 2, y: (copyBottom + canvasHeight) / 2)
@@ -53,6 +56,28 @@ func drawDevice(_ capture: CGImage, device: Device, canvasHeight: CGFloat, copyB
     context.clip(to: displayRect, mask: frame.display)
     context.interpolationQuality = .high
     context.draw(capture, in: displayRect)
+    context.restoreGState()
+}
+
+/// Draws a Mac window, its corners already cut round in the capture, with the shadow macOS gives a window in front.
+/// The capture keeps a margin around the window for popovers that reach past it, so the window is placed by itself.
+@MainActor
+func drawWindow(_ capture: CGImage, device: Device, canvasHeight: CGFloat, copyBottom: CGFloat, context: CGContext) {
+    let margin = Device.windowMargin
+    let windowWidth = CGFloat(capture.width) - 2 * margin
+    let windowHeight = CGFloat(capture.height) - 2 * margin
+    let scale = device.placementWidth / windowWidth
+    let centerY = (copyBottom + canvasHeight) / 2
+    let windowRect = CGRect(
+        x: (device.canvasSize.width - windowWidth * scale) / 2, y: canvasHeight - centerY - windowHeight * scale / 2,
+        width: windowWidth * scale, height: windowHeight * scale
+    )
+    let captureRect = windowRect.insetBy(dx: -margin * scale, dy: -margin * scale)
+    context.saveGState()
+    context.setShadow(offset: CGSize(width: 0, height: -30), blur: 80,
+                      color: NSColor.black.withAlphaComponent(0.45).cgColor)
+    context.interpolationQuality = .high
+    context.draw(capture, in: captureRect)
     context.restoreGState()
 }
 
