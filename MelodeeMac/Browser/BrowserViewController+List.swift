@@ -9,6 +9,7 @@ extension NSUserInterfaceItemIdentifier {
     static let nameColumn = NSUserInterfaceItemIdentifier("name")
     static let kindColumn = NSUserInterfaceItemIdentifier("kind")
     static let sizeColumn = NSUserInterfaceItemIdentifier("size")
+    static let dateAddedColumn = NSUserInterfaceItemIdentifier("dateAdded")
 }
 
 extension BrowserViewController: NSTableViewDataSource, NSTableViewDelegate {
@@ -33,7 +34,8 @@ extension BrowserViewController: NSTableViewDataSource, NSTableViewDelegate {
         let columns: [(NSUserInterfaceItemIdentifier, String, CGFloat)] = [
             (.nameColumn, "Column.Name", 320),
             (.kindColumn, "Column.Kind", 160),
-            (.sizeColumn, "Column.Size", 90)
+            (.sizeColumn, "Column.Size", 90),
+            (.dateAddedColumn, "Column.DateAdded", 170)
         ]
         for (identifier, titleKey, width) in columns {
             let column = NSTableColumn(identifier: identifier)
@@ -63,6 +65,8 @@ extension BrowserViewController: NSTableViewDataSource, NSTableViewDelegate {
                 let lhsSize = lhs.size ?? -1
                 let rhsSize = rhs.size ?? -1
                 result = lhsSize == rhsSize ? .orderedSame : (lhsSize < rhsSize ? .orderedAscending : .orderedDescending)
+            case NSUserInterfaceItemIdentifier.dateAddedColumn.rawValue:
+                result = (lhs.dateAdded ?? .distantPast).compare(rhs.dateAdded ?? .distantPast)
             default:
                 if lhs.isFolder != rhs.isFolder {
                     return lhs.isFolder
@@ -91,6 +95,8 @@ extension BrowserViewController: NSTableViewDataSource, NSTableViewDelegate {
             cell.imageView?.image = NSWorkspace.shared.icon(forFile: item.url.path)
         case .kindColumn:
             cell.textField?.stringValue = item.kindDescription
+        case .dateAddedColumn:
+            cell.textField?.stringValue = item.dateAddedDescription
         default:
             cell.textField?.stringValue = item.sizeDescription
         }
