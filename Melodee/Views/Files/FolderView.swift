@@ -522,6 +522,8 @@ struct FolderView: View {
                         .tag(SortOption.albumName)
                     Label("Sort.ArtistName", systemImage: "music.mic")
                         .tag(SortOption.artistName)
+                    Label("Sort.DateAdded", systemImage: "calendar")
+                        .tag(SortOption.dateAdded)
                 }
             }
             .labelsVisibility(.visible)
@@ -787,22 +789,36 @@ struct FolderView: View {
             $0.type != .playlist && $0.type != .audio
         }
 
-        // Sort directories alphabetically (always by name)
-        directories.sort { lhs, rhs in
-            let result = lhs.name.localizedStandardCompare(rhs.name) == .orderedAscending
-            return state.sortOrder == .ascending ? result : !result
+        // Build date cache for the date added sort option
+        var dateCache: [String: Date] = [:]
+        if state.sortOption == .dateAdded {
+            for item in files {
+                dateCache[item.path] = URL(filePath: item.path).dateAdded
+            }
         }
 
-        // Sort playlists by name
-        playlists.sort { lhs, rhs in
-            let result = lhs.name.localizedStandardCompare(rhs.name) == .orderedAscending
-            return state.sortOrder == .ascending ? result : !result
+        func compareDatesAdded(_ lhs: any FilesystemObject, _ rhs: any FilesystemObject) -> ComparisonResult {
+            (dateCache[lhs.path] ?? .distantPast).compare(dateCache[rhs.path] ?? .distantPast)
         }
+
+        // Items without tags are sorted by name, unless sorting by date added
+        func isOrderedBefore(_ lhs: any FilesystemObject, _ rhs: any FilesystemObject) -> Bool {
+            let dateComparison = state.sortOption == .dateAdded ? compareDatesAdded(lhs, rhs) : .orderedSame
+            let resolved = dateComparison == .orderedSame
+                ? lhs.name.localizedStandardCompare(rhs.name)
+                : dateComparison
+            return state.sortOrder == .ascending
+                ? resolved == .orderedAscending
+                : resolved == .orderedDescending
+        }
+
+        directories.sort(by: isOrderedBefore)
+        playlists.sort(by: isOrderedBefore)
 
         // Build tag cache for tag-based sort options
         // Skip evicted iCloud files to avoid triggering downloads that would freeze the UI
         var tagCache: [String: AudioFile] = [:]
-        if state.sortOption != .fileName {
+        if state.sortOption != .fileName && state.sortOption != .dateAdded {
             for item in audioFiles {
                 if let file = item as? FSFile, file.isTaggableAudio(), !file.isEvicted(),
                    let audioFile = AudioFile.read(for: file) {
@@ -840,6 +856,8 @@ struct FolderView: View {
                 let lhsArtist = tagCache[lhsFile.path]?.artist ?? ""
                 let rhsArtist = tagCache[rhsFile.path]?.artist ?? ""
                 comparison = lhsArtist.localizedStandardCompare(rhsArtist)
+            case .dateAdded:
+                comparison = compareDatesAdded(lhsFile, rhsFile)
             }
 
             // Fall back to file name when primary sort values are equal
@@ -851,11 +869,7 @@ struct FolderView: View {
                 : resolved == .orderedDescending
         }
 
-        // Sort other files by name
-        otherFiles.sort { lhs, rhs in
-            let result = lhs.name.localizedStandardCompare(rhs.name) == .orderedAscending
-            return state.sortOrder == .ascending ? result : !result
-        }
+        otherFiles.sort(by: isOrderedBefore)
 
         // Combine: folders > playlists > audio tracks > other files
         files = directories + playlists + audioFiles + otherFiles

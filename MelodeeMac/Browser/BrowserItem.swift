@@ -18,6 +18,7 @@ struct BrowserItem: Sendable {
     let name: String
     let kind: Kind
     let size: Int64?
+    let dateAdded: Date?
     let kindDescription: String
 
     var file: FSFile? {
@@ -35,6 +36,10 @@ struct BrowserItem: Sendable {
 
     var sizeDescription: String {
         size.map { ByteCountFormatter.string(fromByteCount: $0, countStyle: .file) } ?? "--"
+    }
+
+    var dateAddedDescription: String {
+        dateAdded?.formatted(date: .abbreviated, time: .shortened) ?? "--"
     }
 
     /// Lists a folder's contents, folders first, without blocking the caller.
@@ -59,13 +64,13 @@ struct BrowserItem: Sendable {
         let values = try? url.resourceValues(forKeys: [.fileSizeKey, .localizedTypeDescriptionKey])
         if object is FSDirectory {
             return BrowserItem(
-                url: url, name: object.name, kind: .folder, size: nil,
+                url: url, name: object.name, kind: .folder, size: nil, dateAdded: url.dateAdded,
                 kindDescription: values?.localizedTypeDescription ?? ""
             )
         } else if let file = object as? FSFile {
             return BrowserItem(
                 url: url, name: url.lastPathComponent, kind: .file(file),
-                size: values?.fileSize.map(Int64.init),
+                size: values?.fileSize.map(Int64.init), dateAdded: url.dateAdded,
                 kindDescription: values?.localizedTypeDescription
                     ?? UTType(filenameExtension: file.extension)?.localizedDescription ?? ""
             )

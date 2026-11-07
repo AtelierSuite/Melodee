@@ -6,4 +6,5 @@ enum SortOption: String, CaseIterable {
     case trackNumber
     case albumName
     case artistName
+    case dateAdded
 }
