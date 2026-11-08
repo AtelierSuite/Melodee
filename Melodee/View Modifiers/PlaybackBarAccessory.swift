@@ -8,6 +8,8 @@ enum PlaybackBar {
 extension EnvironmentValues {
     // False when Now Playing is shown in its own column instead of the floating bar.
     @Entry var isPlaybackBarVisible: Bool = true
+    // Changes whenever the files view reloads its files.
+    @Entry var fileListRevision: Int = 0
 }
 
 struct PlaybackBarAccessory: ViewModifier {
@@ -25,7 +27,7 @@ struct PlaybackBarAccessory: ViewModifier {
     func body(content: Content) -> some View {
         content
             .overlay(alignment: .bottom) {
-                if isEnabled && !nowPlayingBarManager.isKeyboardShowing {
+                if isEnabled && nowPlayingBarManager.isBarPresented && !nowPlayingBarManager.isKeyboardShowing {
                     Button {
                         isPopupPresented.toggle()
                     } label: {
@@ -51,6 +53,7 @@ struct PlaybackBarAccessory: ViewModifier {
                 }
             }
             .animation(.default, value: nowPlayingBarManager.isKeyboardShowing)
+            .animation(.default, value: nowPlayingBarManager.isBarPresented)
             .environment(\.isPlaybackBarVisible, isEnabled)
             .onChange(of: isEnabled) { _, isEnabled in
                 // Now Playing moved into its own column, so the sheet is no longer needed.
@@ -100,11 +103,13 @@ struct NowPlayingSheetSizing: PresentationSizing {
 struct PlaybackBarContentInset: ViewModifier {
 
     @Environment(\.isPlaybackBarVisible) var isPlaybackBarVisible
+    @Environment(NowPlayingBarManager.self) var nowPlayingBarManager
 
     func body(content: Content) -> some View {
         content
             .safeAreaInset(edge: .bottom, spacing: 0.0) {
-                Color.clear.frame(height: isPlaybackBarVisible ? PlaybackBar.contentInset : 0.0)
+                Color.clear.frame(height: isPlaybackBarVisible && nowPlayingBarManager.isBarPresented
+                                  ? PlaybackBar.contentInset : 0.0)
             }
     }
 }

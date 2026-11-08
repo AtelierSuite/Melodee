@@ -91,7 +91,7 @@ public enum Videoglot {
         kAudioFormatMPEG4AAC, kAudioFormatMPEG4AAC_HE, kAudioFormatMPEG4AAC_HE_V2, kAudioFormatAppleLossless
     ]
 
-    private static func export(
+    static func export(
         _ session: AVAssetExportSession,
         to outputURL: URL,
         as fileType: AVFileType,

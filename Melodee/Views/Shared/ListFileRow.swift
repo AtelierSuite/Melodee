@@ -4,6 +4,7 @@ struct ListFileRow: View {
 
     @Environment(MediaPlayerManager.self) var mediaPlayer
     @Environment(FileDownloadManager.self) var downloadManager
+    @Environment(\.fileListRevision) var fileListRevision
 
     @Binding var file: FSFile
     @State var thumbnail: UIImage?
@@ -61,7 +62,7 @@ struct ListFileRow: View {
                     .foregroundStyle(.secondary)
             }
         }
-        .task(id: file.path) {
+        .task(id: "\(file.path)|\(fileListRevision)") {
             await loadFileMetadata()
         }
         .onChange(of: downloadManager.isDownloading(file)) { wasDownloading, isDownloading in

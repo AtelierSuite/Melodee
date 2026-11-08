@@ -5,6 +5,11 @@ struct TagEditorPresentation: Identifiable {
     let files: [FSFile]
 }
 
+struct TrimPresentation: Identifiable {
+    let id = UUID()
+    let file: FSFile
+}
+
 struct FBState {
     // State handling for display
     var isInitialLoadCompleted: Bool = false
@@ -40,6 +45,14 @@ struct FBState {
     var isConverting: Bool = false
     var conversionTitle: String = "Alert.ConvertingAudio.Title"
     var conversionProgress: Double = 0.0
+
+    // State handling for trimming
+    var trimPresentation: TrimPresentation?
+    var pasteTrimFiles: [FSFile] = []
+    var isPasteTrimConfirmationPresented: Bool = false
+    var fileBeingRestored: FSFile?
+    var isRestoreConfirmationPresented: Bool = false
+    var trimAlertMessage: String?
 
     // State handling for sort
     var sortOption: SortOption = .fileName

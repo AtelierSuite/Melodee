@@ -66,23 +66,44 @@ public enum Audioglot {
             .appendingPathExtension(target.fileExtension)
     }
 
+    /// Decodes `source` and encodes it as `target`. With `timeRange` (in seconds), only that part of the source
+    /// is written, cut at exact sample positions.
     @concurrent
-    private static func transcode(
+    static func transcode(
         source: AudioSource,
         target: AudioFormat,
         outputURL: URL,
+        timeRange: ClosedRange<TimeInterval>? = nil,
         progress: (@Sendable (Double) -> Void)?
     ) async throws {
         let decoder = try AudioDecoder(url: source.url)
         try decoder.open()
         defer { try? decoder.close() }
 
+        // The frames to write: everything, or the frames inside `timeRange`
+        let sampleRate = decoder.processingFormat.sampleRate
+        var startFrame: AVAudioFramePosition = 0
+        var framesToWrite: AVAudioFramePosition = decoder.length > 0 ? decoder.length : .max
+        if let timeRange {
+            startFrame = max(0, AVAudioFramePosition((timeRange.lowerBound * sampleRate).rounded()))
+            var endFrame = AVAudioFramePosition((timeRange.upperBound * sampleRate).rounded())
+            if decoder.length > 0 {
+                endFrame = min(endFrame, decoder.length)
+            }
+            guard endFrame > startFrame else { throw AudioglotError.invalidTrimRange }
+            if startFrame > 0 {
+                guard decoder.supportsSeeking else { throw AudioglotError.trimNotSupported(source.codecName) }
+                try decoder.seek(to: startFrame)
+            }
+            framesToWrite = endFrame - startFrame
+        }
+
         let encoder = try EncoderFactory.makeEncoder(
             for: target, outputURL: outputURL, bitrate: EncoderFactory.bitrate(for: target, source: source)
         )
         try encoder.setSourceFormat(EncoderFactory.intermediateFormat(for: target, decoder: decoder)
                                     ?? decoder.processingFormat)
-        encoder.estimatedFramesToEncode = decoder.length
+        encoder.estimatedFramesToEncode = framesToWrite == .max ? decoder.length : framesToWrite
         try encoder.openReturningError()
         defer { try? encoder.close() }
 
@@ -94,7 +115,8 @@ public enum Audioglot {
             throw AudioglotError.unsupportedAudioFormat
         }
 
-        let totalFrames = decoder.length
+        let totalFrames = framesToWrite == .max ? decoder.length : framesToWrite
+        var framesRemaining = framesToWrite
         var lastReportedPercent = -1
         progress?(0)
 
@@ -104,8 +126,14 @@ public enum Audioglot {
             var decodeError: Error?
             var convertError: NSError?
             let status = converter.convert(to: encodeBuffer, error: &convertError) { packetCount, inputStatus in
+                guard framesRemaining > 0 else {
+                    inputStatus.pointee = .endOfStream
+                    return nil
+                }
                 do {
-                    try decoder.decode(into: decodeBuffer, length: packetCount)
+                    let length = AVAudioFrameCount(min(AVAudioFramePosition(packetCount), framesRemaining))
+                    try decoder.decode(into: decodeBuffer, length: length)
+                    framesRemaining -= AVAudioFramePosition(decodeBuffer.frameLength)
                 } catch {
                     decodeError = error
                     inputStatus.pointee = .noDataNow
@@ -127,7 +155,8 @@ public enum Audioglot {
             if status == .endOfStream { break }
 
             if let progress, totalFrames > 0 {
-                let percent = Int(Double(decoder.position) / Double(totalFrames) * 100)
+                let framesWritten = framesToWrite == .max ? decoder.position : framesToWrite - framesRemaining
+                let percent = Int(Double(framesWritten) / Double(totalFrames) * 100)
                 if percent != lastReportedPercent {
                     lastReportedPercent = percent
                     progress(min(Double(percent) / 100, 1))

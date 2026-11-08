@@ -58,7 +58,8 @@ import Testing
 
     /// Writes one second of a 440 Hz sine wave as WAV.
     private func makeWAV(name: String, bitDepth: Int, float: Bool = false,
-                         sampleRate: Double = 44100, channels: AVAudioChannelCount = 2) throws -> URL {
+                         sampleRate: Double = 44100, channels: AVAudioChannelCount = 2,
+                         seconds: Double = 1) throws -> URL {
         let url = directory.appendingPathComponent("\(name).wav")
         let settings: [String: Any] = [
             AVFormatIDKey: kAudioFormatLinearPCM,
@@ -70,7 +71,7 @@ import Testing
         ]
         let file = try AVAudioFile(forWriting: url, settings: settings)
         let format = AVAudioFormat(standardFormatWithSampleRate: sampleRate, channels: channels)!
-        let frames = AVAudioFrameCount(sampleRate)
+        let frames = AVAudioFrameCount(sampleRate * seconds)
         let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frames)!
         buffer.frameLength = frames
         for channel in 0..<Int(channels) {
@@ -148,5 +149,74 @@ import Testing
         await #expect(throws: AudioglotError.outputExists(flac)) {
             try await Audioglot.convert(wav, to: .flac)
         }
+    }
+
+    // MARK: Trimming
+
+    private func duration(of url: URL) throws -> TimeInterval {
+        let decoder = try AudioDecoder(url: url)
+        try decoder.open()
+        defer { try? decoder.close() }
+        return Double(decoder.length) / decoder.processingFormat.sampleRate
+    }
+
+    @Test func losslessTrimsCutAtExactSamples() async throws {
+        let wav = try makeWAV(name: "trim", bitDepth: 16)
+        let flac = try await Audioglot.convert(wav, to: .flac)
+        let aiff = try await Audioglot.convert(wav, to: .aiff)
+        for source in [wav, flac, aiff] {
+            let output = directory.appendingPathComponent("trimmed-\(source.lastPathComponent)")
+            try await Audioglot.trim(source, from: 0.25, to: 0.75, outputURL: output)
+            let decoder = try AudioDecoder(url: output)
+            try decoder.open()
+            #expect(decoder.length == 22050, "\(source.lastPathComponent)")
+            try decoder.close()
+            #expect(try AudioSource(contentsOf: output).format == AudioSource(contentsOf: source).format)
+        }
+    }
+
+    @Test func trimEndPastTheFileIsClamped() async throws {
+        let wav = try makeWAV(name: "clamp", bitDepth: 16)
+        let output = directory.appendingPathComponent("clamped.wav")
+        try await Audioglot.trim(wav, from: 0.5, to: 10, outputURL: output)
+        #expect(abs(try duration(of: output) - 0.5) < 0.001)
+    }
+
+    @Test func lossyTrimsKeepTheirFormat() async throws {
+        let wav = try makeWAV(name: "lossytrim", bitDepth: 16)
+        for target in [AudioFormat.mp3, .vorbis, .opus] {
+            let encoded = try await Audioglot.convert(wav, to: target)
+            let output = directory.appendingPathComponent("trimmed-\(encoded.lastPathComponent)")
+            try await Audioglot.trim(encoded, from: 0.2, to: 0.7, outputURL: output)
+            #expect(try AudioSource(contentsOf: output).format == target)
+            // Encoders add a little padding, so allow a few milliseconds either way
+            #expect(abs(try duration(of: output) - 0.5) < 0.06, "\(target)")
+        }
+    }
+
+    @Test func m4aTrimsCutAtExactSamples() async throws {
+        // SFBAudioEngine can't open M4A files of only a few kilobytes, so use a realistic length
+        let wav = try makeWAV(name: "m4atrim", bitDepth: 16, seconds: 5)
+        for target in [AudioFormat.aac, .alac] {
+            let encoded = try await Audioglot.convert(wav, to: target,
+                                                      outputURL: directory.appendingPathComponent("\(target).m4a"))
+            let output = directory.appendingPathComponent("trimmed-\(target).m4a")
+            try await Audioglot.trim(encoded, from: 1.0, to: 3.5, outputURL: output)
+            let result = try AudioSource(contentsOf: output)
+            #expect(result.format == target)
+            let decoder = try AudioDecoder(url: output)
+            try decoder.open()
+            #expect(decoder.length == 110250, "\(target)")
+            try decoder.close()
+        }
+    }
+
+    @Test func emptyRangesAreRejected() async throws {
+        let wav = try makeWAV(name: "empty", bitDepth: 16)
+        let output = directory.appendingPathComponent("empty-out.wav")
+        await #expect(throws: AudioglotError.invalidTrimRange) {
+            try await Audioglot.trim(wav, from: 0.6, to: 0.4, outputURL: output)
+        }
+        #expect(!FileManager.default.fileExists(atPath: output.path))
     }
 }

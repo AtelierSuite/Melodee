@@ -96,6 +96,8 @@ extension FilesystemManager {
             }
         }
 
+        // Trimmed files keep their originals under their new names
+        TrimBackups.moveBackups(result.renamedPaths)
         return result
     }
 

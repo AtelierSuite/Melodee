@@ -63,6 +63,31 @@ struct FBContextMenu: View {
                 }
                 Divider()
             }
+            // Trimming menu items
+            if MediaTrimmer.canTrim(file) {
+                Button {
+                    state.trimPresentation = TrimPresentation(file: file)
+                } label: {
+                    Label("Trim.Ellipsis", systemImage: "timeline.selection")
+                }
+                if CopiedTrim.clipboard != nil {
+                    Button {
+                        state.pasteTrimFiles = [file]
+                        state.isPasteTrimConfirmationPresented = true
+                    } label: {
+                        Label("Trim.Paste", systemImage: "doc.on.clipboard")
+                    }
+                }
+                if MediaTrimmer.hasOriginal(file) {
+                    Button {
+                        state.fileBeingRestored = file
+                        state.isRestoreConfirmationPresented = true
+                    } label: {
+                        Label("Trim.Restore", systemImage: "arrow.uturn.backward")
+                    }
+                }
+                Divider()
+            }
             // Conversion menu items
             let audioTargets = file.audioConversionTargets()
             let videoTargets = file.videoConversionTargets()
