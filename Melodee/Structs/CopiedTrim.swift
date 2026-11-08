@@ -9,6 +9,8 @@ struct CopiedTrim: Codable, Equatable {
     var endCut: TimeInterval
     /// Seconds kept, from the end of the start cut.
     var keptLength: TimeInterval
+    /// The name of the file the trim was copied from. Nil for trims copied before names were kept.
+    var sourceName: String?
 
     /// How the end of a pasted trim is placed in files of a different length.
     enum Anchor {
@@ -18,7 +20,8 @@ struct CopiedTrim: Codable, Equatable {
         case keptLength
     }
 
-    init(range: ClosedRange<TimeInterval>, duration: TimeInterval) {
+    init(range: ClosedRange<TimeInterval>, duration: TimeInterval, sourceName: String) {
+        self.sourceName = sourceName
         startCut = range.lowerBound
         endCut = max(0, duration - range.upperBound)
         keptLength = range.upperBound - range.lowerBound

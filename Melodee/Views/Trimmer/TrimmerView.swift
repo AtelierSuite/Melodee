@@ -178,7 +178,8 @@ struct TrimmerView: View {
             Menu {
                 Button {
                     if let waveform {
-                        CopiedTrim.clipboard = CopiedTrim(range: range, duration: waveform.duration)
+                        CopiedTrim.clipboard = CopiedTrim(range: range, duration: waveform.duration,
+                                                          sourceName: file.name)
                     }
                 } label: {
                     Label("Trim.Copy", systemImage: "doc.on.doc")

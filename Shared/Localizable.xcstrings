@@ -12338,47 +12338,6 @@
         }
       }
     },
-    "Trim.Paste.Message.%@.%@.%@" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "The copied trim cuts %1$@ from the start and %2$@ from the end, keeping %3$@. For files of a different length, cut the same ending, or keep the same length."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "コピーしたトリミングは先頭から%1$@、末尾から%2$@をカットし、%3$@を残します。長さの異なるファイルでは、末尾から同じ長さをカットするか、同じ長さを残すかを選べます。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "복사한 트리밍은 시작에서 %1$@, 끝에서 %2$@를 잘라내고 %3$@를 유지합니다. 길이가 다른 파일에서는 끝에서 같은 길이를 잘라내거나 같은 길이를 유지할 수 있습니다."
-          }
-        },
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Đoạn cắt đã sao chép cắt %1$@ ở đầu và %2$@ ở cuối, giữ lại %3$@. Với tệp có độ dài khác, hãy cắt cùng phần cuối hoặc giữ cùng độ dài."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "已拷贝的修剪从开头剪掉 %1$@、从结尾剪掉 %2$@，保留 %3$@。对于时长不同的文件，可以从结尾剪掉相同时长，或保留相同时长。"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "已拷貝的修剪從開頭剪掉 %1$@、從結尾剪掉 %2$@，保留 %3$@。對於長度不同的檔案，可以從結尾剪掉相同長度，或保留相同長度。"
-          }
-        }
-      }
-    },
     "Trim.Paste.Skipped.%lld" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -12420,43 +12379,43 @@
         }
       }
     },
-    "Trim.Paste.Title.%lld" : {
+    "Trim.Paste.Title.%@" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Paste Trim to %lld Files"
+            "value" : "Paste the trim from “%@”?"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%lld個のファイルにトリミングをペースト"
+            "value" : "「%@」のトリミングをペーストしますか？"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%lld개 파일에 트리밍 붙여넣기"
+            "value" : "‘%@’의 트리밍을 붙여넣으시겠습니까?"
           }
         },
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Dán đoạn cắt vào %lld tệp"
+            "value" : "Dán đoạn cắt từ “%@”?"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "将修剪粘贴到 %lld 个文件"
+            "value" : "要粘贴“%@”的修剪吗？"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "將修剪貼上到 %lld 個檔案"
+            "value" : "要貼上「%@」的修剪嗎？"
           }
         }
       }

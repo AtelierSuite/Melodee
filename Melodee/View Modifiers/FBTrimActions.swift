@@ -14,7 +14,7 @@ struct FileBrowserTrimActions: ViewModifier {
                 TrimmerView(file: presentation.file, onChange: refreshFiles)
             }
             .confirmationDialog(
-                Text("Trim.Paste.Title.\(state.pasteTrimFiles.count)"),
+                pasteTrimTitle,
                 isPresented: $state.isPasteTrimConfirmationPresented,
                 titleVisibility: .visible
             ) {
@@ -26,13 +26,6 @@ struct FileBrowserTrimActions: ViewModifier {
                 }
                 Button("Shared.Cancel", role: .cancel) {
                     state.pasteTrimFiles = []
-                }
-            } message: {
-                if let trim = CopiedTrim.clipboard {
-                    let start = TrimTime.string(trim.startCut)
-                    let end = TrimTime.string(trim.endCut)
-                    let kept = TrimTime.string(trim.keptLength)
-                    Text("Trim.Paste.Message.\(start).\(end).\(kept)")
                 }
             }
             .confirmationDialog(
@@ -53,6 +46,13 @@ struct FileBrowserTrimActions: ViewModifier {
             } message: {
                 Text(verbatim: state.trimAlertMessage ?? "")
             }
+    }
+
+    var pasteTrimTitle: Text {
+        if let sourceName = CopiedTrim.clipboard?.sourceName {
+            return Text("Trim.Paste.Title.\(sourceName)")
+        }
+        return Text("Trim.Paste")
     }
 
     func restoreOriginal(of file: FSFile) {
