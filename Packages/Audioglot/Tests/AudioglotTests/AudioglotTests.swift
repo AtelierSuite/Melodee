@@ -151,6 +151,45 @@ import Testing
         }
     }
 
+    /// Decodes the whole file, returning its sample count, channel count and loudest sample.
+    private func decodeAll(_ url: URL) throws -> (frames: Int, channels: Int, peak: Float) {
+        let decoder = try AudioDecoder(url: url)
+        try decoder.open()
+        defer { try? decoder.close() }
+        let format = AVAudioFormat(standardFormatWithSampleRate: decoder.processingFormat.sampleRate,
+                                   channels: decoder.processingFormat.channelCount)!
+        let converter = AVAudioConverter(from: decoder.processingFormat, to: format)!
+        let input = AVAudioPCMBuffer(pcmFormat: decoder.processingFormat, frameCapacity: 4096)!
+        let output = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: 4096)!
+        var frames = 0
+        var peak: Float = 0
+        while true {
+            try decoder.decode(into: input, length: 4096)
+            guard input.frameLength > 0 else { break }
+            try converter.convert(to: output, from: input)
+            frames += Int(output.frameLength)
+            for channel in 0..<Int(format.channelCount) {
+                for index in 0..<Int(output.frameLength) {
+                    peak = max(peak, abs(output.floatChannelData![channel][index]))
+                }
+            }
+        }
+        return (frames, Int(format.channelCount), peak)
+    }
+
+    @Test(arguments: [AVAudioChannelCount(1), 2])
+    func mp3KeepsEverySampleAndChannelCount(channels: AVAudioChannelCount) async throws {
+        // SFBAudioEngine's MP3 encoder used to drop the frames LAME returns when flushed, and to crash on mono
+        let wav = try makeWAV(name: "mp3-\(channels)", bitDepth: 16, channels: channels, seconds: 3)
+        for run in 0..<5 {
+            let mp3 = try await Audioglot.convert(wav, to: .mp3, outputURL: directory.appendingPathComponent("\(channels)-\(run).mp3"))
+            let result = try decodeAll(mp3)
+            #expect(result.frames == 132300)
+            #expect(result.channels == Int(channels))
+            #expect(abs(result.peak - 0.5) < 0.05, "peak \(result.peak)")
+        }
+    }
+
     // MARK: Trimming
 
     private func duration(of url: URL) throws -> TimeInterval {

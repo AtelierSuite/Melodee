@@ -3,6 +3,8 @@ import SwiftUI
 /// Presents the trimmer, pastes a copied trim onto several files, and restores originals, for the file browser.
 struct FileBrowserTrimActions: ViewModifier {
 
+    @Environment(MediaPlayerManager.self) var mediaPlayer
+
     @Binding var state: FBState
     var refreshFiles: () -> Void
 
@@ -56,6 +58,7 @@ struct FileBrowserTrimActions: ViewModifier {
     func restoreOriginal(of file: FSFile) {
         do {
             try MediaTrimmer.restoreOriginal(of: file)
+            mediaPlayer.fileDidChangeOnDisk(atPath: file.path)
         } catch {
             state.trimAlertMessage = error.localizedDescription
         }
@@ -88,6 +91,7 @@ struct FileBrowserTrimActions: ViewModifier {
                             state.conversionProgress = (Double(index) + value) / Double(files.count)
                         }
                     }
+                    mediaPlayer.fileDidChangeOnDisk(atPath: file.path)
                 } catch {
                     failures.append("\(file.name): \(error.localizedDescription)")
                 }

@@ -261,6 +261,7 @@ struct TrimmerView: View {
                     }
                 }
                 isSaving = false
+                mediaPlayer.fileDidChangeOnDisk(atPath: file.path)
                 onChange()
                 dismiss()
             } catch {
@@ -274,6 +275,7 @@ struct TrimmerView: View {
         player?.stop()
         do {
             try MediaTrimmer.restoreOriginal(of: file)
+            mediaPlayer.fileDidChangeOnDisk(atPath: file.path)
             onChange()
             dismiss()
         } catch {

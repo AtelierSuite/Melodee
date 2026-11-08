@@ -47,8 +47,7 @@ enum TrimBackups {
 
     /// When the original will be deleted.
     static func expiryDate(for fileURL: URL) -> Date? {
-        let url = exists(backupURL(for: fileURL)) ? backupURL(for: fileURL) : evictedBackupURL(for: fileURL)
-        return modificationDate(of: url).map { $0.addingTimeInterval(retention) }
+        modificationDate(of: backupURL(for: fileURL)).map { $0.addingTimeInterval(retention) }
     }
 
     // MARK: Trim range
@@ -113,9 +112,21 @@ enum TrimBackups {
 
     /// Deletes `url` if it's an original whose 30 days are up. Called while listing a folder.
     static func deleteIfExpired(_ url: URL) {
-        guard isBackup(url), let date = modificationDate(of: url),
-              date.addingTimeInterval(retention) < .now else { return }
-        try? FileManager.default.removeItem(at: url)
+        guard isBackup(url) else { return }
+        // An original evicted by iCloud Drive is listed as its placeholder, so act on the item itself
+        let itemURL = itemURL(forListed: url)
+        guard let date = modificationDate(of: itemURL), date.addingTimeInterval(retention) < .now else { return }
+        if (try? FileManager.default.removeItem(at: itemURL)) == nil {
+            try? FileManager.default.removeItem(at: url)
+        }
+    }
+
+    /// The item a listed URL stands for: the URL itself, or for an iCloud placeholder (`.Name.icloud`), the
+    /// evicted item it replaces.
+    private static func itemURL(forListed url: URL) -> URL {
+        let name = url.lastPathComponent
+        guard name.hasPrefix("."), name.hasSuffix(".icloud") else { return url }
+        return url.deletingLastPathComponent().appending(path: String(name.dropFirst().dropLast(".icloud".count)))
     }
 
     // MARK: Helpers
@@ -124,8 +135,12 @@ enum TrimBackups {
         FileManager.default.fileExists(atPath: url.path(percentEncoded: false))
     }
 
+    /// The modification date of `url`, which iCloud Drive reports even for an evicted item.
     private static func modificationDate(of url: URL) -> Date? {
-        (try? FileManager.default.attributesOfItem(atPath: url.path(percentEncoded: false)))?[.modificationDate]
+        if let date = (try? url.resourceValues(forKeys: [.contentModificationDateKey]))?.contentModificationDate {
+            return date
+        }
+        return (try? FileManager.default.attributesOfItem(atPath: url.path(percentEncoded: false)))?[.modificationDate]
             as? Date
     }
 }

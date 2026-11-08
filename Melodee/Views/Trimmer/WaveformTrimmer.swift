@@ -37,6 +37,7 @@ struct WaveformTrimmer: View {
                 Canvas { context, canvasSize in
                     drawWaveform(in: &context, size: canvasSize)
                 }
+                .accessibilityHidden(true)
                 selectionFrame(size: size)
                 if mode == .preview {
                     playheadLine(size: size)
@@ -46,9 +47,8 @@ struct WaveformTrimmer: View {
             .gesture(dragGesture(size: size))
         }
         .sensoryFeedback(.selection, trigger: draggedHandle) { _, newValue in newValue != nil }
-        .accessibilityElement(children: .ignore)
+        .accessibilityElement(children: .contain)
         .accessibilityLabel(Text("Trim.Waveform"))
-        .accessibilityValue(Text(verbatim: "\(TrimTime.string(range.lowerBound)) – \(TrimTime.string(range.upperBound))"))
     }
 
     // MARK: Geometry
@@ -115,9 +115,15 @@ struct WaveformTrimmer: View {
                 .offset(x: startX, y: size.height - Self.frameWidth)
             handle(systemImage: "chevron.compact.left", corners: .leading, isEditable: isEditable)
                 .frame(width: Self.handleWidth, height: size.height)
+                .accessibleHandle("Trim.Start", time: range.lowerBound, isEditable: isEditable) { direction in
+                    move(.start, to: range.lowerBound + accessibilityStep(direction))
+                }
                 .offset(x: startX - Self.handleWidth)
             handle(systemImage: "chevron.compact.right", corners: .trailing, isEditable: isEditable)
                 .frame(width: Self.handleWidth, height: size.height)
+                .accessibleHandle("Trim.End", time: range.upperBound, isEditable: isEditable) { direction in
+                    move(.end, to: range.upperBound + accessibilityStep(direction))
+                }
                 .offset(x: endX)
         }
     }
@@ -139,12 +145,27 @@ struct WaveformTrimmer: View {
     }
 
     private func playheadLine(size: CGSize) -> some View {
-        let x = xPosition(for: min(max(playhead, range.lowerBound), range.upperBound), size: size)
+        let clampedPlayhead = min(max(playhead, range.lowerBound), range.upperBound)
+        let x = xPosition(for: clampedPlayhead, size: size)
         return Capsule()
             .fill(Color.primary)
             .frame(width: 2.0, height: size.height + 8.0)
             .shadow(color: .black.opacity(0.25), radius: 2)
+            .accessibleHandle("Trim.Playhead", time: clampedPlayhead, isEditable: true) { direction in
+                let time = clampedPlayhead + accessibilityStep(direction)
+                onScrub(min(max(time, range.lowerBound), range.upperBound), true)
+            }
             .offset(x: x - 1.0, y: -4.0)
+    }
+
+    /// How far one VoiceOver swipe moves a handle or the playhead: a second, or a tenth of one in short files.
+    private func accessibilityStep(_ direction: AccessibilityAdjustmentDirection) -> TimeInterval {
+        let step = waveform.duration > 60 ? 1.0 : 0.1
+        switch direction {
+        case .increment: return step
+        case .decrement: return -step
+        @unknown default: return 0
+        }
     }
 
     // MARK: Dragging
@@ -203,5 +224,19 @@ enum TrimTime {
             return String(format: "%d:%02d:%02d.%02d", hours, minutes, seconds, fraction)
         }
         return String(format: "%d:%02d.%02d", minutes, seconds, fraction)
+    }
+}
+
+private extension View {
+    /// Makes a handle a VoiceOver control that reads its time and moves with swipes up and down.
+    /// Handles that can't be moved in the current mode are hidden from VoiceOver.
+    func accessibleHandle(_ label: LocalizedStringKey, time: TimeInterval, isEditable: Bool,
+                          adjust: @escaping (AccessibilityAdjustmentDirection) -> Void) -> some View {
+        self
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(Text(label))
+            .accessibilityValue(Text(verbatim: TrimTime.string(time)))
+            .accessibilityAdjustableAction(adjust)
+            .accessibilityHidden(!isEditable)
     }
 }

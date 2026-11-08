@@ -99,13 +99,10 @@ public enum Audioglot {
         }
 
         let encoder = try EncoderFactory.makeEncoder(
-            for: target, outputURL: outputURL, bitrate: EncoderFactory.bitrate(for: target, source: source)
+            for: target, outputURL: outputURL, bitrate: EncoderFactory.bitrate(for: target, source: source),
+            decoder: decoder, estimatedFrames: framesToWrite == .max ? decoder.length : framesToWrite
         )
-        try encoder.setSourceFormat(EncoderFactory.intermediateFormat(for: target, decoder: decoder)
-                                    ?? decoder.processingFormat)
-        encoder.estimatedFramesToEncode = framesToWrite == .max ? decoder.length : framesToWrite
-        try encoder.openReturningError()
-        defer { try? encoder.close() }
+        defer { encoder.close() }
 
         let frameCapacity: AVAudioFrameCount = 4096
         guard let converter = AVAudioConverter(from: decoder.processingFormat, to: encoder.processingFormat),
@@ -150,7 +147,7 @@ public enum Audioglot {
             if let decodeError { throw decodeError }
             if status == .error { throw convertError ?? AudioglotError.unsupportedAudioFormat }
             if encodeBuffer.frameLength > 0 {
-                try encoder.encode(from: encodeBuffer, length: encodeBuffer.frameLength)
+                try encoder.encode(encodeBuffer)
             }
             if status == .endOfStream { break }
 

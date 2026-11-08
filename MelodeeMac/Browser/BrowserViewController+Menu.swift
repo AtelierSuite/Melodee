@@ -97,8 +97,12 @@ extension BrowserViewController: NSMenuDelegate {
     }
 
     func trash(_ trashedItems: [BrowserItem]) {
-        let urls = trashedItems.map(\.url)
+        var urls = trashedItems.map(\.url)
         guard !urls.isEmpty else { return }
+        // Trimmed files take their kept originals to the Trash too, so both can be put back together
+        urls += urls.map(TrimBackups.backupURL(for:)).filter {
+            FileManager.default.fileExists(atPath: $0.path(percentEncoded: false))
+        }
         NSWorkspace.shared.recycle(urls) { [weak self] _, error in
             MainActor.assumeIsolated {
                 if let error {
