@@ -138,4 +138,29 @@ import Testing
             try await Videoglot.convert(mov, to: .mp4)
         }
     }
+
+    @Test func trimsKeepTheirContainerAndCutTheEnd() async throws {
+        let mov = try await makeMOV(name: "trim", audioFormat: kAudioFormatMPEG4AAC)
+        let mp4 = try await Videoglot.convert(mov, to: .mp4)
+        for source in [mov, mp4] {
+            let output = directory.appendingPathComponent("trimmed-\(source.lastPathComponent)")
+            try await Videoglot.trim(source, from: 0, to: 0.5, outputURL: output)
+            let asset = AVURLAsset(url: output)
+            let duration = try await asset.load(.duration).seconds
+            #expect(abs(duration - 0.5) < 0.05, "\(source.lastPathComponent): \(duration)")
+            #expect(try await asset.loadTracks(withMediaType: .video).count == 1)
+            #expect(try await audioCodec(of: output) == kAudioFormatMPEG4AAC)
+        }
+    }
+
+    @Test func refusesUntrimmableContainersAndEmptyRanges() async throws {
+        let mov = try await makeMOV(name: "badtrim", audioFormat: nil)
+        let output = directory.appendingPathComponent("badtrim-out.mov")
+        await #expect(throws: VideoglotError.invalidTrimRange) {
+            try await Videoglot.trim(mov, from: 0.8, to: 0.2, outputURL: output)
+        }
+        await #expect(throws: VideoglotError.trimNotSupported("3gp")) {
+            try await Videoglot.trim(directory.appendingPathComponent("clip.3gp"), from: 0, to: 1, outputURL: output)
+        }
+    }
 }

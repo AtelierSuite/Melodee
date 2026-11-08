@@ -4,9 +4,24 @@ import SFBAudioEngine
 
 enum EncoderFactory {
 
-    /// Builds an encoder for `target`. Lossless encoders are left to infer bit depth and sample rate from the source
-    /// so nothing is truncated. `bitrate` is in kbps and only applies to lossy targets.
-    static func makeEncoder(for target: AudioFormat, outputURL: URL, bitrate: Int?) throws -> AudioEncoder {
+    /// Opens an encoder for `target` that takes audio decoded by `decoder`. `bitrate` is in kbps and only applies to
+    /// lossy targets. MP3 is written with ``LAMEEncoder``; everything else with SFBAudioEngine.
+    static func makeEncoder(for target: AudioFormat, outputURL: URL, bitrate: Int?, decoder: AudioDecoder,
+                            estimatedFrames: AVAudioFramePosition) throws -> PCMEncoder {
+        if target == .mp3 {
+            let decoded = decoder.processingFormat
+            return try LAMEEncoder(outputURL: outputURL, sampleRate: min(decoded.sampleRate, 48000),
+                                   channelCount: decoded.channelCount, bitrate: bitrate ?? 320)
+        }
+        let encoder = try makeSFBEncoder(for: target, outputURL: outputURL, bitrate: bitrate)
+        return try SFBPCMEncoder(encoder, sourceFormat: intermediateFormat(for: target, decoder: decoder)
+                                    ?? decoder.processingFormat,
+                                 estimatedFrames: estimatedFrames)
+    }
+
+    /// Builds an SFBAudioEngine encoder for `target`. Lossless encoders are left to infer bit depth and sample rate
+    /// from the source so nothing is truncated.
+    private static func makeSFBEncoder(for target: AudioFormat, outputURL: URL, bitrate: Int?) throws -> AudioEncoder {
         switch target {
         case .wav:
             let encoder = try AudioEncoder(url: outputURL, encoderName: .libsndfile)
@@ -28,12 +43,7 @@ enum EncoderFactory {
             ]
             return encoder
         case .mp3:
-            let encoder = try AudioEncoder(url: outputURL, encoderName: .MP3)
-            encoder.settings = [
-                .mp3ConstantBitrate: NSNumber(value: bitrate ?? 320),
-                .mp3Quality: NSNumber(value: 2)
-            ]
-            return encoder
+            preconditionFailure("MP3 is written with LAMEEncoder")
         case .aac:
             let encoder = try AudioEncoder(url: outputURL, encoderName: .coreAudio)
             encoder.settings = [

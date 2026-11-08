@@ -50,6 +50,12 @@ class FilesystemManager {
                             return nil
                         }
 
+                        // Hide the originals of trimmed files, deleting those kept for longer than 30 days
+                        if TrimBackups.isBackup(url) {
+                            TrimBackups.deleteIfExpired(url)
+                            return nil
+                        }
+
                         if url.hasDirectoryPath {
                             return FSDirectory(name: url.lastPathComponent,
                                                path: url.path,
@@ -213,10 +219,10 @@ class FilesystemManager {
     }
 
     func rename(file: FSFile, newName: String) {
+        let newPath = "\(file.containingFolderPath())\(newName).\(file.extension)"
         do {
-            try manager
-                .moveItem(atPath: file.path,
-                          toPath: "\(file.containingFolderPath())\(newName).\(file.extension)")
+            try manager.moveItem(atPath: file.path, toPath: newPath)
+            TrimBackups.moveBackup(from: file.path, to: newPath)
         } catch {
             debugPrint("Error occurred while renaming file: \(error.localizedDescription)")
         }
@@ -326,6 +332,10 @@ class FilesystemManager {
             do {
                 try FileManager.default.moveItem(at: url, to: destination)
                 movedPaths[path] = destination.path(percentEncoded: false)
+                // Folders take their files' originals with them, but a file's original sits beside it
+                if !url.hasDirectoryPath {
+                    TrimBackups.moveBackup(from: path, to: destination.path(percentEncoded: false))
+                }
             } catch {
                 failures.append(error)
             }
@@ -374,6 +384,9 @@ class FilesystemManager {
     func delete(_ file: any FilesystemObject) {
         do {
             try manager.removeItem(atPath: file.path)
+            if file is FSFile {
+                TrimBackups.deleteBackup(for: URL(filePath: file.path))
+            }
         } catch {
             debugPrint("Error occurred while deleting file: \(error.localizedDescription)")
         }

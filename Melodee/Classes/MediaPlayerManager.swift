@@ -815,6 +815,30 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
         setNowPlaying()
     }
 
+    /// Reloads the current file if it's the one at `path`, which was changed in place, for example by trimming.
+    /// The player otherwise keeps playing the old contents. The queue is kept, the file starts again from the
+    /// beginning, and playback carries on if it was playing.
+    func fileDidChangeOnDisk(atPath path: String) {
+        guard let file = currentlyPlayingFile(),
+              FilesystemManager.normalizedPath(file.path) == FilesystemManager.normalizedPath(path) else { return }
+        let wasPlaying = isPlaybackActive && !isPaused
+        recordPlayTime()
+        playTimeTrackedFile = nil
+        audioPlayer.stop()
+        unloadStandardVideo()
+        extendedVideoPlayer.stop()
+        activeVideoEngine = nil
+        // Start from the top, since a saved position may lie past the end of the trimmed file
+        pendingResumeTime = 0
+        pendingTotalTime = nil
+        isPaused = true
+        invalidateMetadataCache()
+        setNowPlaying()
+        if wasPlaying {
+            play()
+        }
+    }
+
     private func clearPendingResume() {
         pendingResumeTime = nil
         pendingTotalTime = nil

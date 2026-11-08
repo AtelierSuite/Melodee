@@ -9,6 +9,10 @@ public enum VideoglotError: LocalizedError, Equatable {
     case noAudioTrack
     /// A file already exists where the converted file would be written.
     case outputExists(URL)
+    /// The file's container can't be trimmed without re-encoding.
+    case trimNotSupported(String)
+    /// The trim's end is not after its start, or lies outside the video.
+    case invalidTrimRange
 
     public var errorDescription: String? {
         switch self {
@@ -20,6 +24,10 @@ public enum VideoglotError: LocalizedError, Equatable {
             return "This video has no audio track."
         case .outputExists(let url):
             return "\"\(url.lastPathComponent)\" already exists."
+        case .trimNotSupported(let container):
+            return "\(container.uppercased()) videos can't be trimmed."
+        case .invalidTrimRange:
+            return "The trimmed section is empty."
         }
     }
 }

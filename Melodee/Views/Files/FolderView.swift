@@ -7,6 +7,7 @@ struct FolderView: View {
     @State var fileManager: FilesystemManager
     @Environment(MediaPlayerManager.self) var mediaPlayer
     @Environment(ExternalFoldersManager.self) var externalFolders
+    @Environment(NowPlayingBarManager.self) var nowPlayingBarManager
 
     @AppStorage("SelectedLibrarySource") var selectedSource: LibrarySource = .local
     @AppStorage("FileBrowserLayout") var layout: FileBrowserLayout = .list
@@ -29,6 +30,10 @@ struct FolderView: View {
     @State var searchFolderResults: [FSDirectory] = []
     @State var searchFileResults: [FSFile] = []
     @State var dropTargetPath: String?
+    @State var isSelecting: Bool = false
+    @State var selectedPaths: Set<String> = []
+    /// Increases on every refresh, so rows reload details of files changed in place, such as trimmed files.
+    @State var fileListRevision: Int = 0
 
     var overrideStorageLocation: StorageLocation?
     var isLibraryRoot: Bool = false
@@ -78,82 +83,20 @@ struct FolderView: View {
         )
         .onChange(of: searchText) {
             performSearch()
+            pruneSelection()
+        }
+        .onDisappear {
+            // Leaving the folder, for example by switching library source, ends selection
+            if isSelecting {
+                stopSelecting()
+            }
         }
         .playbackBarContentInset()
         .toolbar {
-            ToolbarItem(placement: .topBarLeading) {
-                Menu {
-                    Section {
-                        layoutPicker
-                    }
-                    if folderContainsTaggableFiles() || folderContainsFiles() {
-                        Section {
-                            if folderContainsTaggableFiles() {
-                                Button {
-                                    state.tagEditorPresentation = TagEditorPresentation(files: taggableFiles())
-                                } label: {
-                                    Label("Shared.EditTag.All", systemImage: "tag")
-                                }
-                            }
-                            if folderContainsFiles() {
-                                Button {
-                                    state.batchRenamePresentation = BatchRenamePresentation(
-                                        files: files.compactMap { $0 as? FSFile }
-                                    )
-                                } label: {
-                                    Label("BatchRename.All", systemImage: "pencil.and.list.clipboard")
-                                }
-                            }
-                        }
-                    }
-                    Section {
-                        resumePlaybackPicker
-                        videoEnginePicker
-                    }
-                    Section {
-                        Link(destination: URL(string: "https://github.com/AtelierSuite/Melodee")!) {
-                            Label("More.GitHub", systemImage: "chevron.left.forwardslash.chevron.right")
-                        }
-                        Button("More.Attributions") {
-                            isAttributionsPresented = true
-                        }
-                    }
-                } label: {
-                    Image(systemName: "ellipsis")
-                }
-            }
-            ToolbarItem(placement: .topBarTrailing) {
-                Menu {
-                    Button {
-                        newFolderName = ""
-                        isCreatingFolder = true
-                    } label: {
-                        Label("Shared.NewFolder", systemImage: "folder")
-                    }
-                    Button {
-                        isCreatingPlaylist = true
-                    } label: {
-                        Label("Shared.NewPlaylist", systemImage: "music.note.list")
-                    }
-                } label: {
-                    Image(systemName: "plus")
-                }
-            }
-            ToolbarItem(placement: .principal) {
-                if isLibraryRoot {
-                    LibrarySourcePicker(
-                        selectedSource: $selectedSource,
-                        isCloudAvailable: isCloudAvailable
-                    )
-                } else {
-                    Text(viewTitle())
-                        .lineLimit(1)
-                        .truncationMode(.middle)
-                        .frame(maxWidth: 200.0)
-                        .bold()
-                        .opacity(isTitleHidden ? 1 : 0)
-                        .transition(.opacity.animation(.default.speed(0.2)))
-                }
+            if isSelecting {
+                selectionToolbar
+            } else {
+                browsingToolbar
             }
         }
         .overlay {
@@ -202,6 +145,7 @@ struct FolderView: View {
             }
         }
         .environment(fileManager)
+        .environment(\.fileListRevision, fileListRevision)
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
             if let overrideStorageLocation {
@@ -239,6 +183,7 @@ struct FolderView: View {
             refreshFiles()
         }
         .fileBrowserAlerts(state: $state, refreshFiles: refreshFiles)
+        .fileBrowserTrimActions(state: $state, refreshFiles: refreshFiles)
         .tagEditorPresentation($state.tagEditorPresentation)
         .sheet(item: $state.batchRenamePresentation) { presentation in
             BatchRenameView(
@@ -552,6 +497,19 @@ struct FolderView: View {
 
     @ViewBuilder
     func fileBrowserRow(for file: any FilesystemObject) -> some View {
+        if isSelecting {
+            let isSelected = selectedPaths.contains(file.path)
+            FBSelectableRow(item: file, layout: layout, isSelected: isSelected) {
+                toggleSelection(of: file)
+            }
+            .listRowBackground(isSelected && layout == .list ? Color.accentColor.opacity(0.12) : Color.clear)
+        } else {
+            browsingRow(for: file)
+        }
+    }
+
+    @ViewBuilder
+    func browsingRow(for file: any FilesystemObject) -> some View {
         let isDropTarget = dropTargetPath == file.path
         Group {
             if let directory = file as? FSDirectory {
@@ -728,6 +686,11 @@ struct FolderView: View {
             sortFiles()
             state.isInitialLoadCompleted = true
         }
+        fileListRevision += 1
+        pruneSelection()
+        if isSelecting && selectableFiles().isEmpty {
+            stopSelecting()
+        }
     }
 
     func extractZIP(file: FSFile) {
@@ -765,18 +728,6 @@ struct FolderView: View {
 
     func folderContainsPlayableMedia() -> Bool {
         files.contains { ($0 as? FSFile)?.isPlayableMedia() ?? false }
-    }
-
-    func folderContainsFiles() -> Bool {
-        files.contains { $0 is FSFile }
-    }
-
-    func folderContainsTaggableFiles() -> Bool {
-        files.contains { ($0 as? FSFile)?.isTaggableAudio() ?? false }
-    }
-
-    func taggableFiles() -> [FSFile] {
-        files.compactMap { $0 as? FSFile }.filter { $0.isTaggableAudio() }
     }
 
     func sortFiles() {

@@ -5,6 +5,7 @@ struct GridFileCell: View {
     @Environment(FileDownloadManager.self) var downloadManager
     @Environment(MediaPlayerManager.self) var mediaPlayer
     @Environment(\.displayScale) var displayScale
+    @Environment(\.fileListRevision) var fileListRevision
 
     var file: FSFile
     @State var thumbnail: UIImage?
@@ -52,7 +53,7 @@ struct GridFileCell: View {
                     }
                 }
         }
-        .task(id: file.path) {
+        .task(id: "\(file.path)|\(fileListRevision)") {
             await loadFileMetadata()
         }
         .onChange(of: downloadManager.isDownloading(file)) { wasDownloading, isDownloading in
