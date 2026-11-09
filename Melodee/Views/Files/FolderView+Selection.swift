@@ -122,21 +122,45 @@ extension FolderView {
         }
     }
 
-    /// Opens the trimmer for one file, or pastes the copied trim onto several.
+    /// Opens the trimmer for one file. For several, offers to paste the copied trim, cut the same length from
+    /// their starts and ends, or restore their originals.
+    @ViewBuilder
     var trimButton: some View {
         let trimmableFiles = selectedFiles().filter(MediaTrimmer.canTrim)
-        let canPaste = CopiedTrim.clipboard != nil
-        return Button {
-            if trimmableFiles.count == 1, selectedPaths.count == 1, let file = trimmableFiles.first {
+        if trimmableFiles.count == 1, selectedPaths.count == 1, let file = trimmableFiles.first {
+            Button {
                 state.trimPresentation = TrimPresentation(file: file)
-            } else {
-                state.pasteTrimFiles = trimmableFiles
-                state.isPasteTrimConfirmationPresented = true
+            } label: {
+                Label("Trim.Action", systemImage: "timeline.selection")
             }
-        } label: {
-            Label(selectedPaths.count > 1 ? "Trim.Paste" : "Trim.Action", systemImage: "timeline.selection")
+        } else {
+            let restorableFiles = trimmableFiles.filter(MediaTrimmer.hasOriginal)
+            Menu {
+                Button {
+                    state.pasteTrimFiles = trimmableFiles
+                    state.isPasteTrimConfirmationPresented = true
+                } label: {
+                    Label("Trim.Paste", systemImage: "doc.on.clipboard")
+                }
+                .disabled(CopiedTrim.clipboard == nil)
+                Button {
+                    state.batchTrimPresentation = BatchTrimPresentation(files: trimmableFiles)
+                } label: {
+                    Label("Trim.Batch.Ellipsis", systemImage: "arrow.right.and.line.vertical.and.arrow.left")
+                }
+                Divider()
+                Button(role: .destructive) {
+                    state.restoreFiles = restorableFiles
+                    state.isBatchRestoreConfirmationPresented = true
+                } label: {
+                    Label("Trim.Restore.Batch", systemImage: "arrow.uturn.backward")
+                }
+                .disabled(restorableFiles.isEmpty)
+            } label: {
+                Label("Trim.Action", systemImage: "timeline.selection")
+            }
+            .disabled(trimmableFiles.isEmpty)
         }
-        .disabled(trimmableFiles.isEmpty || (selectedPaths.count > 1 && !canPaste))
     }
 
     // MARK: Selection

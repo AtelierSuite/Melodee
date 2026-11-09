@@ -52,6 +52,10 @@ struct FBState {
     var isPasteTrimConfirmationPresented: Bool = false
     var fileBeingRestored: FSFile?
     var isRestoreConfirmationPresented: Bool = false
+    var batchTrimPresentation: BatchTrimPresentation?
+    var pendingBatchTrim: (files: [FSFile], cuts: BatchTrimCuts)?
+    var restoreFiles: [FSFile] = []
+    var isBatchRestoreConfirmationPresented: Bool = false
     var trimAlertMessage: String?
 
     // State handling for sort
