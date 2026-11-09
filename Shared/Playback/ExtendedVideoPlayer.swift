@@ -152,6 +152,11 @@ final class ExtendedVideoPlayer: NSObject {
         player.pause()
     }
 
+    /// Sets the playback speed, where 1 is normal speed.
+    func setRate(_ rate: Float) {
+        player?.rate = rate
+    }
+
     func seek(to time: TimeInterval) {
         guard let player, player.isSeekable else { return }
         player.time = VLCTime(number: NSNumber(value: Int64(time * 1000)))
