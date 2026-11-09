@@ -98,6 +98,13 @@ struct NPFullScreenVideo: View {
         .accessibilityAction(.escape) {
             close()
         }
+        .onDisappear {
+            // Taken away without closing, such as when the Now Playing sheet goes away, so hand the video back
+            if !hasHandedBack {
+                hasHandedBack = true
+                mediaPlayer.isVideoFullScreen = false
+            }
+        }
         .onAppear {
             sourceRect = currentSourceRect()
             withAnimation(transitionAnimation) {
@@ -113,10 +120,11 @@ struct NPFullScreenVideo: View {
 
     @ViewBuilder
     private var surface: some View {
+        // Only while full screen, so this doesn't take the video back from Now Playing as it's dismissed
         if mediaPlayer.activeVideoEngine == .extended {
-            NPExtendedVideoSurface(isActive: !hasHandedBack)
+            NPExtendedVideoSurface(isActive: !hasHandedBack && mediaPlayer.isVideoFullScreen)
         } else {
-            NPVideoSurface(isActive: !hasHandedBack)
+            NPVideoSurface(isActive: !hasHandedBack && mediaPlayer.isVideoFullScreen)
         }
     }
 
