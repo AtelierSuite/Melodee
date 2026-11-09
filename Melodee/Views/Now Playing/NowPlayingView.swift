@@ -21,6 +21,8 @@ struct NowPlayingView: View {
     @State var previousQueueID: String = ""
     @State var isClearQueueButtonConfirming: Bool = false
     @State var listSize: CGSize = .zero
+    @State var isVideoFullScreen: Bool = false
+    @State var videoFrame = NPScreenFrameReference()
 
     /// Where Now Playing is shown, which decides how much room the artwork has.
     var presentation: NowPlayingPresentation = .sheet
@@ -59,9 +61,10 @@ struct NowPlayingView: View {
     var body: some View {
         List {
             Group {
-                NPControllerSection(albumArt: $albumArt, layout: controllerLayout)
+                NPControllerSection(albumArt: $albumArt, layout: controllerLayout,
+                                    isVideoFullScreen: $isVideoFullScreen, videoFrame: videoFrame)
                     .listRowSeparator(.hidden)
-                    .padding(.top, Self.topPadding)
+                    .padding(.top, presentation == .sheet ? Self.topPadding : 0.0)
                 NPQueueSection()
                     .alignmentGuide(.listRowSeparatorTrailing) { dimensions in
                         return dimensions.width
@@ -108,6 +111,12 @@ struct NowPlayingView: View {
             isClearQueueButtonConfirming = false
         }
         .resumePlaybackAlert(for: .queue)
+        .fullScreenCover(isPresented: $isVideoFullScreen) {
+            NPFullScreenVideo(sourceFrame: videoFrame) {
+                NPControllerSection.setVideoFullScreen(false, $isVideoFullScreen, mediaPlayer: mediaPlayer)
+            }
+            .environment(mediaPlayer)
+        }
         .background {
             // The artwork is laid out as an overlay so its size can't widen the background past
             // this view, which matters when Now Playing sits in a column beside the file browser.

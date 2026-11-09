@@ -56,8 +56,15 @@ struct PlaybackBarAccessory: ViewModifier {
             .animation(.default, value: nowPlayingBarManager.isBarPresented)
             .environment(\.isPlaybackBarVisible, isEnabled)
             .onChange(of: isEnabled) { _, isEnabled in
-                // Now Playing moved into its own column, so the sheet is no longer needed.
-                if !isEnabled {
+                // Now Playing moved into its own column, so the sheet is no longer needed. A full screen
+                // video is shown over the sheet, so keep the sheet until the video leaves full screen,
+                // such as when rotating while watching.
+                if !isEnabled && !mediaPlayer.isVideoFullScreen {
+                    isPopupPresented = false
+                }
+            }
+            .onChange(of: mediaPlayer.isVideoFullScreen) { _, isVideoFullScreen in
+                if !isVideoFullScreen && !isEnabled {
                     isPopupPresented = false
                 }
             }

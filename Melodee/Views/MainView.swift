@@ -49,11 +49,17 @@ struct MainView: View {
         }
         .overlay(alignment: .trailing) {
             if isTwoColumnLayout {
-                NowPlayingView(presentation: isNowPlayingFullScreen ? .fullScreen : .column)
-                    .frame(width: isNowPlayingFullScreen ? containerSize.width : nowPlayingColumnWidth)
-                    .overlay(alignment: .topTrailing) {
-                        fullScreenButton
-                    }
+                // Hosted in its own navigation stack so the full screen toggle sits in a real
+                // toolbar, lined up with and sized like the file browser's toolbar buttons.
+                NavigationStack {
+                    NowPlayingView(presentation: isNowPlayingFullScreen ? .fullScreen : .column)
+                        .toolbar {
+                            ToolbarItem(placement: .topBarTrailing) {
+                                fullScreenButton
+                            }
+                        }
+                }
+                .frame(width: isNowPlayingFullScreen ? containerSize.width : nowPlayingColumnWidth)
             }
         }
         // The column is not animated in: UIKit-backed viewers (text, PDF) keep their text laid out
@@ -104,23 +110,16 @@ struct MainView: View {
                 isNowPlayingFullScreen.toggle()
             }
         } label: {
+            // Horizontal arrows, as the column only grows and shrinks sideways
             Image(systemName: isNowPlayingFullScreen ?
-                  "arrow.down.right.and.arrow.up.left" :
-                  "arrow.up.left.and.arrow.down.right")
-            .font(.body.weight(.semibold))
-            .frame(width: 24.0, height: 24.0)
-            .padding(4.0)
+                  "arrow.right.and.line.vertical.and.arrow.left" :
+                  "arrow.left.and.line.vertical.and.arrow.right")
         }
-        .buttonStyle(.glass)
-        .buttonBorderShape(.circle)
-        .foregroundStyle(.primary)
         .accessibilityLabel(
             isNowPlayingFullScreen ?
             String(localized: "NowPlaying.ExitFullScreen") :
             String(localized: "NowPlaying.EnterFullScreen")
         )
-        .padding(.top, 8.0)
-        .padding(.trailing, 16.0)
     }
 
     // Show onboarding on first launch and whenever the major/minor version is bumped.
