@@ -23,6 +23,7 @@ enum NPVisualizerStyle: String, CaseIterable, Identifiable {
 
     var id: String { rawValue }
 
+    /// The style's name in English, which also names its icon in the asset catalog.
     var name: String {
         switch self {
         case .bars: "Bars"
@@ -37,6 +38,24 @@ enum NPVisualizerStyle: String, CaseIterable, Identifiable {
         case .pulse: "Pulse"
         case .mixer: "Mixer"
         case .marquee: "Marquee"
+        }
+    }
+
+    /// The name shown to the user.
+    var localizedName: String {
+        switch self {
+        case .bars: String(localized: "NowPlaying.Visualizer.Bars")
+        case .mirror: String(localized: "NowPlaying.Visualizer.Mirror")
+        case .curve: String(localized: "NowPlaying.Visualizer.Curve")
+        case .radial: String(localized: "NowPlaying.Visualizer.Radial")
+        case .blob: String(localized: "NowPlaying.Visualizer.Blob")
+        case .waves: String(localized: "NowPlaying.Visualizer.Waves")
+        case .arcs: String(localized: "NowPlaying.Visualizer.Arcs")
+        case .ridges: String(localized: "NowPlaying.Visualizer.Ridges")
+        case .orbs: String(localized: "NowPlaying.Visualizer.Orbs")
+        case .pulse: String(localized: "NowPlaying.Visualizer.Pulse")
+        case .mixer: String(localized: "NowPlaying.Visualizer.Mixer")
+        case .marquee: String(localized: "NowPlaying.Visualizer.Marquee")
         }
     }
 
