@@ -4311,7 +4311,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "放射"
+            "value" : "ラジアル"
           }
         },
         "ko" : {
@@ -4393,7 +4393,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "波"
+            "value" : "ウェーブ"
           }
         },
         "ko" : {
@@ -4475,7 +4475,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "山並み"
+            "value" : "リッジ"
           }
         },
         "ko" : {
@@ -4516,7 +4516,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "光球"
+            "value" : "オーブ"
           }
         },
         "ko" : {
@@ -4639,7 +4639,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "電光掲示"
+            "value" : "マーキー"
           }
         },
         "ko" : {
