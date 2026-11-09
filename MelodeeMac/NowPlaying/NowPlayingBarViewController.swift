@@ -36,6 +36,11 @@ final class NowPlayingBarViewController: NSViewController {
         artworkView.wantsLayer = true
         artworkView.layer?.cornerRadius = 6
         artworkView.layer?.masksToBounds = true
+        // Clicking the artwork shows it over the whole screen, where it can turn into the visualizer
+        artworkView.addGestureRecognizer(NSClickGestureRecognizer(target: self, action: #selector(showVisualizer(_:))))
+        artworkView.toolTip = MacText.shared("NowPlaying.ShowVisualizer")
+        artworkView.setAccessibilityRole(.button)
+        artworkView.setAccessibilityLabel(MacText.shared("NowPlaying.ShowVisualizer"))
         titleLabel.font = .systemFont(ofSize: NSFont.systemFontSize, weight: .semibold)
         subtitleLabel.font = .systemFont(ofSize: NSFont.smallSystemFontSize)
         subtitleLabel.textColor = .secondaryLabelColor
@@ -244,6 +249,12 @@ final class NowPlayingBarViewController: NSViewController {
 
     @objc private func nextTrack(_ sender: Any?) {
         player.skipToNextTrack()
+    }
+
+    @objc private func showVisualizer(_ sender: Any?) {
+        // Videos show in their own window, and play outside the audio engine the visualizer listens to
+        guard player.currentFile != nil, !player.isPlayingVideo else { return }
+        VisualizerWindowController.shared.show(over: view.window)
     }
 
     @objc private func cycleRepeatMode(_ sender: Any?) {

@@ -112,7 +112,11 @@ final class SpectrumAnalyzer: @unchecked Sendable {
         }
         installedOutputUnit = outputUnit
         // The time between samples leaving the engine and being heard, which is long for Bluetooth outputs
+#if os(iOS)
         outputLatency = AVAudioSession.sharedInstance().outputLatency
+#else
+        outputLatency = audioPlayer.outputNode.presentationLatency
+#endif
     }
 
     @MainActor
