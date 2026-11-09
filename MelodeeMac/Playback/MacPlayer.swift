@@ -18,6 +18,8 @@ final class MacPlayer: NSObject {
     let audioPlayer = AudioPlayer()
     let videoPlayer = AVPlayer()
     let extendedVideoPlayer = ExtendedVideoPlayer()
+    /// Measures the audio player's output for the visualizer while it is on screen.
+    let spectrumAnalyzer = SpectrumAnalyzer()
     /// The engine playing the loaded video, chosen from the setting when the video started.
     private(set) var activeVideoEngine: VideoEngine?
     /// The natural size of the playing video, once the video engine knows it.
@@ -320,6 +322,18 @@ final class MacPlayer: NSObject {
         }
     }
 
+    // MARK: - Visualizer
+
+    /// Starts measuring the audio output for a visualizer that came on screen.
+    /// Balance each call with ``stopSpectrumAnalysis()``.
+    func startSpectrumAnalysis() {
+        spectrumAnalyzer.start(on: audioPlayer)
+    }
+
+    func stopSpectrumAnalysis() {
+        spectrumAnalyzer.stop(on: audioPlayer)
+    }
+
     func notifyChange() {
         updateNowPlaying()
         NotificationCenter.default.post(name: Self.didChangeNotification, object: self)
@@ -340,6 +354,13 @@ extension MacPlayer: AudioPlayer.Delegate {
     ) {
         Task { @MainActor in
             self.notifyChange()
+        }
+    }
+
+    nonisolated func audioPlayer(_ audioPlayer: AudioPlayer, audioEngineConfigurationChange userInfo: [AnyHashable: Any]?) {
+        Task { @MainActor in
+            // The mixer's output format may have changed with the output device
+            self.spectrumAnalyzer.reconfigure(on: self.audioPlayer)
         }
     }
 
