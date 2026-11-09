@@ -1,5 +1,15 @@
 import SwiftUI
 
+/// Where Now Playing is shown.
+enum NowPlayingPresentation {
+    /// In a sheet over the file browser.
+    case sheet
+    /// In a column beside the file browser.
+    case column
+    /// Over the whole window, in place of the column beside the file browser.
+    case fullScreen
+}
+
 struct NowPlayingView: View {
 
     @Environment(\.dismiss) var dismiss
@@ -10,25 +20,48 @@ struct NowPlayingView: View {
     @State var albumArt: Image = Image("Album.Generic")
     @State var previousQueueID: String = ""
     @State var isClearQueueButtonConfirming: Bool = false
-    @State var listHeight: CGFloat = .zero
+    @State var listSize: CGSize = .zero
 
-    // Height kept free for the top padding, track details, seek bar and playback controls.
-    static let compactReservedHeight: CGFloat = 280.0
-    static let compactMinimumArtworkHeight: CGFloat = 72.0
+    /// Where Now Playing is shown, which decides how much room the artwork has.
+    var presentation: NowPlayingPresentation = .sheet
 
-    // On short screens such as iPhone in landscape, shrink the artwork so the playback
-    // controls stay on screen instead of being pushed below it.
-    var artworkMaxHeight: CGFloat? {
-        guard verticalSizeClass == .compact, listHeight > 0 else { return nil }
-        return max(listHeight - Self.compactReservedHeight, Self.compactMinimumArtworkHeight)
+    static let topPadding: CGFloat = 28.0
+    static let rowInset: CGFloat = 32.0
+    // Height kept free for the top padding, seek bar and playback controls, when the track
+    // details sit beside the artwork.
+    static let besideDetailsReservedHeight: CGFloat = 186.0
+    // Height kept free for the top padding and the controller section's own padding, when the
+    // artwork runs down the side.
+    static let besideControlsReservedHeight: CGFloat = 68.0
+    static let minimumArtworkSize: CGFloat = 96.0
+
+    // On short screens such as iPhone in landscape, and when Now Playing fills the screen
+    // beside nothing else, lay the artwork out beside the controls so it can be sized to the
+    // height instead of being squeezed above them.
+    var controllerLayout: NPControllerLayout {
+        guard listSize.height > 0 else { return .stacked }
+        let contentWidth = listSize.width - Self.rowInset * 2
+        switch presentation {
+        case .column where verticalSizeClass == .compact:
+            // The column is narrow, so the artwork takes most of its width and the track
+            // details get the rest, with the seek bar and controls below them.
+            let size = min(listSize.height - Self.besideDetailsReservedHeight, contentWidth * 0.6)
+            return .artworkBesideDetails(artworkSize: max(size, Self.minimumArtworkSize))
+        case .sheet where verticalSizeClass == .compact, .fullScreen:
+            // There is room across, so the artwork runs down the whole left side.
+            let size = min(listSize.height - Self.besideControlsReservedHeight, contentWidth * 0.5)
+            return .artworkBesideControls(artworkSize: max(size, Self.minimumArtworkSize))
+        default:
+            return .stacked
+        }
     }
 
     var body: some View {
         List {
             Group {
-                NPControllerSection(albumArt: $albumArt, artworkMaxHeight: artworkMaxHeight)
+                NPControllerSection(albumArt: $albumArt, layout: controllerLayout)
                     .listRowSeparator(.hidden)
-                    .padding(.top, 28.0)
+                    .padding(.top, Self.topPadding)
                 NPQueueSection()
                     .alignmentGuide(.listRowSeparatorTrailing) { dimensions in
                         return dimensions.width
@@ -59,15 +92,15 @@ struct NowPlayingView: View {
                     }
                 }
             }
-            .listRowInsets(.init(top: 0.0, leading: 32.0, bottom: 0.0, trailing: 32.0))
+            .listRowInsets(.init(top: 0.0, leading: Self.rowInset, bottom: 0.0, trailing: Self.rowInset))
             .listRowBackground(Color.clear)
         }
         .listStyle(.plain)
         .listSectionSpacing(.compact)
-        .onGeometryChange(for: CGFloat.self) { proxy in
-            proxy.size.height
-        } action: { height in
-            listHeight = height
+        .onGeometryChange(for: CGSize.self) { proxy in
+            proxy.size
+        } action: { size in
+            listSize = size
         }
         .navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(.hidden, for: .navigationBar)

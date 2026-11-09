@@ -11,6 +11,7 @@ struct MainView: View {
     @State var path: [ViewPath] = []
     @State var isOnboardingPresented: Bool = false
     @State var containerSize: CGSize = .zero
+    @State var isNowPlayingFullScreen: Bool = false
 
     // Show Now Playing in its own column when iOS reports enough horizontal room and the
     // window is landscape; otherwise fall back to the floating Now Playing bar.
@@ -36,11 +37,23 @@ struct MainView: View {
             }
             .resumePlaybackAlert(for: .fileBrowser)
             .playbackBarAccessory(isEnabled: !isTwoColumnLayout)
+            .accessibilityHidden(isTwoColumnLayout && isNowPlayingFullScreen)
             if isTwoColumnLayout {
                 Divider()
                     .ignoresSafeArea()
-                NowPlayingView()
+                // Holds the column's place; Now Playing is laid over it so it can grow to fill
+                // the window without the file browser being squeezed underneath it.
+                Color.clear
                     .frame(width: nowPlayingColumnWidth)
+            }
+        }
+        .overlay(alignment: .trailing) {
+            if isTwoColumnLayout {
+                NowPlayingView(presentation: isNowPlayingFullScreen ? .fullScreen : .column)
+                    .frame(width: isNowPlayingFullScreen ? containerSize.width : nowPlayingColumnWidth)
+                    .overlay(alignment: .topTrailing) {
+                        fullScreenButton
+                    }
             }
         }
         // The column is not animated in: UIKit-backed viewers (text, PDF) keep their text laid out
@@ -49,6 +62,12 @@ struct MainView: View {
             proxy.size
         } action: { size in
             containerSize = size
+        }
+        .onChange(of: isTwoColumnLayout) { _, isTwoColumnLayout in
+            // Full screen only applies to the column, so start from the column next time.
+            if !isTwoColumnLayout {
+                isNowPlayingFullScreen = false
+            }
         }
         .onChange(of: selectedSource) {
             path.removeAll()
@@ -77,6 +96,31 @@ struct MainView: View {
                 .datastoreLocation(.applicationDefault)
             ])
         }
+    }
+
+    var fullScreenButton: some View {
+        Button {
+            withAnimation(.smooth(duration: 0.4)) {
+                isNowPlayingFullScreen.toggle()
+            }
+        } label: {
+            Image(systemName: isNowPlayingFullScreen ?
+                  "arrow.down.right.and.arrow.up.left" :
+                  "arrow.up.left.and.arrow.down.right")
+            .font(.body.weight(.semibold))
+            .frame(width: 24.0, height: 24.0)
+            .padding(4.0)
+        }
+        .buttonStyle(.glass)
+        .buttonBorderShape(.circle)
+        .foregroundStyle(.primary)
+        .accessibilityLabel(
+            isNowPlayingFullScreen ?
+            String(localized: "NowPlaying.ExitFullScreen") :
+            String(localized: "NowPlaying.EnterFullScreen")
+        )
+        .padding(.top, 8.0)
+        .padding(.trailing, 16.0)
     }
 
     // Show onboarding on first launch and whenever the major/minor version is bumped.
