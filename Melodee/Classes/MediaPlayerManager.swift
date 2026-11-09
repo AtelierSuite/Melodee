@@ -13,6 +13,8 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
     @ObservationIgnored let remoteCommandCenter = MPRemoteCommandCenter.shared()
     @ObservationIgnored let nowPlayingInfoCenter = MPNowPlayingInfoCenter.default()
     @ObservationIgnored let audioPlayer = AudioPlayer()
+    /// Measures the audio player's output for the Now Playing visualizer while it is on screen.
+    @ObservationIgnored let spectrumAnalyzer = SpectrumAnalyzer()
     @ObservationIgnored let videoPlayer: AVPlayer
     /// Draws the standard engine's video. It is reused by the Now Playing sheet so that
     /// Picture in Picture keeps running when the sheet is dismissed.
@@ -783,6 +785,27 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
         return UIImage(named: "Album.Generic") ?? UIImage()
     }
 
+    /// The current file's embedded artwork, or nil if it has none.
+    func embeddedAlbumArt() -> UIImage? {
+        guard let file = currentlyPlayingFile() else { return nil }
+        refreshMetadataCacheIfNeeded(for: file)
+        return cachedAlbumArt
+    }
+
+    // MARK: - Visualizer
+
+    /// Starts measuring the audio output for a visualizer that came on screen.
+    /// Balance each call with ``stopSpectrumAnalysis()``.
+    @MainActor
+    func startSpectrumAnalysis() {
+        spectrumAnalyzer.start(on: audioPlayer)
+    }
+
+    @MainActor
+    func stopSpectrumAnalysis() {
+        spectrumAnalyzer.stop(on: audioPlayer)
+    }
+
     // MARK: - State persistence
 
     /// Restores the queue and position saved in a previous session, paused at the saved time.
@@ -954,6 +977,8 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
             if managerRef.isPaused, managerRef.audioPlayer.isPlaying {
                 managerRef.audioPlayer.pause()
             }
+            // The mixer's output format may have changed with the output hardware
+            managerRef.spectrumAnalyzer.reconfigure(on: managerRef.audioPlayer)
             managerRef.setNowPlaying()
         }
     }
