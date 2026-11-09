@@ -20,6 +20,10 @@ struct NPControllerSection: View {
     @State var currentDuration: TimeInterval = .zero
     @State var totalDuration: TimeInterval = .zero
     @State var isSeekbarSeeking: Bool = false
+    /// Whether the video is shown full screen. The full screen video takes the video view while it's shown.
+    @State var isVideoFullScreen: Bool = false
+    /// Where the video is, for the full screen video to grow out of and shrink back into.
+    @State var videoFrame = NPScreenFrameReference()
 
     let updateTimer = Timer.publish(every: 0.25, on: .current, in: .common).autoconnect()
 
@@ -81,12 +85,37 @@ struct NPControllerSection: View {
             if mediaPlayer.isCurrentlyPlayingVideo() {
                 Group {
                     if mediaPlayer.activeVideoEngine == .extended {
-                        NPExtendedVideoSurface()
+                        NPExtendedVideoSurface(isActive: !isVideoFullScreen)
                     } else {
-                        NPVideoSurface()
+                        NPVideoSurface(isActive: !isVideoFullScreen)
                     }
                 }
                 .aspectRatio(mediaPlayer.videoAspectRatio ?? 1.0, contentMode: .fit)
+                .background(NPScreenFrameReader(reference: videoFrame))
+                .overlay {
+                    NPVideoControlsOverlay { controls in
+                        HStack(alignment: .top) {
+                            if mediaPlayer.supportsVideoPictureInPicture {
+                                NPVideoOverlayButton(
+                                    systemImage: "pip.enter",
+                                    accessibilityLabel: String(localized: "NowPlaying.PictureInPicture")
+                                ) {
+                                    controls.hide()
+                                    mediaPlayer.startVideoPictureInPicture()
+                                }
+                            }
+                            Spacer(minLength: 0.0)
+                            NPVideoOverlayButton(
+                                systemImage: "arrow.up.left.and.arrow.down.right",
+                                accessibilityLabel: String(localized: "NowPlaying.EnterFullScreen")
+                            ) {
+                                controls.hide()
+                                setVideoFullScreen(true)
+                            }
+                        }
+                        .frame(maxHeight: .infinity, alignment: .top)
+                    }
+                }
                 .clipShape(RoundedRectangle(cornerRadius: 16.0))
                 .overlay(
                     RoundedRectangle(cornerRadius: 16.0)
@@ -94,6 +123,12 @@ struct NPControllerSection: View {
                         .opacity(0.3)
                 )
                 .animation(.default.speed(2), value: mediaPlayer.videoAspectRatio)
+                .fullScreenCover(isPresented: $isVideoFullScreen) {
+                    NPFullScreenVideo(sourceFrame: videoFrame) {
+                        setVideoFullScreen(false)
+                    }
+                    .environment(mediaPlayer)
+                }
             } else {
                 NPArtworkCard(albumArt: albumArt)
             }
@@ -101,6 +136,16 @@ struct NPControllerSection: View {
         .aspectRatio(1.0, contentMode: .fit)
         .shadow(color: .black.opacity(0.1), radius: 10.0)
         .transition(.slide.animation(.default))
+    }
+
+    /// Shows or hides the full screen video without the system's slide up, as it animates out of the video itself.
+    /// The video view moves between the two in the same update, so playback carries on uninterrupted.
+    private func setVideoFullScreen(_ isFullScreen: Bool) {
+        var transaction = Transaction()
+        transaction.disablesAnimations = true
+        withTransaction(transaction) {
+            isVideoFullScreen = isFullScreen
+        }
     }
 
     var seekBar: some View {

@@ -305,6 +305,23 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
         return currentlyPlayingFile()?.type == .video
     }
 
+    /// Whether the playing video can be moved into Picture in Picture on this device.
+    var supportsVideoPictureInPicture: Bool {
+        AVPictureInPictureController.isPictureInPictureSupported()
+    }
+
+    /// Moves the playing video into Picture in Picture, from whichever video engine is playing it.
+    @MainActor
+    func startVideoPictureInPicture() {
+        guard isCurrentlyPlayingVideo() else { return }
+        switch activeVideoEngine {
+        case .extended:
+            extendedVideoPlayer.videoView.pictureInPictureWindowController?.startPictureInPicture()
+        default:
+            videoPictureInPictureController?.startPictureInPicture()
+        }
+    }
+
     /// Whether the current file is a video loaded in VLCKit.
     private func isPlayingExtendedVideo() -> Bool {
         return isCurrentlyPlayingVideo() && activeVideoEngine == .extended
