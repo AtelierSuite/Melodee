@@ -84,6 +84,26 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
     // The file the engine has loaded, whose play time is tracked so it can be continued later
     @ObservationIgnored private var playTimeTrackedFile: FSFile?
 
+    /// How many times normal speed playback moves at while the fast forward or rewind buttons are held.
+    static let scrubRate: Double = 2.0
+    /// How a held fast forward or rewind button moves through the current file.
+    private enum ScrubMode {
+        /// The audio is played sped up, or reversed, by the scrub audio player while the main player is paused.
+        case audio
+        /// The video engine itself plays faster, or backwards.
+        case videoRate
+        /// The position moves in steps, for files that can't be played sped up or backwards.
+        case stepped
+    }
+    @ObservationIgnored private let scrubAudioPlayer = ScrubAudioPlayer()
+    @ObservationIgnored private var scrubMode: ScrubMode?
+    @ObservationIgnored private var scrubDirection: ScrubDirection = .forward
+    @ObservationIgnored private var scrubTotalTime: TimeInterval = 0
+    @ObservationIgnored private var scrubPosition: TimeInterval = 0
+    @ObservationIgnored private var scrubResumesPlayback: Bool = false
+    @ObservationIgnored private var scrubStepTimer: Timer?
+    @ObservationIgnored private var scrubStepDate: Date = .distantPast
+
     override init() {
         // SFBAudioEngine prepares its audio engine as soon as the player is created, which in the
         // default non-mixable category interrupts audio from other apps when Melodee is opened.
@@ -122,7 +142,8 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
             nonisolated(unsafe) let managerRef = self
             let isNowPaused = player.timeControlStatus == .paused
             Task { @MainActor in
-                guard managerRef.isCurrentlyPlayingVideo(), managerRef.activeVideoEngine == .standard else { return }
+                guard managerRef.isCurrentlyPlayingVideo(), managerRef.activeVideoEngine == .standard,
+                      !managerRef.isScrubbing else { return }
                 managerRef.isPaused = isNowPaused
                 managerRef.setNowPlaying()
             }
@@ -164,7 +185,7 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
             self.handlePlaybackFailure()
         }
         extendedVideoPlayer.onPausedChanged = { [weak self] isNowPaused in
-            guard let self, self.isPlayingExtendedVideo() else { return }
+            guard let self, self.isPlayingExtendedVideo(), !self.isScrubbing else { return }
             self.isPaused = isNowPaused
             self.setNowPlaying()
         }
@@ -307,6 +328,9 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
     }
 
     func playbackTime() -> (currentTime: TimeInterval, totalTime: TimeInterval)? {
+        if let scrubTime = scrubbingTime() {
+            return (scrubTime, scrubTotalTime)
+        }
         // The restored file isn't loaded until playback starts, so report the saved position
         if let pendingResumeTime {
             guard let pendingTotalTime, pendingTotalTime > 0 else { return nil }
@@ -386,6 +410,7 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
         // Save how far the outgoing file got before stopping it
         recordPlayTime()
         playTimeTrackedFile = nil
+        cancelScrubbing()
         let startTime = startTime(for: file, at: position)
         // Stop any playback that is in progress
         audioPlayer.stop()
@@ -638,6 +663,7 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
     }
 
     func stop() {
+        cancelScrubbing()
         recordPlayTime()
         playTimeTrackedFile = nil
         audioPlayer.stop()
@@ -695,6 +721,146 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
         setNowPlaying()
         savePlaybackPosition(at: time)
         recordPlayTime(at: time)
+    }
+
+    // MARK: - Scrubbing
+
+    /// Whether a fast forward or rewind button is being held.
+    var isScrubbing: Bool {
+        return scrubMode != nil
+    }
+
+    /// Starts moving through the current file at `scrubRate` times normal speed, while a button is held.
+    /// Audio is heard while doing so, played backwards when rewinding.
+    func beginScrubbing(_ direction: ScrubDirection) {
+        cancelScrubbing()
+        guard isPlaybackActive, supportsSeeking(),
+              let file = currentlyPlayingFile(), let time = playbackTime() else { return }
+        scrubDirection = direction
+        scrubTotalTime = time.totalTime
+        scrubResumesPlayback = !isPaused
+        activateAudioSession()
+        let isFileLoaded = pendingResumeTime == nil
+        if file.type == .video, isFileLoaded, beginVideoRateScrubbing(direction) {
+            return
+        }
+        // Keep the engines paused where they are, without marking playback as paused
+        audioPlayer.pause()
+        videoPlayer.pause()
+        extendedVideoPlayer.pause()
+        if file.type != .video, !file.isEvicted() {
+            do {
+                try scrubAudioPlayer.start(url: URL(fileURLWithPath: file.path),
+                                           at: time.currentTime,
+                                           direction: direction,
+                                           rate: Float(Self.scrubRate))
+                scrubMode = .audio
+                return
+            } catch {
+                debugPrint("Failed to play audio while scrubbing: \(error.localizedDescription)")
+            }
+        }
+        scrubMode = .stepped
+        scrubPosition = time.currentTime
+        scrubStepDate = .now
+        scrubStepTimer = Timer.scheduledTimer(timeInterval: 0.1,
+                                              target: self,
+                                              selector: #selector(scrubStepTimerFired(_:)),
+                                              userInfo: nil,
+                                              repeats: true)
+    }
+
+    /// Plays the loaded video faster, or backwards, if its engine can.
+    private func beginVideoRateScrubbing(_ direction: ScrubDirection) -> Bool {
+        let rate = Float(direction == .forward ? Self.scrubRate : -Self.scrubRate)
+        if isPlayingExtendedVideo() {
+            // VLCKit can't play backwards
+            guard direction == .forward, extendedVideoPlayer.hasMedia else { return false }
+            scrubMode = .videoRate
+            extendedVideoPlayer.setRate(rate)
+            extendedVideoPlayer.resume()
+            return true
+        }
+        guard let item = videoPlayer.currentItem, item.status == .readyToPlay,
+              direction == .forward ? item.canPlayFastForward : item.canPlayFastReverse else { return false }
+        scrubMode = .videoRate
+        videoPlayer.rate = rate
+        return true
+    }
+
+    /// Stops scrubbing where it got to, and carries on playing from there if it was playing before.
+    func endScrubbing() {
+        guard let mode = scrubMode else { return }
+        let position = scrubbingTime()
+        stopScrubbing()
+        switch mode {
+        case .audio, .stepped:
+            if let position {
+                // Stay just short of the end, so the file finishes playing normally if playback resumes
+                seekTo(min(position, max(0, scrubTotalTime - 0.1)))
+            }
+            if scrubResumesPlayback {
+                play()
+            } else {
+                setNowPlaying()
+            }
+        case .videoRate:
+            if isPlayingExtendedVideo() {
+                extendedVideoPlayer.setRate(1.0)
+                if !scrubResumesPlayback {
+                    extendedVideoPlayer.pause()
+                }
+            } else if scrubResumesPlayback {
+                videoPlayer.rate = 1.0
+            } else {
+                videoPlayer.pause()
+            }
+            isPaused = !scrubResumesPlayback
+            setNowPlaying()
+            savePlaybackPosition()
+            recordPlayTime()
+        }
+    }
+
+    /// Stops scrubbing without moving playback, as the file is being changed or stopped.
+    private func cancelScrubbing() {
+        guard scrubMode != nil else { return }
+        if scrubMode == .videoRate {
+            extendedVideoPlayer.setRate(1.0)
+        }
+        stopScrubbing()
+    }
+
+    private func stopScrubbing() {
+        scrubMode = nil
+        scrubStepTimer?.invalidate()
+        scrubStepTimer = nil
+        scrubAudioPlayer.stop()
+    }
+
+    /// The position scrubbing has reached, when it is tracked separately from the engines.
+    private func scrubbingTime() -> TimeInterval? {
+        switch scrubMode {
+        case .audio: return scrubAudioPlayer.currentTime
+        case .stepped: return scrubPosition
+        case .videoRate, nil: return nil
+        }
+    }
+
+    @objc private func scrubStepTimerFired(_ timer: Timer) {
+        guard scrubMode == .stepped else { return }
+        let now = Date.now
+        let distance = now.timeIntervalSince(scrubStepDate) * Self.scrubRate
+        scrubStepDate = now
+        let target = scrubDirection == .forward ? scrubPosition + distance : scrubPosition - distance
+        scrubPosition = min(max(0, target), scrubTotalTime)
+        // Show the frame at the new position
+        guard isCurrentlyPlayingVideo(), pendingResumeTime == nil else { return }
+        if isPlayingExtendedVideo() {
+            extendedVideoPlayer.seek(to: scrubPosition)
+        } else {
+            videoPlayer.seek(to: CMTime(seconds: scrubPosition, preferredTimescale: 600))
+        }
     }
 
     /// Points queued files at their new locations after they have been renamed.
@@ -857,6 +1023,7 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
     func fileDidChangeOnDisk(atPath path: String) {
         guard let file = currentlyPlayingFile(),
               FilesystemManager.normalizedPath(file.path) == FilesystemManager.normalizedPath(path) else { return }
+        cancelScrubbing()
         let wasPlaying = isPlaybackActive && !isPaused
         recordPlayTime()
         playTimeTrackedFile = nil
@@ -972,7 +1139,7 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
         let isNowPaused = playbackState != .playing
         Task { @MainActor in
             // A stale .stopped state may arrive after playback has moved on to a video
-            guard !managerRef.isCurrentlyPlayingVideo() else { return }
+            guard !managerRef.isCurrentlyPlayingVideo(), !managerRef.isScrubbing else { return }
             managerRef.isPaused = isNowPaused
             if playbackState == .playing {
                 managerRef.isPlaybackActive = true

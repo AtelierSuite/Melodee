@@ -143,6 +143,9 @@ struct NPVisualizer: View {
         } else {
             mediaPlayer.stopSpectrumAnalysis()
         }
+        // Keep the screen on while the visualizer is showing, and let it turn off again once it's hidden,
+        // for example when the artwork is flipped back or the Now Playing sheet is closed
+        UIApplication.shared.isIdleTimerDisabled = newValue
     }
 }
 
@@ -216,7 +219,7 @@ struct NPVisualizerPicker: View {
                 .overlay(alignment: .topLeading) {
                     HStack(spacing: 5.0) {
                         style.icon
-                        Text(verbatim: style.name)
+                        Text(verbatim: style.localizedName)
                     }
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(.white)
@@ -235,7 +238,7 @@ struct NPVisualizerPicker: View {
                 .scaleEffect(phase.isIdentity ? 1.0 : 0.82)
                 .opacity(phase.isIdentity ? 1.0 : 0.55)
         }
-        .accessibilityLabel(Text(verbatim: style.name))
+        .accessibilityLabel(Text(verbatim: style.localizedName))
         .accessibilityAddTraits(isSelected ? .isSelected : [])
         .id(style)
     }
