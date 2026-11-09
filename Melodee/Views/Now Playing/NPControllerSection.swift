@@ -11,7 +11,7 @@ struct NPControllerSection: View {
     @State var totalDuration: TimeInterval = .zero
     @State var isSeekbarSeeking: Bool = false
 
-    let updateTimer = Timer.publish(every: 0.5, on: .current, in: .common).autoconnect()
+    let updateTimer = Timer.publish(every: 0.25, on: .current, in: .common).autoconnect()
 
     var body: some View {
         Section {
@@ -74,21 +74,18 @@ struct NPControllerSection: View {
                         .frame(width: 24.0, height: 24.0)
                     Spacer()
                     Group {
-                        Button {
+                        // Holding the previous and next track buttons rewinds and fast forwards instead
+                        NPTransportButton(imageName: "Back", scrubDirection: .backward) {
+                            guard mediaPlayer.canGoToPreviousTrack() else { return }
                             withAnimation(.default.speed(2)) {
                                 mediaPlayer.backToPreviousTrack()
                                 currentDuration = .zero
                                 totalDuration = .zero
                             }
-                        } label: {
-                            Image("Back")
-                                .resizable()
-                                .scaledToFit()
-                                .frame(width: 24.0, height: 24.0)
-                                .padding(10.0)
                         }
                         .foregroundStyle(.primary)
-                        .disabled(!(mediaPlayer.isPlaybackActive && mediaPlayer.canGoToPreviousTrack()))
+                        .disabled(!(mediaPlayer.isPlaybackActive &&
+                                    (mediaPlayer.canGoToPreviousTrack() || mediaPlayer.supportsSeeking())))
                         .clipShape(Circle())
                         Button {
                             if mediaPlayer.isPaused {
@@ -106,19 +103,15 @@ struct NPControllerSection: View {
                         .buttonStyle(.glass)
                         .buttonBorderShape(.circle)
                         .foregroundStyle(.primary)
-                        Button {
+                        NPTransportButton(imageName: "Next", scrubDirection: .forward) {
+                            guard mediaPlayer.canGoToNextTrack() else { return }
                             withAnimation(.default.speed(2)) {
                                 mediaPlayer.skipToNextTrack()
                             }
-                        } label: {
-                            Image("Next")
-                                .resizable()
-                                .scaledToFit()
-                                .frame(width: 24.0, height: 24.0)
-                                .padding(10.0)
                         }
                         .foregroundStyle(.primary)
-                        .disabled(!(mediaPlayer.isPlaybackActive && mediaPlayer.canGoToNextTrack()))
+                        .disabled(!(mediaPlayer.isPlaybackActive &&
+                                    (mediaPlayer.canGoToNextTrack() || mediaPlayer.supportsSeeking())))
                         .clipShape(Circle())
                     }
                     Spacer()
