@@ -143,6 +143,9 @@ struct NPVisualizer: View {
         } else {
             mediaPlayer.stopSpectrumAnalysis()
         }
+        // Keep the screen on while the visualizer is showing, and let it turn off again once it's hidden,
+        // for example when the artwork is flipped back or the Now Playing sheet is closed
+        UIApplication.shared.isIdleTimerDisabled = newValue
     }
 }
 
