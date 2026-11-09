@@ -12,7 +12,7 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
     @ObservationIgnored let audioSession = AVAudioSession.sharedInstance()
     @ObservationIgnored let remoteCommandCenter = MPRemoteCommandCenter.shared()
     @ObservationIgnored let nowPlayingInfoCenter = MPNowPlayingInfoCenter.default()
-    @ObservationIgnored let audioPlayer = AudioPlayer()
+    @ObservationIgnored let audioPlayer: AudioPlayer
     /// Measures the audio player's output for the Now Playing visualizer while it is on screen.
     @ObservationIgnored let spectrumAnalyzer = SpectrumAnalyzer()
     @ObservationIgnored let videoPlayer: AVPlayer
@@ -85,6 +85,11 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
     @ObservationIgnored private var playTimeTrackedFile: FSFile?
 
     override init() {
+        // SFBAudioEngine prepares its audio engine as soon as the player is created, which in the
+        // default non-mixable category interrupts audio from other apps when Melodee is opened.
+        // Start out mixable, and take over the audio session only when playback starts.
+        Self.configureAudioSessionForLaunch()
+        self.audioPlayer = AudioPlayer()
         let videoPlayer = AVPlayer()
         self.videoPlayer = videoPlayer
         let videoPlayerView = MainActor.assumeIsolated {
@@ -527,6 +532,14 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
             skipToNextTrack()
         } else {
             stop()
+        }
+    }
+
+    private static func configureAudioSessionForLaunch() {
+        do {
+            try AVAudioSession.sharedInstance().setCategory(.ambient)
+        } catch {
+            debugPrint(error.localizedDescription)
         }
     }
 

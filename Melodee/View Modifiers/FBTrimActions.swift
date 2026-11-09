@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Presents the trimmer, pastes a copied trim onto several files, and restores originals, for the file browser.
+/// Presents the trimmer, trims or pastes a copied trim onto several files, and restores originals, for the file browser.
 struct FileBrowserTrimActions: ViewModifier {
 
     @Environment(MediaPlayerManager.self) var mediaPlayer
@@ -27,6 +27,26 @@ struct FileBrowserTrimActions: ViewModifier {
                 Button("Shared.Cancel", role: .cancel) {
                     state.pasteTrimFiles = []
                 }
+            }
+            .sheet(item: $state.batchTrimPresentation, onDismiss: startPendingBatchTrim) { presentation in
+                BatchTrimView(fileCount: presentation.files.count) { cuts in
+                    // Starts once the sheet is gone, so the progress alert can show
+                    state.pendingBatchTrim = (presentation.files, cuts)
+                }
+            }
+            .confirmationDialog(
+                "Trim.Restore.Batch",
+                isPresented: $state.isBatchRestoreConfirmationPresented,
+                titleVisibility: .visible
+            ) {
+                Button("Trim.Restore.Batch", role: .destructive) {
+                    restoreOriginals(of: state.restoreFiles)
+                }
+                Button("Shared.Cancel", role: .cancel) {
+                    state.restoreFiles = []
+                }
+            } message: {
+                Text("Trim.Restore.Batch.Message.\(state.restoreFiles.count)")
             }
             .confirmationDialog(
                 "Trim.Restore",
@@ -66,11 +86,41 @@ struct FileBrowserTrimActions: ViewModifier {
         refreshFiles()
     }
 
+    /// Puts back the originals of the files that have one, and reports any that couldn't be restored.
+    func restoreOriginals(of files: [FSFile]) {
+        state.restoreFiles = []
+        var failures: [String] = []
+        for file in files where MediaTrimmer.hasOriginal(file) {
+            do {
+                try MediaTrimmer.restoreOriginal(of: file)
+                mediaPlayer.fileDidChangeOnDisk(atPath: file.path)
+            } catch {
+                failures.append("\(file.name): \(error.localizedDescription)")
+            }
+        }
+        refreshFiles()
+        if !failures.isEmpty {
+            state.trimAlertMessage = failures.joined(separator: "\n")
+        }
+    }
+
     /// Trims each file with the copied trim, one after another, showing the conversion progress alert.
     func pasteTrim(anchor: CopiedTrim.Anchor) {
         guard let trim = CopiedTrim.clipboard else { return }
         let files = state.pasteTrimFiles
         state.pasteTrimFiles = []
+        trimFiles(files) { trim.range(forDuration: $0, anchor: anchor) }
+    }
+
+    func startPendingBatchTrim() {
+        guard let pending = state.pendingBatchTrim else { return }
+        state.pendingBatchTrim = nil
+        trimFiles(pending.files) { pending.cuts.range(forDuration: $0) }
+    }
+
+    /// Trims each file to the range `rangeForDuration` picks from its original's length, one after another,
+    /// showing the conversion progress alert. Files it returns nil for are skipped as too short.
+    func trimFiles(_ files: [FSFile], rangeForDuration: @escaping (TimeInterval) -> ClosedRange<TimeInterval>?) {
         guard !files.isEmpty else { return }
         state.conversionTitle = "Trim.Saving"
         state.conversionProgress = 0
@@ -81,7 +131,7 @@ struct FileBrowserTrimActions: ViewModifier {
             var failures: [String] = []
             for (index, file) in files.enumerated() {
                 guard let duration = try? await MediaTrimmer.originalDuration(of: file),
-                      let range = trim.range(forDuration: duration, anchor: anchor) else {
+                      let range = rangeForDuration(duration) else {
                     skippedCount += 1
                     continue
                 }
