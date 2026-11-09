@@ -15,6 +15,7 @@ enum NPVisualizerStyle: String, CaseIterable, Identifiable {
     case orbs
     case pulse
     case mixer
+    case marquee
 
     static let storageKey = "NowPlaying.VisualizerStyle"
 
@@ -22,6 +23,7 @@ enum NPVisualizerStyle: String, CaseIterable, Identifiable {
 
     var id: String { rawValue }
 
+    /// The style's name in English, which also names its icon in the asset catalog.
     var name: String {
         switch self {
         case .bars: "Bars"
@@ -35,6 +37,25 @@ enum NPVisualizerStyle: String, CaseIterable, Identifiable {
         case .orbs: "Orbs"
         case .pulse: "Pulse"
         case .mixer: "Mixer"
+        case .marquee: "Marquee"
+        }
+    }
+
+    /// The name shown to the user.
+    var localizedName: String {
+        switch self {
+        case .bars: String(localized: "NowPlaying.Visualizer.Bars")
+        case .mirror: String(localized: "NowPlaying.Visualizer.Mirror")
+        case .curve: String(localized: "NowPlaying.Visualizer.Curve")
+        case .radial: String(localized: "NowPlaying.Visualizer.Radial")
+        case .blob: String(localized: "NowPlaying.Visualizer.Blob")
+        case .waves: String(localized: "NowPlaying.Visualizer.Waves")
+        case .arcs: String(localized: "NowPlaying.Visualizer.Arcs")
+        case .ridges: String(localized: "NowPlaying.Visualizer.Ridges")
+        case .orbs: String(localized: "NowPlaying.Visualizer.Orbs")
+        case .pulse: String(localized: "NowPlaying.Visualizer.Pulse")
+        case .mixer: String(localized: "NowPlaying.Visualizer.Mixer")
+        case .marquee: String(localized: "NowPlaying.Visualizer.Marquee")
         }
     }
 
@@ -63,6 +84,7 @@ enum NPVisualizerStyle: String, CaseIterable, Identifiable {
         case .orbs: Self.drawOrbs(bands, colors: colors, time: time, in: &context, size: size)
         case .pulse: Self.drawPulse(bands, history: history, colors: colors, time: time, in: &context, size: size)
         case .mixer: Self.drawMixer(bands, colors: colors, in: &context, size: size)
+        case .marquee: Self.drawMarquee(bands, history: history, colors: colors, time: time, in: &context, size: size)
         }
     }
 
@@ -408,6 +430,58 @@ enum NPVisualizerStyle: String, CaseIterable, Identifiable {
         glow.addFilter(.shadow(color: colors.bottom.opacity(0.6), radius: 4))
         for (zone, color) in [colors.bottom, warmColor, colors.top].enumerated() {
             glow.fill(lit[zone], with: .color(color))
+        }
+    }
+
+    // MARK: Marquee
+
+    /// Waveforms that flow in from the right edge and scroll off to the left, mirrored around the middle,
+    /// one each for the bass, mids and treble, so the past few seconds read like a ticker.
+    @MainActor
+    private static func drawMarquee(_ bands: [Float], history: NPVisualizerHistory, colors: Colors,
+                                    time: TimeInterval, in context: inout GraphicsContext, size: CGSize) {
+        let groupCount = 3
+        let midY = size.height / 2
+        let spacing = size.width / CGFloat(NPVisualizerHistory.capacity - 1)
+        let fraction = history.fractionSinceLastRecord(at: time)
+        // The current levels sit on the right edge, and recorded frames move left as they age
+        var samples: [(x: CGFloat, bands: [Float])] = [(size.width, bands)]
+        if let newest = history.frames.last {
+            for frame in history.frames.reversed() {
+                let x = size.width - (CGFloat(newest.index - frame.index) + CGFloat(fraction)) * spacing
+                guard x >= -spacing else { break }
+                samples.append((x, frame.bands))
+            }
+        }
+        samples.reverse()
+
+        var waveContext = context
+        waveContext.blendMode = .plusLighter
+        // Bass is the widest and drawn at the back, with the mids and treble inside it
+        for group in 0..<groupCount {
+            let scale = size.height * 0.46 * (1 - 0.25 * CGFloat(group))
+            let levels = samples.map { CGFloat(groupLevel($0.bands, group: group, of: groupCount)) }
+            let upper = zip(samples, levels).map { CGPoint(x: $0.x, y: midY - max($1 * scale, 1)) }
+            let lower = zip(samples, levels).map { CGPoint(x: $0.x, y: midY + max($1 * scale, 1)) }
+            var shape = Path()
+            appendSmoothCurve(through: upper, to: &shape)
+            appendSmoothCurve(through: lower.reversed(), to: &shape)
+            shape.closeSubpath()
+            let color = colors.bottom.mix(with: colors.top, by: Double(group) / Double(groupCount - 1))
+            // Fade out towards the left edge, where the oldest waves leave
+            let fade = Gradient(stops: [.init(color: color.opacity(0), location: 0),
+                                        .init(color: color.opacity(0.35), location: 0.35),
+                                        .init(color: color.opacity(0.55), location: 1)])
+            waveContext.fill(shape, with: .linearGradient(fade, startPoint: .zero,
+                                                          endPoint: CGPoint(x: size.width, y: 0)))
+            var outline = smoothPath(through: upper, isClosed: false)
+            outline.addPath(smoothPath(through: lower, isClosed: false))
+            var glow = waveContext
+            glow.addFilter(.shadow(color: color.opacity(0.8), radius: 4))
+            glow.stroke(outline, with: .linearGradient(Gradient(colors: [color.opacity(0), color, color]),
+                                                       startPoint: .zero,
+                                                       endPoint: CGPoint(x: size.width, y: 0)),
+                        style: StrokeStyle(lineWidth: 1.5, lineCap: .round, lineJoin: .round))
         }
     }
 
