@@ -35,15 +35,7 @@ struct NPControllerSection: View {
                         )
                         .animation(.default.speed(2), value: mediaPlayer.videoAspectRatio)
                     } else {
-                        albumArt
-                            .resizable()
-                            .scaledToFit()
-                            .clipShape(RoundedRectangle(cornerRadius: 16.0))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 16.0)
-                                    .stroke(.primary, lineWidth: 1/3)
-                                    .opacity(0.3)
-                            )
+                        NPArtworkCard(albumArt: albumArt)
                     }
                 }
                 .frame(maxWidth: .infinity)
@@ -97,30 +89,22 @@ struct NPControllerSection: View {
                         }
                         .foregroundStyle(.primary)
                         .disabled(!(mediaPlayer.isPlaybackActive && mediaPlayer.canGoToPreviousTrack()))
-                        Group {
+                        .clipShape(Circle())
+                        Button {
                             if mediaPlayer.isPaused {
-                                Button {
-                                    mediaPlayer.play()
-                                } label: {
-                                    Image("Play")
-                                        .resizable()
-                                        .scaledToFit()
-                                        .frame(width: 32.0, height: 32.0)
-                                        .padding()
-                                }
+                                mediaPlayer.play()
                             } else {
-                                Button {
-                                    mediaPlayer.pause()
-                                } label: {
-                                    Image("Pause")
-                                        .resizable()
-                                        .scaledToFit()
-                                        .frame(width: 32.0, height: 32.0)
-                                        .padding()
-                                }
+                                mediaPlayer.pause()
                             }
+                        } label: {
+                            Image(mediaPlayer.isPaused ? "Play" : "Pause")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 32.0, height: 32.0)
+                                .padding(10.0)
                         }
-                        .buttonStyle(.bordered)
+                        .buttonStyle(.glass)
+                        .buttonBorderShape(.circle)
                         .foregroundStyle(.primary)
                         Button {
                             withAnimation(.default.speed(2)) {
@@ -135,8 +119,8 @@ struct NPControllerSection: View {
                         }
                         .foregroundStyle(.primary)
                         .disabled(!(mediaPlayer.isPlaybackActive && mediaPlayer.canGoToNextTrack()))
+                        .clipShape(Circle())
                     }
-                    .clipShape(Circle())
                     Spacer()
                     Button {
                         withAnimation(.default.speed(2)) {
