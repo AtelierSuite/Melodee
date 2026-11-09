@@ -7,6 +7,10 @@ struct NPTransportButton: View {
 
     let imageName: String
     let scrubDirection: ScrubDirection
+    /// The space around the 24pt glyph, which is also pressable.
+    var padding: CGFloat = 10.0
+    /// Told when the button starts and stops being held, such as to keep other controls up meanwhile.
+    var onHoldChanged: ((Bool) -> Void)?
     let action: () -> Void
 
     /// Set when the press scrubbed, so letting go doesn't also change tracks.
@@ -24,11 +28,12 @@ struct NPTransportButton: View {
                 .resizable()
                 .scaledToFit()
                 .frame(width: 24.0, height: 24.0)
-                .padding(10.0)
+                .padding(padding)
         }
         .buttonStyle(HoldableButtonStyle(onPress: {
             didScrub = false
         }, onHoldChanged: { isHolding in
+            onHoldChanged?(isHolding)
             if isHolding {
                 guard mediaPlayer.supportsSeeking() else { return }
                 didScrub = true
