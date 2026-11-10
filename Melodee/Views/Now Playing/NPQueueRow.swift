@@ -36,6 +36,11 @@ struct NPQueueRow: View {
                 .lineLimit(1)
                 .truncationMode(.middle)
             Spacer()
+            // Rows are reordered by holding and dragging them, which the list does outside of edit
+            // mode too, so swiping to remove them keeps working
+            Image(systemName: "line.3.horizontal")
+                .foregroundStyle(.tertiary)
+                .accessibilityHidden(true)
         }
         .contentShape(Rectangle())
         .task(id: file.path) {

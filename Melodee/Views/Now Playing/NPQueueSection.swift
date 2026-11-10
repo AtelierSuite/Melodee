@@ -31,14 +31,7 @@ struct NPQueueSection: View {
                 }
             }
         } header: {
-            HStack(alignment: .center, spacing: 8.0) {
-                ListSectionHeader(text: "Shared.Queue")
-                Spacer()
-                EditButton()
-                    .bold()
-                    .textCase(.none)
-                    .disabled(mediaPlayer.queue.isEmpty)
-            }
+            ListSectionHeader(text: "Shared.Queue")
         }
     }
 }

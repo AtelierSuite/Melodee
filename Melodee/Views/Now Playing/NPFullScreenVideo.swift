@@ -234,17 +234,25 @@ struct NPFullScreenVideoTransportControls: View {
     let controls: NPVideoControlsContext
 
     var body: some View {
-        HStack(alignment: .center, spacing: 32.0) {
-            // Holding these rewinds and fast forwards, as in the Now Playing sheet
-            NPTransportButton(imageName: "Back", scrubDirection: .backward,
+        let skipsByInterval = mediaPlayer.skipsByInterval()
+        return HStack(alignment: .center, spacing: 32.0) {
+            // Holding these rewinds and fast forwards, and tapping them skips or changes tracks,
+            // as in the Now Playing sheet
+            NPTransportButton(image: skipsByInterval ? Image(systemName: "gobackward.15") : Image("Back"),
+                              scrubDirection: .backward,
                               padding: 16.0, onHoldChanged: controls.setHeld) {
+                if mediaPlayer.skipsByInterval() {
+                    controls.keepShowing()
+                    mediaPlayer.skipBackward()
+                    return
+                }
                 guard mediaPlayer.canGoToPreviousTrack() else { return }
                 controls.keepShowing()
                 mediaPlayer.backToPreviousTrack()
             }
             .glassEffect(.clear.interactive(), in: .circle)
-            .disabled(!(mediaPlayer.isPlaybackActive &&
-                        (mediaPlayer.canGoToPreviousTrack() || mediaPlayer.supportsSeeking())))
+            .accessibilityLabel(skipsByInterval ? "NowPlaying.SkipBackward" : "NowPlaying.PreviousTrack")
+            .disabled(!canUseTransportButton(canChangeTrack: mediaPlayer.canGoToPreviousTrack()))
             Button {
                 controls.keepShowing()
                 if mediaPlayer.isPaused {
@@ -262,18 +270,30 @@ struct NPFullScreenVideoTransportControls: View {
             }
             .buttonStyle(.plain)
             .glassEffect(.clear.interactive(), in: .circle)
-            NPTransportButton(imageName: "Next", scrubDirection: .forward,
+            NPTransportButton(image: skipsByInterval ? Image(systemName: "goforward.15") : Image("Next"),
+                              scrubDirection: .forward,
                               padding: 16.0, onHoldChanged: controls.setHeld) {
+                if mediaPlayer.skipsByInterval() {
+                    controls.keepShowing()
+                    mediaPlayer.skipForward()
+                    return
+                }
                 guard mediaPlayer.canGoToNextTrack() else { return }
                 controls.keepShowing()
                 mediaPlayer.skipToNextTrack()
             }
             .glassEffect(.clear.interactive(), in: .circle)
-            .disabled(!(mediaPlayer.isPlaybackActive &&
-                        (mediaPlayer.canGoToNextTrack() || mediaPlayer.supportsSeeking())))
+            .accessibilityLabel(skipsByInterval ? "NowPlaying.SkipForward" : "NowPlaying.NextTrack")
+            .disabled(!canUseTransportButton(canChangeTrack: mediaPlayer.canGoToNextTrack()))
         }
         .foregroundStyle(.white)
         .disabled(!mediaPlayer.canStartPlayback())
+    }
+
+    /// Whether a previous or next button does anything, as in the Now Playing sheet.
+    func canUseTransportButton(canChangeTrack: Bool) -> Bool {
+        guard mediaPlayer.isPlaybackActive else { return false }
+        return mediaPlayer.supportsSeeking() || (!mediaPlayer.skipsByInterval() && canChangeTrack)
     }
 }
 

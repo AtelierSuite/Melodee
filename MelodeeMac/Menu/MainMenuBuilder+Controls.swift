@@ -35,6 +35,7 @@ extension MainMenuBuilder {
         }
         repeatItem.submenu = repeatMenu
         menu.addItem(repeatItem)
+        menu.addItem(skipButtonsItem())
         let videoEngineItem = item("VideoEngine.Title", action: nil)
         let videoEngineMenu = NSMenu()
         let engines: [(String, VideoEngine)] = [("VideoEngine.Default", .standard), ("VideoEngine.Extended", .extended)]
@@ -48,5 +49,23 @@ extension MainMenuBuilder {
         menu.addItem(.separator())
         menu.addItem(item("Queue.Clear", action: #selector(AppDelegate.clearQueue(_:))))
         return menu
+    }
+
+    /// Chooses whether the previous and next buttons change tracks or skip within the file.
+    private static func skipButtonsItem() -> NSMenuItem {
+        let skipButtonsItem = item("SkipButtons.Title", action: nil)
+        let skipButtonsMenu = NSMenu()
+        let modes: [(String, SkipButtonMode)] = [
+            ("SkipButtons.Automatic", .automatic),
+            ("SkipButtons.Tracks", .tracks),
+            ("SkipButtons.FifteenSeconds", .fifteenSeconds)
+        ]
+        for (key, mode) in modes {
+            let modeItem = item(key, action: #selector(AppDelegate.setSkipButtonMode(_:)))
+            modeItem.representedObject = mode.rawValue
+            skipButtonsMenu.addItem(modeItem)
+        }
+        skipButtonsItem.submenu = skipButtonsMenu
+        return skipButtonsItem
     }
 }
