@@ -20,6 +20,11 @@ struct NPControllerSection: View {
     @State var currentDuration: TimeInterval = .zero
     @State var totalDuration: TimeInterval = .zero
     @State var isSeekbarSeeking: Bool = false
+    /// Whether the video is shown full screen. The full screen video takes the video view while it's shown.
+    /// Presented by Now Playing rather than here, as rows in its list are rebuilt on rotating, which would close it.
+    @Binding var isVideoFullScreen: Bool
+    /// Where the video is, for the full screen video to grow out of and shrink back into.
+    var videoFrame: NPScreenFrameReference
 
     let updateTimer = Timer.publish(every: 0.25, on: .current, in: .common).autoconnect()
 
@@ -40,7 +45,8 @@ struct NPControllerSection: View {
                     VStack(alignment: .center, spacing: 16.0) {
                         HStack(alignment: .center, spacing: 16.0) {
                             artwork
-                                .frame(width: artworkSize, height: artworkSize)
+                                .frame(width: artworkFrame(fitting: artworkSize).width,
+                                       height: artworkFrame(fitting: artworkSize).height)
                             trackDetails
                                 .frame(maxWidth: .infinity, alignment: .leading)
                         }
@@ -50,7 +56,8 @@ struct NPControllerSection: View {
                 case .artworkBesideControls(let artworkSize):
                     HStack(alignment: .center, spacing: 32.0) {
                         artwork
-                            .frame(width: artworkSize, height: artworkSize)
+                            .frame(width: artworkFrame(fitting: artworkSize).width,
+                                   height: artworkFrame(fitting: artworkSize).height)
                         VStack(alignment: .center, spacing: 16.0) {
                             trackDetails
                             seekBar
@@ -81,12 +88,37 @@ struct NPControllerSection: View {
             if mediaPlayer.isCurrentlyPlayingVideo() {
                 Group {
                     if mediaPlayer.activeVideoEngine == .extended {
-                        NPExtendedVideoSurface()
+                        NPExtendedVideoSurface(isActive: !mediaPlayer.isVideoFullScreen)
                     } else {
-                        NPVideoSurface()
+                        NPVideoSurface(isActive: !mediaPlayer.isVideoFullScreen)
                     }
                 }
                 .aspectRatio(mediaPlayer.videoAspectRatio ?? 1.0, contentMode: .fit)
+                .background(NPScreenFrameReader(reference: videoFrame))
+                .overlay {
+                    NPVideoControlsOverlay { controls in
+                        HStack(alignment: .top) {
+                            if mediaPlayer.supportsVideoPictureInPicture {
+                                NPVideoOverlayButton(
+                                    systemImage: "pip.enter",
+                                    accessibilityLabel: String(localized: "NowPlaying.PictureInPicture")
+                                ) {
+                                    controls.hide()
+                                    mediaPlayer.startVideoPictureInPicture()
+                                }
+                            }
+                            Spacer(minLength: 0.0)
+                            NPVideoOverlayButton(
+                                systemImage: "arrow.up.left.and.arrow.down.right",
+                                accessibilityLabel: String(localized: "NowPlaying.EnterFullScreen")
+                            ) {
+                                controls.hide()
+                                Self.setVideoFullScreen(true, $isVideoFullScreen, mediaPlayer: mediaPlayer)
+                            }
+                        }
+                        .frame(maxHeight: .infinity, alignment: .top)
+                    }
+                }
                 .clipShape(RoundedRectangle(cornerRadius: 16.0))
                 .overlay(
                     RoundedRectangle(cornerRadius: 16.0)
@@ -98,9 +130,36 @@ struct NPControllerSection: View {
                 NPArtworkCard(albumArt: albumArt)
             }
         }
-        .aspectRatio(1.0, contentMode: .fit)
+        .aspectRatio(artworkAspectRatio, contentMode: .fit)
         .shadow(color: .black.opacity(0.1), radius: 10.0)
         .transition(.slide.animation(.default))
+    }
+
+    /// The artwork's shape: square, or the video's own shape so it isn't boxed in with empty space around it.
+    var artworkAspectRatio: CGFloat {
+        guard mediaPlayer.isCurrentlyPlayingVideo(),
+              let aspectRatio = mediaPlayer.videoAspectRatio, aspectRatio > 0 else { return 1.0 }
+        return aspectRatio
+    }
+
+    /// The artwork's size when laid out beside the other controls, as large as fits in a square of the given size.
+    func artworkFrame(fitting size: CGFloat) -> CGSize {
+        let aspectRatio = artworkAspectRatio
+        return aspectRatio >= 1.0 ?
+            CGSize(width: size, height: size / aspectRatio) :
+            CGSize(width: size * aspectRatio, height: size)
+    }
+
+    /// Shows or hides the full screen video without the system's slide up, as it animates out of the video itself.
+    /// The video view moves between the two in the same update, so playback carries on uninterrupted.
+    static func setVideoFullScreen(_ isFullScreen: Bool, _ isVideoFullScreen: Binding<Bool>,
+                                   mediaPlayer: MediaPlayerManager) {
+        var transaction = Transaction()
+        transaction.disablesAnimations = true
+        withTransaction(transaction) {
+            isVideoFullScreen.wrappedValue = isFullScreen
+            mediaPlayer.isVideoFullScreen = isFullScreen
+        }
     }
 
     var seekBar: some View {

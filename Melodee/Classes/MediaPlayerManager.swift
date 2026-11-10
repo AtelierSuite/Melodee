@@ -53,6 +53,9 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
     }
     var metadataRefreshTrigger: UUID = UUID()
     var videoAspectRatio: CGFloat?
+    /// Whether the video is shown full screen. The video view can only be in one place at a time, so every
+    /// inline video surface, in the Now Playing sheet or column, lets go of it while this is set.
+    var isVideoFullScreen: Bool = false
     /// The engine playing the loaded video, chosen from the setting when the video was loaded.
     var activeVideoEngine: VideoEngine?
     /// Set when the user picks a file that was previously stopped partway through, to ask where to start.
@@ -327,6 +330,23 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
 
     func isCurrentlyPlayingVideo() -> Bool {
         return currentlyPlayingFile()?.type == .video
+    }
+
+    /// Whether the playing video can be moved into Picture in Picture on this device.
+    var supportsVideoPictureInPicture: Bool {
+        AVPictureInPictureController.isPictureInPictureSupported()
+    }
+
+    /// Moves the playing video into Picture in Picture, from whichever video engine is playing it.
+    @MainActor
+    func startVideoPictureInPicture() {
+        guard isCurrentlyPlayingVideo() else { return }
+        switch activeVideoEngine {
+        case .extended:
+            extendedVideoPlayer.videoView.pictureInPictureWindowController?.startPictureInPicture()
+        default:
+            videoPictureInPictureController?.startPictureInPicture()
+        }
     }
 
     /// Whether the current file is a video loaded in VLCKit.
