@@ -19,10 +19,10 @@ struct NowPlayingView: View {
 
     @State var albumArt: Image = Image("Album.Generic")
     @State var previousQueueID: String = ""
-    @State var isClearQueueButtonConfirming: Bool = false
     @State var listSize: CGSize = .zero
     @State var isVideoFullScreen: Bool = false
     @State var videoFrame = NPScreenFrameReference()
+    @AppStorage(NPAdditionalControls.isExpandedKey) var isAdditionalControlsExpanded: Bool = false
 
     /// Where Now Playing is shown, which decides how much room the artwork has.
     var presentation: NowPlayingPresentation = .sheet
@@ -47,7 +47,9 @@ struct NowPlayingView: View {
         case .column where verticalSizeClass == .compact:
             // The column is narrow, so the artwork takes most of its width and the track
             // details get the rest, with the seek bar and controls below them.
-            let size = min(listSize.height - Self.besideDetailsReservedHeight, contentWidth * 0.6)
+            let reservedHeight = Self.besideDetailsReservedHeight +
+                (isAdditionalControlsExpanded ? NPAdditionalControls.height : 0.0)
+            let size = min(listSize.height - reservedHeight, contentWidth * 0.6)
             return .artworkBesideDetails(artworkSize: max(size, Self.minimumArtworkSize))
         case .sheet where verticalSizeClass == .compact, .fullScreen:
             // There is room across, so the artwork runs down the whole left side.
@@ -62,38 +64,13 @@ struct NowPlayingView: View {
         List {
             Group {
                 NPControllerSection(albumArt: $albumArt, layout: controllerLayout,
+                                    topPadding: presentation == .sheet ? Self.topPadding : 0.0,
                                     isVideoFullScreen: $isVideoFullScreen, videoFrame: videoFrame)
                     .listRowSeparator(.hidden)
-                    .padding(.top, presentation == .sheet ? Self.topPadding : 0.0)
                 NPQueueSection()
                     .alignmentGuide(.listRowSeparatorTrailing) { dimensions in
                         return dimensions.width
                     }
-                if !mediaPlayer.queue.isEmpty {
-                    Section {
-                        Button {
-                            withAnimation(.default.speed(2)) {
-                                if isClearQueueButtonConfirming {
-                                    mediaPlayer.stop()
-                                }
-                                isClearQueueButtonConfirming.toggle()
-                            }
-                        } label: {
-                            Label(
-                                (
-                                    isClearQueueButtonConfirming ?
-                                    String(localized: "Shared.AreYouSure") :
-                                    String(localized: "NowPlaying.ClearQueue")
-                                ),
-                                systemImage: "eraser.line.dashed"
-                            )
-                        }
-                        .foregroundStyle(.red)
-                        .disabled(mediaPlayer.queue.isEmpty)
-                        .listRowSeparator(.hidden)
-                        .frame(maxWidth: .infinity)
-                    }
-                }
             }
             .listRowInsets(.init(top: 0.0, leading: Self.rowInset, bottom: 0.0, trailing: Self.rowInset))
             .listRowBackground(Color.clear)
@@ -107,9 +84,6 @@ struct NowPlayingView: View {
         }
         .navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(.hidden, for: .navigationBar)
-        .onAppear {
-            isClearQueueButtonConfirming = false
-        }
         .resumePlaybackAlert(for: .queue)
         .fullScreenCover(isPresented: $isVideoFullScreen) {
             NPFullScreenVideo(sourceFrame: videoFrame) {

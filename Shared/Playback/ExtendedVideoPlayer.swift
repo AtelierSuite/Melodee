@@ -152,7 +152,14 @@ final class ExtendedVideoPlayer: NSObject {
         player.pause()
     }
 
-    /// Sets the playback speed, where 1 is normal speed.
+    /// The speed files play at, where 1 is normal speed, kept for each file loaded.
+    var defaultRate: Float = 1.0 {
+        didSet {
+            player?.rate = defaultRate
+        }
+    }
+
+    /// Sets the playback speed for now, where 1 is normal speed, such as while seeking.
     func setRate(_ rate: Float) {
         player?.rate = rate
     }
@@ -211,6 +218,7 @@ final class ExtendedVideoPlayer: NSObject {
             media.addOption(":avcodec-hw=none")
         }
         player.media = media
+        player.rate = defaultRate
         if playsWhenReady {
             player.play()
         }

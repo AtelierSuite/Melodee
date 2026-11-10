@@ -1,6 +1,7 @@
 import SwiftUI
 
 /// Chooses whether the previous and next buttons change tracks or skip within the file, for use in menus.
+/// Give it a picker style where it's used: as a submenu, or with its options listed in the menu.
 struct SkipButtonModePicker: View {
 
     @Environment(MediaPlayerManager.self) var mediaPlayer
@@ -17,6 +18,5 @@ struct SkipButtonModePicker: View {
         } label: {
             Label("SkipButtons.Title", systemImage: "goforward.15")
         }
-        .pickerStyle(.menu)
     }
 }

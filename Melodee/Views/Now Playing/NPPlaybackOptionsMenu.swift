@@ -1,34 +1,27 @@
 import SwiftUI
 
-/// Changes tracks from a visible control, since the previous and next buttons may skip within
-/// the file instead, and chooses what those buttons do.
+/// Chooses how fast playback is, and whether the previous and next buttons change tracks or skip within the file.
 struct NPPlaybackOptionsMenu: View {
 
     @Environment(MediaPlayerManager.self) var mediaPlayer
 
     var body: some View {
+        @Bindable var mediaPlayer = mediaPlayer
         Menu {
-            Section {
-                Button {
-                    withAnimation(.default.speed(2)) {
-                        mediaPlayer.backToPreviousTrack()
-                    }
-                } label: {
-                    Label("NowPlaying.PreviousTrack", systemImage: "backward.end")
+            // The options are listed in the menu, under each picker's name
+            Picker(selection: $mediaPlayer.playbackSpeed) {
+                ForEach(PlaybackSpeed.options, id: \.self) { speed in
+                    Text(verbatim: PlaybackSpeed.label(for: speed))
+                        .tag(speed)
                 }
-                .disabled(!mediaPlayer.canGoToPreviousTrack())
-                Button {
-                    withAnimation(.default.speed(2)) {
-                        mediaPlayer.skipToNextTrack()
-                    }
-                } label: {
-                    Label("NowPlaying.NextTrack", systemImage: "forward.end")
-                }
-                .disabled(!mediaPlayer.canGoToNextTrack())
+            } label: {
+                Label("NowPlaying.PlaybackSpeed", systemImage: "gauge.with.dots.needle.67percent")
             }
-            Section {
-                SkipButtonModePicker()
-            }
+            .pickerStyle(.inline)
+            .labelsVisibility(.visible)
+            SkipButtonModePicker()
+                .pickerStyle(.inline)
+                .labelsVisibility(.visible)
         } label: {
             Image(systemName: "ellipsis")
                 .resizable()

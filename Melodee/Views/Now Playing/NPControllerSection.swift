@@ -9,6 +9,11 @@ enum NPControllerLayout: Equatable {
     case artworkBesideDetails(artworkSize: CGFloat)
     /// The artwork down one side, with everything else beside it.
     case artworkBesideControls(artworkSize: CGFloat)
+
+    var isArtworkBesideControls: Bool {
+        if case .artworkBesideControls = self { return true }
+        return false
+    }
 }
 
 struct NPControllerSection: View {
@@ -17,9 +22,16 @@ struct NPControllerSection: View {
 
     @Binding var albumArt: Image
     var layout: NPControllerLayout = .stacked
+    /// Space above the controls, such as room for the sheet's grabber.
+    var topPadding: CGFloat = 0.0
     @State var currentDuration: TimeInterval = .zero
     @State var totalDuration: TimeInterval = .zero
     @State var isSeekbarSeeking: Bool = false
+    /// Drives showing the additional controls. App storage changes don't carry the animation they were made in,
+    /// so they're shown from this state and the stored value is updated alongside it.
+    @State var isAdditionalControlsExpanded: Bool =
+        UserDefaults.standard.bool(forKey: NPAdditionalControls.isExpandedKey)
+    @Environment(\.accessibilityReduceMotion) var reduceMotion
     /// Whether the video is shown full screen. The full screen video takes the video view while it's shown.
     /// Presented by Now Playing rather than here, as rows in its list are rebuilt on rotating, which would close it.
     @Binding var isVideoFullScreen: Bool
@@ -62,12 +74,26 @@ struct NPControllerSection: View {
                             trackDetails
                             seekBar
                             playbackControls
+                            if isAdditionalControlsExpanded {
+                                NPAdditionalControls()
+                                    .transition(NPAdditionalControlsTransition(reduceMotion: reduceMotion))
+                            }
                         }
                         .frame(maxWidth: .infinity)
                     }
                 }
             }
             .padding([.top, .bottom])
+            .padding(.top, topPadding)
+            // Below the whole width, the additional controls are a row of their own, so the list
+            // animates them in and out and slides the queue along with them
+            if isAdditionalControlsExpanded, !layout.isArtworkBesideControls {
+                NPAdditionalControls()
+                    .padding(.bottom)
+            }
+        }
+        .onChange(of: isAdditionalControlsExpanded) { _, isExpanded in
+            UserDefaults.standard.set(isExpanded, forKey: NPAdditionalControls.isExpandedKey)
         }
         .onReceive(updateTimer, perform: { _ in
             if !isSeekbarSeeking {
@@ -187,7 +213,7 @@ struct NPControllerSection: View {
             }
             .frame(width: Self.sideControlsWidth, alignment: .leading)
             Spacer()
-            Group {
+            HStack(alignment: .center, spacing: 20.0) {
                 // Holding the previous and next buttons rewinds and fast forwards instead
                 NPTransportButton(image: skipsByInterval ? Image(systemName: "gobackward.15") : Image("Back"),
                                   scrubDirection: .backward) {
@@ -239,57 +265,21 @@ struct NPControllerSection: View {
                 .clipShape(Circle())
             }
             Spacer()
-            HStack(alignment: .center, spacing: 10.0) {
-                NPPlaybackOptionsMenu()
-                repeatButton
-            }
-            .frame(width: Self.sideControlsWidth, alignment: .trailing)
+            NPAdditionalControlsToggle(isExpanded: $isAdditionalControlsExpanded)
+                .frame(width: Self.sideControlsWidth, alignment: .trailing)
         }
         .disabled(!mediaPlayer.canStartPlayback())
         .buttonStyle(.plain)
     }
 
-    /// Room for two 24 point controls and the spacing between them.
-    static let sideControlsWidth: CGFloat = 58.0
+    /// Room for the 24 point control on each side.
+    static let sideControlsWidth: CGFloat = 24.0
 
     /// Whether a previous or next button does anything: it can always seek while held, and when tapped it
     /// skips within the file or changes tracks.
     func canUseTransportButton(canChangeTrack: Bool) -> Bool {
         guard mediaPlayer.isPlaybackActive else { return false }
         return mediaPlayer.supportsSeeking() || (!mediaPlayer.skipsByInterval() && canChangeTrack)
-    }
-
-    var repeatButton: some View {
-        Button {
-            withAnimation(.default.speed(2)) {
-                switch mediaPlayer.repeatMode {
-                case .none: mediaPlayer.repeatMode = .single
-                case .single: mediaPlayer.repeatMode = .all
-                case .all: mediaPlayer.repeatMode = .none
-                }
-            }
-        } label: {
-            Group {
-                switch mediaPlayer.repeatMode {
-                case .none:
-                    Image(systemName: "repeat")
-                        .resizable()
-                        .opacity(0.5)
-                case .single:
-                    Image(systemName: "repeat.1")
-                        .resizable()
-                case .all:
-                    Image(systemName: "repeat")
-                        .resizable()
-                }
-            }
-            .scaledToFit()
-            .padding(2.0)
-            .frame(width: 24.0, height: 24.0)
-        }
-        .buttonStyle(.borderless)
-        .foregroundStyle(.primary)
-        .disabled(!(mediaPlayer.isPlaybackActive))
     }
 
     var trackDetails: some View {

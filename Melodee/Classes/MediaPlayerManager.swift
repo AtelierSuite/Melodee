@@ -21,6 +21,15 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
     @ObservationIgnored let videoPlayerView: VideoPlayerView
     @ObservationIgnored private let videoPictureInPictureController: AVPictureInPictureController?
     @ObservationIgnored let extendedVideoPlayer = ExtendedVideoPlayer()
+    /// Changes the audio player's speed without changing its pitch. It's bypassed at normal speed.
+    @ObservationIgnored let timePitch = AVAudioUnitTimePitch()
+    /// How fast audio and video play, where 1 is normal speed.
+    var playbackSpeed: Double = PlaybackSpeed.current {
+        didSet {
+            PlaybackSpeed.current = playbackSpeed
+            applyPlaybackSpeed()
+        }
+    }
     @ObservationIgnored var downloadManager: FileDownloadManager?
     @ObservationIgnored var stateStore: PlaybackStateStore? {
         didSet {
@@ -141,6 +150,8 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
         videoPictureInPictureController = pictureInPictureController
         super.init()
         audioPlayer.delegate = self
+        insertTimePitch()
+        applyPlaybackSpeed()
         // By default AVPlayer pauses a video when the app is backgrounded or the screen is
         // locked unless Picture in Picture is active, so keep its audio playing instead
         videoPlayer.audiovisualBackgroundPlaybackPolicy = .continuesIfPossible
@@ -850,12 +861,12 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
             }
         case .videoRate:
             if isPlayingExtendedVideo() {
-                extendedVideoPlayer.setRate(1.0)
+                extendedVideoPlayer.setRate(Float(playbackSpeed))
                 if !scrubResumesPlayback {
                     extendedVideoPlayer.pause()
                 }
             } else if scrubResumesPlayback {
-                videoPlayer.rate = 1.0
+                videoPlayer.rate = Float(playbackSpeed)
             } else {
                 videoPlayer.pause()
             }
@@ -870,7 +881,7 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
     private func cancelScrubbing() {
         guard scrubMode != nil else { return }
         if scrubMode == .videoRate {
-            extendedVideoPlayer.setRate(1.0)
+            extendedVideoPlayer.setRate(Float(playbackSpeed))
         }
         stopScrubbing()
     }
@@ -990,7 +1001,8 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
             nowPlayingInfo[MPNowPlayingInfoPropertyElapsedPlaybackTime] = time.currentTime
             nowPlayingInfo[MPMediaItemPropertyPlaybackDuration] = time.totalTime
         }
-        nowPlayingInfo[MPNowPlayingInfoPropertyPlaybackRate] = playing ? 1.0 : 0.0
+        nowPlayingInfo[MPNowPlayingInfoPropertyPlaybackRate] = playing ? playbackSpeed : 0.0
+        nowPlayingInfo[MPNowPlayingInfoPropertyDefaultPlaybackRate] = playbackSpeed
         if !queue.isEmpty {
             nowPlayingInfo[MPNowPlayingInfoPropertyPlaybackQueueIndex] = currentlyPlayingIndex()
             nowPlayingInfo[MPNowPlayingInfoPropertyPlaybackQueueCount] = queue.count
