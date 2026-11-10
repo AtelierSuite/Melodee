@@ -68,13 +68,15 @@ struct NPFullScreenVideo: View {
                     VStack(spacing: 0.0) {
                         HStack(alignment: .top) {
                             NPVideoOverlayButton(systemImage: "xmark",
-                                                 accessibilityLabel: String(localized: "NowPlaying.ExitFullScreen")) {
+                                                 accessibilityLabel: String(localized: "NowPlaying.ExitFullScreen"),
+                                                 size: .navigationBar) {
                                 close()
                             }
                             Spacer(minLength: 0.0)
                             if mediaPlayer.supportsVideoPictureInPicture {
                                 NPVideoOverlayButton(systemImage: "pip.enter",
-                                                     accessibilityLabel: String(localized: "NowPlaying.PictureInPicture")) {
+                                                     accessibilityLabel: String(localized: "NowPlaying.PictureInPicture"),
+                                                     size: .navigationBar) {
                                     mediaPlayer.startVideoPictureInPicture()
                                     close()
                                 }

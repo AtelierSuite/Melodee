@@ -80,15 +80,37 @@ struct NPVideoControlsOverlay<Controls: View>: View {
 /// A round glass button over the video, sized and spaced like the visualizer's switch button.
 struct NPVideoOverlayButton: View {
 
+    enum Size {
+        /// Sized like the visualizer's switch button, for the video in the Now Playing sheet.
+        case regular
+        /// Sized like the buttons in a navigation bar, for the full screen video.
+        case navigationBar
+
+        var symbolSize: CGFloat {
+            switch self {
+            case .regular: 16.0
+            case .navigationBar: 19.0
+            }
+        }
+
+        var labelSize: CGFloat {
+            switch self {
+            case .regular: 24.0
+            case .navigationBar: 32.0
+            }
+        }
+    }
+
     let systemImage: String
     let accessibilityLabel: String
+    var size: Size = .regular
     let action: () -> Void
 
     var body: some View {
         Button(action: action) {
             Image(systemName: systemImage)
-                .font(.system(size: 16.0, weight: .semibold))
-                .frame(width: 24.0, height: 24.0)
+                .font(.system(size: size.symbolSize, weight: .semibold))
+                .frame(width: size.labelSize, height: size.labelSize)
         }
         .buttonStyle(.glass(.clear))
         .buttonBorderShape(.circle)
