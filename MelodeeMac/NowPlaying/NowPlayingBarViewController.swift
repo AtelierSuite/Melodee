@@ -174,8 +174,7 @@ final class NowPlayingBarViewController: NSViewController {
         )
         playPauseButton.toolTip = MacText.string(playPauseKey)
         playPauseButton.isEnabled = player.canPlay
-        previousButton.isEnabled = player.canGoToPreviousTrack
-        nextButton.isEnabled = player.canGoToNextTrack
+        updateSkipButtons()
         updateRepeatButton()
         updateProgress()
         if isPlaying {
@@ -240,7 +239,11 @@ final class NowPlayingBarViewController: NSViewController {
     }
 
     @objc private func previousTrack(_ sender: Any?) {
-        player.backToPreviousTrack()
+        if player.skipsByInterval {
+            player.skipBackward()
+        } else {
+            player.backToPreviousTrack()
+        }
     }
 
     @objc private func togglePlayPause(_ sender: Any?) {
@@ -248,7 +251,11 @@ final class NowPlayingBarViewController: NSViewController {
     }
 
     @objc private func nextTrack(_ sender: Any?) {
-        player.skipToNextTrack()
+        if player.skipsByInterval {
+            player.skipForward()
+        } else {
+            player.skipToNextTrack()
+        }
     }
 
     @objc private func showVisualizer(_ sender: Any?) {
@@ -271,5 +278,31 @@ final class NowPlayingBarViewController: NSViewController {
         popover.contentViewController = QueueViewController()
         popover.show(relativeTo: queueButton.bounds, of: queueButton, preferredEdge: .maxY)
         queuePopover = popover
+    }
+}
+
+extension NowPlayingBarViewController {
+
+    /// Shows the previous and next buttons as skipping within the file or changing tracks,
+    /// following the skip button mode.
+    private func updateSkipButtons() {
+        if player.skipsByInterval {
+            configure(previousButton, symbolName: "gobackward.15", labelKey: "NowPlaying.SkipBackward",
+                      isEnabled: player.supportsSeeking)
+            configure(nextButton, symbolName: "goforward.15", labelKey: "NowPlaying.SkipForward",
+                      isEnabled: player.supportsSeeking)
+        } else {
+            configure(previousButton, symbolName: "backward.fill", labelKey: "NowPlaying.Previous",
+                      isEnabled: player.canGoToPreviousTrack)
+            configure(nextButton, symbolName: "forward.fill", labelKey: "NowPlaying.Next",
+                      isEnabled: player.canGoToNextTrack)
+        }
+    }
+
+    private func configure(_ button: NSButton, symbolName: String, labelKey: String, isEnabled: Bool) {
+        let label = MacText.string(labelKey)
+        button.image = NSImage(systemSymbolName: symbolName, accessibilityDescription: label)
+        button.toolTip = label
+        button.isEnabled = isEnabled
     }
 }

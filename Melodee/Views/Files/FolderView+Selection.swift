@@ -13,6 +13,7 @@ extension FolderView {
                 }
                 Section {
                     resumePlaybackPicker
+                    SkipButtonModePicker()
                     videoEnginePicker
                 }
                 Section {

@@ -110,6 +110,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         player.repeatMode = mode
     }
 
+    @objc func setSkipButtonMode(_ sender: NSMenuItem) {
+        guard let rawValue = sender.representedObject as? String, let mode = SkipButtonMode(rawValue: rawValue) else {
+            return
+        }
+        player.skipButtonMode = mode
+    }
+
     @objc func setVideoEngine(_ sender: NSMenuItem) {
         guard let rawValue = sender.representedObject as? String, let engine = VideoEngine(rawValue: rawValue),
               engine != VideoEngine.current else {
@@ -142,6 +149,8 @@ extension AppDelegate: NSMenuItemValidation {
             return player.canGoToPreviousTrack
         case #selector(setRepeatMode(_:)):
             menuItem.state = (menuItem.representedObject as? String) == player.repeatMode.rawValue ? .on : .off
+        case #selector(setSkipButtonMode(_:)):
+            menuItem.state = (menuItem.representedObject as? String) == player.skipButtonMode.rawValue ? .on : .off
         case #selector(setVideoEngine(_:)):
             menuItem.state = (menuItem.representedObject as? String) == VideoEngine.current.rawValue ? .on : .off
         case #selector(clearQueue(_:)):

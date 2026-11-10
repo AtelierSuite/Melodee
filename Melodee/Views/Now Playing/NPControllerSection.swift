@@ -119,13 +119,23 @@ struct NPControllerSection: View {
     }
 
     var playbackControls: some View {
-        HStack(alignment: .center, spacing: 10.0) {
-            DevicePickerView()
-                .frame(width: 24.0, height: 24.0)
+        let skipsByInterval = mediaPlayer.skipsByInterval()
+        return HStack(alignment: .center, spacing: 10.0) {
+            // Both sides are the same width, so the transport buttons stay centered
+            HStack(alignment: .center, spacing: 10.0) {
+                DevicePickerView()
+                    .frame(width: 24.0, height: 24.0)
+            }
+            .frame(width: Self.sideControlsWidth, alignment: .leading)
             Spacer()
             Group {
-                // Holding the previous and next track buttons rewinds and fast forwards instead
-                NPTransportButton(imageName: "Back", scrubDirection: .backward) {
+                // Holding the previous and next buttons rewinds and fast forwards instead
+                NPTransportButton(image: skipsByInterval ? Image(systemName: "gobackward.15") : Image("Back"),
+                                  scrubDirection: .backward) {
+                    if mediaPlayer.skipsByInterval() {
+                        mediaPlayer.skipBackward()
+                        return
+                    }
                     guard mediaPlayer.canGoToPreviousTrack() else { return }
                     withAnimation(.default.speed(2)) {
                         mediaPlayer.backToPreviousTrack()
@@ -134,8 +144,8 @@ struct NPControllerSection: View {
                     }
                 }
                 .foregroundStyle(.primary)
-                .disabled(!(mediaPlayer.isPlaybackActive &&
-                            (mediaPlayer.canGoToPreviousTrack() || mediaPlayer.supportsSeeking())))
+                .accessibilityLabel(skipsByInterval ? "NowPlaying.SkipBackward" : "NowPlaying.PreviousTrack")
+                .disabled(!canUseTransportButton(canChangeTrack: mediaPlayer.canGoToPreviousTrack()))
                 .clipShape(Circle())
                 Button {
                     if mediaPlayer.isPaused {
@@ -153,51 +163,74 @@ struct NPControllerSection: View {
                 .buttonStyle(.glass)
                 .buttonBorderShape(.circle)
                 .foregroundStyle(.primary)
-                NPTransportButton(imageName: "Next", scrubDirection: .forward) {
+                NPTransportButton(image: skipsByInterval ? Image(systemName: "goforward.15") : Image("Next"),
+                                  scrubDirection: .forward) {
+                    if mediaPlayer.skipsByInterval() {
+                        mediaPlayer.skipForward()
+                        return
+                    }
                     guard mediaPlayer.canGoToNextTrack() else { return }
                     withAnimation(.default.speed(2)) {
                         mediaPlayer.skipToNextTrack()
                     }
                 }
                 .foregroundStyle(.primary)
-                .disabled(!(mediaPlayer.isPlaybackActive &&
-                            (mediaPlayer.canGoToNextTrack() || mediaPlayer.supportsSeeking())))
+                .accessibilityLabel(skipsByInterval ? "NowPlaying.SkipForward" : "NowPlaying.NextTrack")
+                .disabled(!canUseTransportButton(canChangeTrack: mediaPlayer.canGoToNextTrack()))
                 .clipShape(Circle())
             }
             Spacer()
-            Button {
-                withAnimation(.default.speed(2)) {
-                    switch mediaPlayer.repeatMode {
-                    case .none: mediaPlayer.repeatMode = .single
-                    case .single: mediaPlayer.repeatMode = .all
-                    case .all: mediaPlayer.repeatMode = .none
-                    }
-                }
-            } label: {
-                Group {
-                    switch mediaPlayer.repeatMode {
-                    case .none:
-                        Image(systemName: "repeat")
-                            .resizable()
-                            .opacity(0.5)
-                    case .single:
-                        Image(systemName: "repeat.1")
-                            .resizable()
-                    case .all:
-                        Image(systemName: "repeat")
-                            .resizable()
-                    }
-                }
-                .scaledToFit()
-                .padding(2.0)
-                .frame(width: 24.0, height: 24.0)
+            HStack(alignment: .center, spacing: 10.0) {
+                NPPlaybackOptionsMenu()
+                repeatButton
             }
-            .buttonStyle(.borderless)
-            .foregroundStyle(.primary)
-            .disabled(!(mediaPlayer.isPlaybackActive))
+            .frame(width: Self.sideControlsWidth, alignment: .trailing)
         }
         .disabled(!mediaPlayer.canStartPlayback())
         .buttonStyle(.plain)
+    }
+
+    /// Room for two 24 point controls and the spacing between them.
+    static let sideControlsWidth: CGFloat = 58.0
+
+    /// Whether a previous or next button does anything: it can always seek while held, and when tapped it
+    /// skips within the file or changes tracks.
+    func canUseTransportButton(canChangeTrack: Bool) -> Bool {
+        guard mediaPlayer.isPlaybackActive else { return false }
+        return mediaPlayer.supportsSeeking() || (!mediaPlayer.skipsByInterval() && canChangeTrack)
+    }
+
+    var repeatButton: some View {
+        Button {
+            withAnimation(.default.speed(2)) {
+                switch mediaPlayer.repeatMode {
+                case .none: mediaPlayer.repeatMode = .single
+                case .single: mediaPlayer.repeatMode = .all
+                case .all: mediaPlayer.repeatMode = .none
+                }
+            }
+        } label: {
+            Group {
+                switch mediaPlayer.repeatMode {
+                case .none:
+                    Image(systemName: "repeat")
+                        .resizable()
+                        .opacity(0.5)
+                case .single:
+                    Image(systemName: "repeat.1")
+                        .resizable()
+                case .all:
+                    Image(systemName: "repeat")
+                        .resizable()
+                }
+            }
+            .scaledToFit()
+            .padding(2.0)
+            .frame(width: 24.0, height: 24.0)
+        }
+        .buttonStyle(.borderless)
+        .foregroundStyle(.primary)
+        .disabled(!(mediaPlayer.isPlaybackActive))
     }
 
     var trackDetails: some View {

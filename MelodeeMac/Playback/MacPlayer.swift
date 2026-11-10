@@ -34,6 +34,17 @@ final class MacPlayer: NSObject {
         }
     }
 
+    /// What the previous and next buttons do.
+    var skipButtonMode: SkipButtonMode = SkipButtonMode.current {
+        didSet {
+            SkipButtonMode.current = skipButtonMode
+            notifyChange()
+        }
+    }
+    /// Whether the current file looks like a podcast episode or an audiobook, for the automatic skip button mode.
+    var isCurrentFileSpokenWord: Bool = false
+    var spokenWordDetectionTask: Task<Void, Never>?
+
     /// Going back within this many seconds of a track starting moves to the previous track instead of restarting.
     private static let restartThreshold: TimeInterval = 3.0
 
@@ -169,6 +180,7 @@ final class MacPlayer: NSObject {
     func refreshMetadata(forPaths paths: Set<String>) {
         guard let currentFile, paths.contains(currentFile.path) else { return }
         metadata = TrackMetadata(file: currentFile)
+        detectSpokenWord()
         notifyChange()
     }
 
@@ -183,6 +195,7 @@ final class MacPlayer: NSObject {
         currentIndex = index
         let file = queue[index]
         metadata = TrackMetadata(file: file)
+        detectSpokenWord()
         if file.type == .video {
             audioPlayer.stop()
             if VideoEngine.current == .extended {
@@ -253,6 +266,7 @@ final class MacPlayer: NSObject {
         queue.removeAll()
         currentIndex = nil
         metadata = nil
+        detectSpokenWord()
         notifyChange()
     }
 

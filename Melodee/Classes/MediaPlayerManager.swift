@@ -47,6 +47,7 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
             if currentlyPlayingID != oldValue {
                 // The engine may still report the previous file's duration, so leave it out
                 savePlaybackPosition(at: 0.0, includesTotalTime: false)
+                detectSpokenWord()
             }
         }
     }
@@ -56,6 +57,15 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
     var activeVideoEngine: VideoEngine?
     /// Set when the user picks a file that was previously stopped partway through, to ask where to start.
     var resumePrompt: ResumePlaybackPrompt?
+    /// What the previous and next buttons do.
+    var skipButtonMode: SkipButtonMode = SkipButtonMode.current {
+        didSet {
+            SkipButtonMode.current = skipButtonMode
+            setNowPlaying()
+        }
+    }
+    /// Whether the current file looks like a podcast episode or an audiobook, for the automatic skip button mode.
+    var isCurrentFileSpokenWord: Bool = false
 
     /// Where playback of a file starts.
     enum StartPosition {
@@ -73,6 +83,7 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
     @ObservationIgnored private var videoItemStatusObservation: NSKeyValueObservation?
     @ObservationIgnored private var videoTimeControlObservation: NSKeyValueObservation?
     @ObservationIgnored private var videoPresentationSizeObservation: NSKeyValueObservation?
+    @ObservationIgnored var spokenWordDetectionTask: Task<Void, Never>?
 
     // Restored position that is applied once the engine loads the current file
     @ObservationIgnored private var pendingResumeTime: TimeInterval?
@@ -226,6 +237,18 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
             self.backToPreviousTrack()
             return .success
         }
+        // Only one of the track and skip command pairs is enabled at a time, following the skip button mode
+        let skipIntervals = [NSNumber(value: SkipButtonMode.interval)]
+        remoteCommandCenter.skipForwardCommand.preferredIntervals = skipIntervals
+        remoteCommandCenter.skipBackwardCommand.preferredIntervals = skipIntervals
+        remoteCommandCenter.skipForwardCommand.addTarget { _ in
+            self.skipForward()
+            return .success
+        }
+        remoteCommandCenter.skipBackwardCommand.addTarget { _ in
+            self.skipBackward()
+            return .success
+        }
         remoteCommandCenter.changePlaybackPositionCommand.addTarget { event in
             if let event = event as? MPChangePlaybackPositionCommandEvent {
                 self.seekTo(event.positionTime)
@@ -295,6 +318,7 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
     private func invalidateMetadataCache() {
         cachedMetadataID = ""
         metadataRefreshTrigger = UUID()
+        detectSpokenWord()
     }
 
     func currentlyPlayingFile() -> FSFile? {
@@ -925,8 +949,12 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
         remoteCommandCenter.playCommand.isEnabled = canStartPlayback()
         remoteCommandCenter.pauseCommand.isEnabled = playing
         remoteCommandCenter.togglePlayPauseCommand.isEnabled = playing || canStartPlayback()
-        remoteCommandCenter.nextTrackCommand.isEnabled = canGoToNextTrack()
-        remoteCommandCenter.previousTrackCommand.isEnabled = canGoToPreviousTrack()
+        let skipsByInterval = skipsByInterval()
+        remoteCommandCenter.nextTrackCommand.isEnabled = !skipsByInterval && canGoToNextTrack()
+        remoteCommandCenter.previousTrackCommand.isEnabled = !skipsByInterval && canGoToPreviousTrack()
+        let canSkipByInterval = skipsByInterval && isPlaybackActive && supportsSeeking()
+        remoteCommandCenter.skipForwardCommand.isEnabled = canSkipByInterval
+        remoteCommandCenter.skipBackwardCommand.isEnabled = canSkipByInterval
         remoteCommandCenter.changePlaybackPositionCommand.isEnabled = playing && supportsSeeking()
         // Set now playing info
         let albumArt = albumArt()

@@ -1,11 +1,11 @@
 import SwiftUI
 
-/// A previous or next track button that, when held, fast forwards or rewinds through the current file instead.
+/// A previous or next button that, when held, fast forwards or rewinds through the current file instead.
 struct NPTransportButton: View {
 
     @Environment(MediaPlayerManager.self) var mediaPlayer
 
-    let imageName: String
+    let image: Image
     let scrubDirection: ScrubDirection
     let action: () -> Void
 
@@ -20,7 +20,7 @@ struct NPTransportButton: View {
             }
             action()
         } label: {
-            Image(imageName)
+            image
                 .resizable()
                 .scaledToFit()
                 .frame(width: 24.0, height: 24.0)

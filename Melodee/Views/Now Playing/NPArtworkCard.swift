@@ -1,6 +1,7 @@
 import SwiftUI
 
-/// The Now Playing artwork, which flips over when tapped to reveal the visualizer on its back.
+/// The Now Playing artwork, which flips over when tapped to reveal the visualizer on its back,
+/// and changes tracks when swiped.
 struct NPArtworkCard: View {
 
     @Environment(\.accessibilityReduceMotion) var reduceMotion
@@ -70,6 +71,8 @@ struct NPArtworkCard: View {
                 flip()
             }
             .sensoryFeedback(.impact(weight: .light), trigger: isShowingVisualizer)
+            // The style picker scrolls sideways, so swiping between tracks waits until it's closed
+            .modifier(NPTrackSwipe(isEnabled: !isChoosingStyle))
             .accessibilityElement(children: .contain)
     }
 

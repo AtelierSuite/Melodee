@@ -31,6 +31,18 @@ extension MacPlayer {
             Task { @MainActor in self?.backToPreviousTrack() }
             return .success
         }
+        // Only one of the track and skip command pairs is enabled at a time, following the skip button mode
+        let skipIntervals = [NSNumber(value: SkipButtonMode.interval)]
+        commandCenter.skipForwardCommand.preferredIntervals = skipIntervals
+        commandCenter.skipBackwardCommand.preferredIntervals = skipIntervals
+        commandCenter.skipForwardCommand.addTarget { [weak self] _ in
+            Task { @MainActor in self?.skipForward() }
+            return .success
+        }
+        commandCenter.skipBackwardCommand.addTarget { [weak self] _ in
+            Task { @MainActor in self?.skipBackward() }
+            return .success
+        }
         commandCenter.changePlaybackPositionCommand.addTarget { [weak self] event in
             guard let event = event as? MPChangePlaybackPositionCommandEvent else { return .commandFailed }
             let position = event.positionTime
@@ -47,8 +59,11 @@ extension MacPlayer {
 
     func updateNowPlaying() {
         let commandCenter = MPRemoteCommandCenter.shared()
-        commandCenter.nextTrackCommand.isEnabled = canGoToNextTrack
-        commandCenter.previousTrackCommand.isEnabled = canGoToPreviousTrack
+        let skipsByInterval = skipsByInterval
+        commandCenter.nextTrackCommand.isEnabled = !skipsByInterval && canGoToNextTrack
+        commandCenter.previousTrackCommand.isEnabled = !skipsByInterval && canGoToPreviousTrack
+        commandCenter.skipForwardCommand.isEnabled = skipsByInterval && supportsSeeking
+        commandCenter.skipBackwardCommand.isEnabled = skipsByInterval && supportsSeeking
         commandCenter.changePlaybackPositionCommand.isEnabled = supportsSeeking
         commandCenter.changeRepeatModeCommand.currentRepeatType = repeatMode.remoteRepeatType
         let infoCenter = MPNowPlayingInfoCenter.default()
