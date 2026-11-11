@@ -1,12 +1,11 @@
 import SwiftUI
 
-/// The controls shown below the playback controls when they're expanded: repeat, shuffle, stop,
+/// The controls shown below the playback controls when they're expanded: repeat, shuffle, the queue menu,
 /// and the playback options.
 struct NPAdditionalControls: View {
 
     @Environment(MediaPlayerManager.self) var mediaPlayer
 
-    @State private var isStopConfirming: Bool = false
     @State private var shuffles: Int = 0
 
     /// Remembers whether the controls were showing, so Now Playing reopens with them.
@@ -27,22 +26,7 @@ struct NPAdditionalControls: View {
             .disabled(!mediaPlayer.canShuffleUpcomingTracks())
             .sensoryFeedback(.impact(weight: .light), trigger: shuffles)
             Spacer()
-            // Stopping also empties the queue, so it's confirmed first
-            // A filled square looks bigger than the line icons at the same size, so it's inset further
-            controlButton(systemImage: "stop.fill", label: "NowPlaying.Stop", inset: 5.0) {
-                isStopConfirming = true
-            }
-            .foregroundStyle(.red)
-            .disabled(mediaPlayer.queue.isEmpty)
-            .confirmationDialog("NowPlaying.Stop", isPresented: $isStopConfirming) {
-                Button("NowPlaying.Stop", role: .destructive) {
-                    withAnimation(.default.speed(2)) {
-                        mediaPlayer.stop()
-                    }
-                }
-            } message: {
-                Text("NowPlaying.Stop.Message")
-            }
+            NPQueueMenu()
             Spacer()
             NPPlaybackOptionsMenu()
         }
@@ -62,7 +46,7 @@ struct NPAdditionalControls: View {
                 .scaledToFit()
                 .padding(inset)
                 .frame(width: 24.0, height: 24.0)
-                .contentShape(Rectangle())
+                .npAdditionalControlHitArea()
         }
         .accessibilityLabel(label)
     }
@@ -83,6 +67,7 @@ struct NPAdditionalControls: View {
                 .padding(2.0)
                 .frame(width: 24.0, height: 24.0)
                 .opacity(mediaPlayer.repeatMode == .none ? 0.5 : 1.0)
+                .npAdditionalControlHitArea()
         }
         .accessibilityLabel("NowPlaying.Repeat")
         .accessibilityValue(repeatModeDescription)
@@ -94,6 +79,17 @@ struct NPAdditionalControls: View {
         case .single: Text("NowPlaying.Repeat.One")
         case .all: Text("NowPlaying.Repeat.All")
         }
+    }
+}
+
+extension View {
+    /// Lets a 24 point control be tapped anywhere in the 44 point square around it, without taking up more room,
+    /// so a tap just off the icon isn't lost to the glass behind it.
+    func npAdditionalControlHitArea() -> some View {
+        self
+            .frame(width: 44.0, height: 44.0)
+            .contentShape(Rectangle())
+            .padding(-10.0)
     }
 }
 
