@@ -125,8 +125,11 @@ struct FileBrowserTrimActions: ViewModifier {
         state.conversionTitle = "Trim.Saving"
         state.conversionProgress = 0
         state.isConverting = true
+        // Locking the screen would suspend the app partway through the trims
+        UIApplication.shared.isIdleTimerDisabled = true
 
         Task {
+            defer { UIApplication.shared.isIdleTimerDisabled = false }
             var skippedCount = 0
             var failures: [String] = []
             for (index, file) in files.enumerated() {
