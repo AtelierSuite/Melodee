@@ -340,6 +340,46 @@ import Testing
         #expect(try AudioSource(contentsOf: output).format == .mp3)
     }
 
+    @Test(arguments: [
+        (AudioFormat.vorbis, 44100.0, AVAudioChannelCount(2), 1.0, 3.5),
+        (.vorbis, 48000.0, AVAudioChannelCount(1), 0.0, 2.0),
+        (.vorbis, 44100.0, AVAudioChannelCount(2), 2.3, 5.0),
+        (.opus, 48000.0, AVAudioChannelCount(2), 1.0, 3.5),
+        (.opus, 48000.0, AVAudioChannelCount(1), 0.0, 2.0),
+        (.opus, 44100.0, AVAudioChannelCount(2), 2.3, 5.0)
+    ])
+    func oggTrimsCopyPacketsAndCutAtExactSamples(format: AudioFormat, sampleRate: Double,
+                                                 channels: AVAudioChannelCount, start: Double, end: Double)
+        async throws {
+        let name = "oggcopy-\(format)-\(Int(sampleRate))-\(channels)-\(start)"
+        let wav = try makeWAV(name: name, bitDepth: 16, sampleRate: sampleRate, channels: channels, seconds: 5)
+        let encoded = try await Audioglot.convert(wav, to: format,
+                                                  outputURL: directory.appendingPathComponent("\(name).\(format.fileExtension)"))
+        let output = directory.appendingPathComponent("trimmed-\(name).\(format.fileExtension)")
+        // Called directly, so a fallback to re-encoding fails the test
+        try OggPacketTrimmer.trim(encoded, from: start, to: end, outputURL: output, progress: nil)
+
+        // Opus always decodes at 48 kHz
+        let rate = format == .opus ? 48000 : sampleRate
+        let startSample = Int((start * rate).rounded())
+        let wanted = Int((end * rate).rounded()) - startSample
+        let original = try decodeFirstChannel(encoded)
+        let trimmed = try decodeFirstChannel(output)
+        #expect(trimmed.count == wanted, "decoded length")
+        let difference = zip(trimmed, original[startSample...]).map { abs($0 - $1) }.max() ?? 1
+        #expect(difference < 0.0001, "decoded samples differ by \(difference)")
+        #expect(try AudioSource(contentsOf: output).format == format)
+
+        // A trimmed file can be trimmed again, though its stream no longer starts at the beginning
+        let retrimmed = directory.appendingPathComponent("retrimmed-\(name).\(format.fileExtension)")
+        try OggPacketTrimmer.trim(output, from: 0.6, to: 1.9, outputURL: retrimmed, progress: nil)
+        let again = try decodeFirstChannel(retrimmed)
+        let againStart = Int((0.6 * rate).rounded())
+        #expect(again.count == Int((1.9 * rate).rounded()) - againStart, "decoded length after trimming again")
+        let againDifference = zip(again, trimmed[againStart...]).map { abs($0 - $1) }.max() ?? 1
+        #expect(againDifference < 0.0001, "decoded samples after trimming again differ by \(againDifference)")
+    }
+
     @Test func emptyRangesAreRejected() async throws {
         let wav = try makeWAV(name: "empty", bitDepth: 16)
         let output = directory.appendingPathComponent("empty-out.wav")

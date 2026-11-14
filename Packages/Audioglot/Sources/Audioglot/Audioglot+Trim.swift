@@ -14,9 +14,11 @@ extension Audioglot {
     /// Every cut lands on an exact sample.
     /// - AAC-LC is copied packet by packet, so its quality never changes. See ``AACPacketTrimmer``.
     /// - MP3 is copied frame by frame, so its quality never changes either. See ``MP3FrameTrimmer``.
+    /// - Opus and Vorbis are copied packet by packet, so their quality never changes either. See
+    ///   ``OggPacketTrimmer``.
     /// - WAV, AIFF, FLAC and ALAC are re-encoded losslessly.
-    /// - Vorbis, Opus, other AAC profiles, and MP3s whose start can't be placed exactly (a Xing frame without a
-    ///   LAME tag) are re-encoded at no more than the source's bitrate.
+    /// - Other AAC profiles, and files the copying trimmers can't follow (such as an MP3 with a Xing frame but no
+    ///   LAME tag, or a chained Ogg file), are re-encoded at no more than the source's bitrate.
     ///
     /// - Throws: ``AudioglotError/trimNotSupported(_:)`` for codecs Audioglot can't write,
     ///   ``AudioglotError/invalidTrimRange`` when the range is empty, ``AudioglotError/outputExists(_:)`` when the
@@ -42,6 +44,9 @@ extension Audioglot {
             } else if format == .mp3,
                       try await trimMP3Frames(url, from: start, to: end, outputURL: outputURL, progress: progress) {
                 // Copied without re-encoding
+            } else if format == .opus || format == .vorbis,
+                      try await trimOggPackets(url, from: start, to: end, outputURL: outputURL, progress: progress) {
+                // Copied without re-encoding
             } else {
                 try await transcode(source: source, target: format, outputURL: outputURL,
                                     timeRange: start...end, progress: progress)
@@ -66,6 +71,18 @@ extension Audioglot {
             try MP3FrameTrimmer.trim(url, from: start, to: end, outputURL: outputURL, progress: progress)
             return true
         } catch is MP3FrameTrimmer.Unsupported {
+            return false
+        }
+    }
+
+    /// Trims by copying packets, returning false when the file can't be trimmed that way and must be re-encoded.
+    @concurrent
+    private static func trimOggPackets(_ url: URL, from start: TimeInterval, to end: TimeInterval,
+                                       outputURL: URL, progress: (@Sendable (Double) -> Void)?) async throws -> Bool {
+        do {
+            try OggPacketTrimmer.trim(url, from: start, to: end, outputURL: outputURL, progress: progress)
+            return true
+        } catch is OggPacketTrimmer.Unsupported {
             return false
         }
     }
