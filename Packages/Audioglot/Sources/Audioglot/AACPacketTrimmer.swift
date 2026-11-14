@@ -1,33 +1,54 @@
 import AudioToolbox
 import Foundation
 
-/// Trims AAC-LC in M4A by copying packets, so the audio is never re-encoded.
+/// Trims AAC in M4A by copying packets, so the audio is never re-encoded.
 ///
-/// AAC packets hold 1024 frames each, and decoding one needs the packet before it. The trimmer copies the packets
-/// covering the range plus a couple of packets of pre-roll, then records in the file's packet table how many frames
-/// at the start (priming) and end (remainder) the decoder should drop. Players that honour the packet table, as
-/// Core Audio and SFBAudioEngine do, play exactly the requested frames.
+/// AAC packets hold 1024 frames each (512 for AAC-LD and AAC-ELD), and decoding one needs the packet before it. The
+/// trimmer copies the packets covering the range plus some packets of pre-roll, then records in the file's packet
+/// table how many frames at the start (priming) and end (remainder) the decoder should drop. Players that honour the
+/// packet table, as Core Audio and SFBAudioEngine do, play exactly the requested frames.
+///
+/// HE-AAC and HE-AAC v2 rebuild the treble and the stereo image from parameters that are often sent as changes
+/// from earlier packets, so a decoder starting partway through gets them wrong until the encoder next sends them
+/// whole. Those streams get a couple of seconds of pre-roll instead of a couple of packets. Their files report
+/// plain AAC at the core sample rate, half the rate they play at, so their cuts land on every other sample.
 ///
 /// Files are written with Core Audio's `AudioFile`, since SFBAudioEngine can't open M4A files written by
 /// `AVAssetExportSession`.
 enum AACPacketTrimmer {
 
-    /// Packets copied before the first wanted frame, so the decoder has warmed up by the time it reaches it.
-    static let prerollPackets: Int64 = 2
+    /// Packets copied before the first wanted frame, so the decoder has warmed up by the time it reaches it. AAC-ELD's
+    /// window reaches back three packets.
+    static let prerollPackets: Int64 = 4
+    /// Seconds copied before the first wanted frame of HE-AAC, so its parameters have been sent whole by then.
+    static let parametricPreroll: TimeInterval = 2
+
+    /// The AAC flavours whose packets can be copied.
+    static let copyableFormats: Set<AudioFormatID> = [
+        kAudioFormatMPEG4AAC, kAudioFormatMPEG4AAC_HE, kAudioFormatMPEG4AAC_HE_V2,
+        kAudioFormatMPEG4AAC_LD, kAudioFormatMPEG4AAC_ELD, kAudioFormatMPEG4AAC_ELD_SBR, kAudioFormatMPEG4AAC_ELD_V2
+    ]
 
     static func canTrim(_ url: URL) -> Bool {
-        guard let file = try? AudioFileHandle(url: url) else { return false }
-        return (try? file.dataFormat().mFormatID) == kAudioFormatMPEG4AAC
+        guard let file = try? AudioFileHandle(url: url), let format = try? file.dataFormat() else { return false }
+        return copyableFormats.contains(format.mFormatID)
     }
 
     static func trim(_ url: URL, from start: TimeInterval, to end: TimeInterval, outputURL: URL,
-                     progress: (@Sendable (Double) -> Void)?) throws {
+                     progress: (@Sendable (Double) -> Void)?, prerollOverride: Int64? = nil) throws {
         let source = try AudioFileHandle(url: url)
         var format = try source.dataFormat()
         let framesPerPacket = Int64(format.mFramesPerPacket)
-        guard format.mFormatID == kAudioFormatMPEG4AAC, framesPerPacket > 0 else {
+        guard copyableFormats.contains(format.mFormatID), framesPerPacket > 0 else {
             throw AudioglotError.trimNotSupported("AAC")
         }
+        let parametricFormats: Set<AudioFormatID> = [
+            kAudioFormatMPEG4AAC_HE, kAudioFormatMPEG4AAC_HE_V2, kAudioFormatMPEG4AAC_ELD_SBR, kAudioFormatMPEG4AAC_ELD_V2
+        ]
+        let isParametric = source.formatList().contains { parametricFormats.contains($0.mASBD.mFormatID) }
+        let prerollPackets = prerollOverride ?? (isParametric
+            ? Int64((parametricPreroll * format.mSampleRate / Double(framesPerPacket)).rounded(.up))
+            : Self.prerollPackets)
         let packetCount = try source.packetCount()
         let sourceTable = source.packetTableInfo()
         let sourcePriming = Int64(sourceTable?.mPrimingFrames ?? 0)
@@ -151,6 +172,18 @@ final class AudioFileHandle {
         let status = AudioFileSetProperty(id, kAudioFilePropertyPacketTableInfo,
                                           UInt32(MemoryLayout<AudioFilePacketTableInfo>.size), &table)
         guard status == noErr else { throw AACPacketTrimmer.osStatusError(status) }
+    }
+
+    /// Every format the file can be decoded as, such as HE-AAC v2, HE-AAC and AAC for an HE-AAC v2 file.
+    func formatList() -> [AudioFormatListItem] {
+        var size: UInt32 = 0
+        guard AudioFileGetPropertyInfo(id, kAudioFilePropertyFormatList, &size, nil) == noErr, size > 0 else {
+            return []
+        }
+        var items = [AudioFormatListItem](repeating: AudioFormatListItem(),
+                                          count: Int(size) / MemoryLayout<AudioFormatListItem>.size)
+        guard AudioFileGetProperty(id, kAudioFilePropertyFormatList, &size, &items) == noErr else { return [] }
+        return items
     }
 
     func magicCookie() -> [UInt8]? {

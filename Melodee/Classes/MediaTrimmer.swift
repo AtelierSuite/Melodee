@@ -110,12 +110,24 @@ enum MediaTrimmer {
         let fileURL = URL(filePath: file.path)
         guard TrimBackups.hasBackup(for: fileURL) else { throw MediaTrimmerError.noOriginal }
         let backupURL = try downloadedBackupURL(for: fileURL)
-        removexattr(backupURL.path, TrimBackups.rangeAttribute, 0)
-        if FileManager.default.fileExists(atPath: fileURL.path(percentEncoded: false)) {
-            _ = try FileManager.default.replaceItemAt(fileURL, withItemAt: backupURL)
+        let manager = FileManager.default
+        // Put back a copy made under the file's own name, as a trim does, rather than moving the hidden original
+        // into place. Files tracks items by identity, and keeps hiding the original after it's renamed back.
+        let workDirectory = try manager.url(for: .itemReplacementDirectory, in: .userDomainMask,
+                                            appropriateFor: fileURL, create: true)
+        defer { try? manager.removeItem(at: workDirectory) }
+        var restoredURL = workDirectory.appending(path: fileURL.lastPathComponent)
+        try manager.copyItem(at: backupURL, to: restoredURL)
+        removexattr(restoredURL.path, TrimBackups.rangeAttribute, 0)
+        var resourceValues = URLResourceValues()
+        resourceValues.isHidden = false
+        try? restoredURL.setResourceValues(resourceValues)
+        if manager.fileExists(atPath: fileURL.path(percentEncoded: false)) {
+            _ = try manager.replaceItemAt(fileURL, withItemAt: restoredURL)
         } else {
-            try FileManager.default.moveItem(at: backupURL, to: fileURL)
+            try manager.moveItem(at: restoredURL, to: fileURL)
         }
+        TrimBackups.deleteBackup(for: fileURL)
     }
 
     /// The original's URL, starting a download and throwing if iCloud Drive has evicted it.

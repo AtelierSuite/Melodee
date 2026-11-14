@@ -250,6 +250,184 @@ import Testing
         }
     }
 
+    /// Decodes the whole file with SFBAudioEngine (mpg123 for MP3), returning its first channel.
+    private func decodeFirstChannel(_ url: URL) throws -> [Float] {
+        let decoder = try AudioDecoder(url: url)
+        try decoder.open()
+        defer { try? decoder.close() }
+        let format = AVAudioFormat(standardFormatWithSampleRate: decoder.processingFormat.sampleRate,
+                                   channels: decoder.processingFormat.channelCount)!
+        let converter = AVAudioConverter(from: decoder.processingFormat, to: format)!
+        let input = AVAudioPCMBuffer(pcmFormat: decoder.processingFormat, frameCapacity: 4096)!
+        let output = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: 4096)!
+        var samples: [Float] = []
+        while true {
+            try decoder.decode(into: input, length: 4096)
+            guard input.frameLength > 0 else { break }
+            try converter.convert(to: output, from: input)
+            samples.append(contentsOf: UnsafeBufferPointer(start: output.floatChannelData![0],
+                                                           count: Int(output.frameLength)))
+        }
+        return samples
+    }
+
+    @Test(arguments: [
+        (44100.0, AVAudioChannelCount(2), 1.0, 3.5),
+        (44100.0, AVAudioChannelCount(1), 0.0, 2.0),
+        (48000.0, AVAudioChannelCount(2), 2.3, 5.0),
+        (22050.0, AVAudioChannelCount(2), 0.7, 4.1)
+    ])
+    func mp3TrimsCopyFramesAndCutAtExactSamples(sampleRate: Double, channels: AVAudioChannelCount,
+                                                start: Double, end: Double) async throws {
+        let name = "mp3copy-\(Int(sampleRate))-\(channels)-\(start)"
+        let wav = try makeWAV(name: name, bitDepth: 16, sampleRate: sampleRate, channels: channels, seconds: 5)
+        let mp3 = try await Audioglot.convert(wav, to: .mp3,
+                                              outputURL: directory.appendingPathComponent("\(name).mp3"))
+        let output = directory.appendingPathComponent("trimmed-\(name).mp3")
+        // Called directly, so a fallback to re-encoding fails the test
+        try MP3FrameTrimmer.trim(mp3, from: start, to: end, outputURL: output, progress: nil)
+
+        let startSample = Int((start * sampleRate).rounded())
+        let wanted = Int((end * sampleRate).rounded()) - startSample
+        let original = try decodeFirstChannel(mp3)
+        let trimmed = try decodeFirstChannel(output)
+        #expect(trimmed.count == wanted, "mpg123 length")
+        #expect(try AVAudioFile(forReading: output).length == AVAudioFramePosition(wanted), "Core Audio length")
+        let difference = zip(trimmed, original[startSample...]).map { abs($0 - $1) }.max() ?? 1
+        #expect(difference < 0.0001, "decoded samples differ by \(difference)")
+        // The bitrate is estimated from size and length, which the pre-roll frames nudge up a little
+        let bitrates = (try AudioSource(contentsOf: output).bitrate ?? 0, try AudioSource(contentsOf: mp3).bitrate ?? 0)
+        #expect(abs(bitrates.0 - bitrates.1) <= 5, "bitrates \(bitrates)")
+    }
+
+    @Test(arguments: [(1.2, 2.6), (0.0, 1.5)])
+    func bareMP3StreamIsTrimmedFromItsFirstFrame(start: Double, end: Double) async throws {
+        let wav = try makeWAV(name: "bare-\(start)", bitDepth: 16, seconds: 3)
+        let mp3 = try await Audioglot.convert(wav, to: .mp3)
+        // A bare stream of frames with no Info frame, as some encoders write
+        var data = try Data(contentsOf: mp3)
+        data.removeSubrange(0..<MP3FrameHeader([UInt8](data), at: 0)!.length)
+        let untagged = directory.appendingPathComponent("bare-\(start).mp3")
+        try data.write(to: untagged)
+        let output = directory.appendingPathComponent("bare-trimmed-\(start).mp3")
+        try MP3FrameTrimmer.trim(untagged, from: start, to: end, outputURL: output, progress: nil)
+
+        // Players play every frame of an untagged file, but a trim can't start in the decoder's lead-in
+        let startSample = max(MP3FrameTrimmer.decoderDelay, Int((start * 44100).rounded()))
+        let wanted = Int((end * 44100).rounded()) - startSample
+        let original = try decodeFirstChannel(untagged)
+        let trimmed = try decodeFirstChannel(output)
+        #expect(trimmed.count == wanted, "mpg123 length")
+        #expect(try AVAudioFile(forReading: output).length == AVAudioFramePosition(wanted), "Core Audio length")
+        let difference = zip(trimmed, original[startSample...]).map { abs($0 - $1) }.max() ?? 1
+        #expect(difference < 0.0001, "decoded samples differ by \(difference)")
+    }
+
+    @Test func mp3WithAnInfoFrameButNoLAMETagIsReEncoded() async throws {
+        let wav = try makeWAV(name: "nolame", bitDepth: 16, seconds: 3)
+        let mp3 = try await Audioglot.convert(wav, to: .mp3)
+        var data = try Data(contentsOf: mp3)
+        let tag = data.range(of: Data("LAME".utf8))!
+        data.replaceSubrange(tag.lowerBound..<(tag.lowerBound + 36), with: [UInt8](repeating: 0, count: 36))
+        let untagged = directory.appendingPathComponent("nolame.mp3")
+        try data.write(to: untagged)
+        #expect(throws: MP3FrameTrimmer.Unsupported.self) {
+            try MP3FrameTrimmer.trim(untagged, from: 0.5, to: 2,
+                                     outputURL: directory.appendingPathComponent("nolame-x.mp3"), progress: nil)
+        }
+        let output = directory.appendingPathComponent("nolame-trimmed.mp3")
+        try await Audioglot.trim(untagged, from: 0.5, to: 2, outputURL: output)
+        #expect(try AudioSource(contentsOf: output).format == .mp3)
+    }
+
+    @Test(arguments: [
+        (AudioFormat.vorbis, 44100.0, AVAudioChannelCount(2), 1.0, 3.5),
+        (.vorbis, 48000.0, AVAudioChannelCount(1), 0.0, 2.0),
+        (.vorbis, 44100.0, AVAudioChannelCount(2), 2.3, 5.0),
+        (.opus, 48000.0, AVAudioChannelCount(2), 1.0, 3.5),
+        (.opus, 48000.0, AVAudioChannelCount(1), 0.0, 2.0),
+        (.opus, 44100.0, AVAudioChannelCount(2), 2.3, 5.0)
+    ])
+    func oggTrimsCopyPacketsAndCutAtExactSamples(format: AudioFormat, sampleRate: Double,
+                                                 channels: AVAudioChannelCount, start: Double, end: Double)
+        async throws {
+        let name = "oggcopy-\(format)-\(Int(sampleRate))-\(channels)-\(start)"
+        let wav = try makeWAV(name: name, bitDepth: 16, sampleRate: sampleRate, channels: channels, seconds: 5)
+        let encoded = try await Audioglot.convert(wav, to: format,
+                                                  outputURL: directory.appendingPathComponent("\(name).\(format.fileExtension)"))
+        let output = directory.appendingPathComponent("trimmed-\(name).\(format.fileExtension)")
+        // Called directly, so a fallback to re-encoding fails the test
+        try OggPacketTrimmer.trim(encoded, from: start, to: end, outputURL: output, progress: nil)
+
+        // Opus always decodes at 48 kHz
+        let rate = format == .opus ? 48000 : sampleRate
+        let startSample = Int((start * rate).rounded())
+        let wanted = Int((end * rate).rounded()) - startSample
+        let original = try decodeFirstChannel(encoded)
+        let trimmed = try decodeFirstChannel(output)
+        #expect(trimmed.count == wanted, "decoded length")
+        let difference = zip(trimmed, original[startSample...]).map { abs($0 - $1) }.max() ?? 1
+        #expect(difference < 0.0001, "decoded samples differ by \(difference)")
+        #expect(try AudioSource(contentsOf: output).format == format)
+
+        // A trimmed file can be trimmed again, though its stream no longer starts at the beginning
+        let retrimmed = directory.appendingPathComponent("retrimmed-\(name).\(format.fileExtension)")
+        try OggPacketTrimmer.trim(output, from: 0.6, to: 1.9, outputURL: retrimmed, progress: nil)
+        let again = try decodeFirstChannel(retrimmed)
+        let againStart = Int((0.6 * rate).rounded())
+        #expect(again.count == Int((1.9 * rate).rounded()) - againStart, "decoded length after trimming again")
+        let againDifference = zip(again, trimmed[againStart...]).map { abs($0 - $1) }.max() ?? 1
+        #expect(againDifference < 0.0001, "decoded samples after trimming again differ by \(againDifference)")
+    }
+
+    @Test(arguments: [
+        (kAudioFormatMPEG4AAC, "LC"), (kAudioFormatMPEG4AAC_LD, "LD"), (kAudioFormatMPEG4AAC_ELD, "ELD"),
+        (kAudioFormatMPEG4AAC_HE, "HE"), (kAudioFormatMPEG4AAC_HE_V2, "HEv2")
+    ])
+    func everyAACFlavourIsTrimmedByCopyingPackets(formatID: AudioFormatID, name: String) async throws {
+        // A sweep and a second tone on the right, so the stereo image and the treble matter
+        let url = directory.appendingPathComponent("aac-\(name).m4a")
+        let settings: [String: Any] = [AVFormatIDKey: formatID, AVSampleRateKey: 44100.0, AVNumberOfChannelsKey: 2]
+        let format = AVAudioFormat(standardFormatWithSampleRate: 44100, channels: 2)!
+        do {
+            let file = try AVAudioFile(forWriting: url, settings: settings)
+            let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: 44100 * 8)!
+            buffer.frameLength = 44100 * 8
+            for frame in 0..<Int(buffer.frameLength) {
+                let time = Double(frame) / 44100
+                buffer.floatChannelData![0][frame] = Float(sin(2 * .pi * (200 + 600 * time) * time)) * 0.4
+                buffer.floatChannelData![1][frame] = Float(sin(2 * .pi * 330 * time)) * 0.3
+                    + buffer.floatChannelData![0][frame] * 0.3
+            }
+            try file.write(from: buffer)
+        }
+        #expect(AACPacketTrimmer.canTrim(url))
+        let output = directory.appendingPathComponent("aac-\(name)-trimmed.m4a")
+        try await Audioglot.trim(url, from: 3.2, to: 6.7, outputURL: output)
+        let original = try readFloats(url)
+        let trimmed = try readFloats(output)
+        let startSample = Int((3.2 * 44100).rounded())
+        let wanted = Int((6.7 * 44100).rounded()) - startSample
+        // HE-AAC's frames are counted at half the rate, so a cut can be a sample off
+        #expect(abs(trimmed.count - wanted) <= (formatID == kAudioFormatMPEG4AAC_HE ? 1 : 0), "length")
+        #expect(try AVAudioFile(forReading: output).fileFormat.streamDescription.pointee.mFormatID
+                    == AVAudioFile(forReading: url).fileFormat.streamDescription.pointee.mFormatID, "codec kept")
+        var difference: Float = 0
+        for index in 0..<min(trimmed.count, original.count - startSample) {
+            difference = max(difference, abs(trimmed[index] - original[startSample + index]))
+        }
+        // HE-AAC rebuilds its treble partly from noise, which only matches when decoding from the very start
+        #expect(difference < (formatID == kAudioFormatMPEG4AAC_HE ? 0.2 : 0.0001), "samples differ by \(difference)")
+    }
+
+    /// Decodes the first channel with Core Audio.
+    private func readFloats(_ url: URL) throws -> [Float] {
+        let file = try AVAudioFile(forReading: url)
+        let buffer = AVAudioPCMBuffer(pcmFormat: file.processingFormat, frameCapacity: AVAudioFrameCount(file.length))!
+        try file.read(into: buffer)
+        return Array(UnsafeBufferPointer(start: buffer.floatChannelData![0], count: Int(buffer.frameLength)))
+    }
+
     @Test func emptyRangesAreRejected() async throws {
         let wav = try makeWAV(name: "empty", bitDepth: 16)
         let output = directory.appendingPathComponent("empty-out.wav")

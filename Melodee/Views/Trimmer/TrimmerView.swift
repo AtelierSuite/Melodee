@@ -250,7 +250,10 @@ struct TrimmerView: View {
         progress = 0
         let range = range
         let restoresOriginal = isFullLength && hasOriginal
+        // Locking the screen would suspend the app partway through the trim
+        UIApplication.shared.isIdleTimerDisabled = true
         Task {
+            defer { UIApplication.shared.isIdleTimerDisabled = false }
             do {
                 if restoresOriginal {
                     try MediaTrimmer.restoreOriginal(of: file)
