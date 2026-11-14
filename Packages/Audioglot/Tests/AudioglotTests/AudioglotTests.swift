@@ -380,6 +380,54 @@ import Testing
         #expect(againDifference < 0.0001, "decoded samples after trimming again differ by \(againDifference)")
     }
 
+    @Test(arguments: [
+        (kAudioFormatMPEG4AAC, "LC"), (kAudioFormatMPEG4AAC_LD, "LD"), (kAudioFormatMPEG4AAC_ELD, "ELD"),
+        (kAudioFormatMPEG4AAC_HE, "HE"), (kAudioFormatMPEG4AAC_HE_V2, "HEv2")
+    ])
+    func everyAACFlavourIsTrimmedByCopyingPackets(formatID: AudioFormatID, name: String) async throws {
+        // A sweep and a second tone on the right, so the stereo image and the treble matter
+        let url = directory.appendingPathComponent("aac-\(name).m4a")
+        let settings: [String: Any] = [AVFormatIDKey: formatID, AVSampleRateKey: 44100.0, AVNumberOfChannelsKey: 2]
+        let format = AVAudioFormat(standardFormatWithSampleRate: 44100, channels: 2)!
+        do {
+            let file = try AVAudioFile(forWriting: url, settings: settings)
+            let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: 44100 * 8)!
+            buffer.frameLength = 44100 * 8
+            for frame in 0..<Int(buffer.frameLength) {
+                let time = Double(frame) / 44100
+                buffer.floatChannelData![0][frame] = Float(sin(2 * .pi * (200 + 600 * time) * time)) * 0.4
+                buffer.floatChannelData![1][frame] = Float(sin(2 * .pi * 330 * time)) * 0.3
+                    + buffer.floatChannelData![0][frame] * 0.3
+            }
+            try file.write(from: buffer)
+        }
+        #expect(AACPacketTrimmer.canTrim(url))
+        let output = directory.appendingPathComponent("aac-\(name)-trimmed.m4a")
+        try await Audioglot.trim(url, from: 3.2, to: 6.7, outputURL: output)
+        let original = try readFloats(url)
+        let trimmed = try readFloats(output)
+        let startSample = Int((3.2 * 44100).rounded())
+        let wanted = Int((6.7 * 44100).rounded()) - startSample
+        // HE-AAC's frames are counted at half the rate, so a cut can be a sample off
+        #expect(abs(trimmed.count - wanted) <= (formatID == kAudioFormatMPEG4AAC_HE ? 1 : 0), "length")
+        #expect(try AVAudioFile(forReading: output).fileFormat.streamDescription.pointee.mFormatID
+                    == AVAudioFile(forReading: url).fileFormat.streamDescription.pointee.mFormatID, "codec kept")
+        var difference: Float = 0
+        for index in 0..<min(trimmed.count, original.count - startSample) {
+            difference = max(difference, abs(trimmed[index] - original[startSample + index]))
+        }
+        // HE-AAC rebuilds its treble partly from noise, which only matches when decoding from the very start
+        #expect(difference < (formatID == kAudioFormatMPEG4AAC_HE ? 0.2 : 0.0001), "samples differ by \(difference)")
+    }
+
+    /// Decodes the first channel with Core Audio.
+    private func readFloats(_ url: URL) throws -> [Float] {
+        let file = try AVAudioFile(forReading: url)
+        let buffer = AVAudioPCMBuffer(pcmFormat: file.processingFormat, frameCapacity: AVAudioFrameCount(file.length))!
+        try file.read(into: buffer)
+        return Array(UnsafeBufferPointer(start: buffer.floatChannelData![0], count: Int(buffer.frameLength)))
+    }
+
     @Test func emptyRangesAreRejected() async throws {
         let wav = try makeWAV(name: "empty", bitDepth: 16)
         let output = directory.appendingPathComponent("empty-out.wav")

@@ -12,13 +12,14 @@ extension Audioglot {
     /// format as the source. The source is left untouched.
     ///
     /// Every cut lands on an exact sample.
-    /// - AAC-LC is copied packet by packet, so its quality never changes. See ``AACPacketTrimmer``.
+    /// - AAC in M4A (AAC-LC, HE-AAC, HE-AAC v2, AAC-LD and AAC-ELD) is copied packet by packet, so its quality never
+    ///   changes. See ``AACPacketTrimmer``.
     /// - MP3 is copied frame by frame, so its quality never changes either. See ``MP3FrameTrimmer``.
     /// - Opus and Vorbis are copied packet by packet, so their quality never changes either. See
     ///   ``OggPacketTrimmer``.
     /// - WAV, AIFF, FLAC and ALAC are re-encoded losslessly.
-    /// - Other AAC profiles, and files the copying trimmers can't follow (such as an MP3 with a Xing frame but no
-    ///   LAME tag, or a chained Ogg file), are re-encoded at no more than the source's bitrate.
+    /// - Files the copying trimmers can't follow (such as an MP3 with a Xing frame but no LAME tag, or a chained Ogg
+    ///   file) are re-encoded at no more than the source's bitrate.
     ///
     /// - Throws: ``AudioglotError/trimNotSupported(_:)`` for codecs Audioglot can't write,
     ///   ``AudioglotError/invalidTrimRange`` when the range is empty, ``AudioglotError/outputExists(_:)`` when the
