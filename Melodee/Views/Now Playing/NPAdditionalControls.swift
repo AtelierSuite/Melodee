@@ -16,6 +16,7 @@ struct NPAdditionalControls: View {
     var body: some View {
         HStack(alignment: .center) {
             repeatButton
+                .disabled(!mediaPlayer.isPlaybackActive)
             Spacer()
             controlButton(systemImage: "shuffle", label: "NowPlaying.ShuffleUpNext") {
                 withAnimation(.default.speed(2)) {
@@ -23,19 +24,19 @@ struct NPAdditionalControls: View {
                 }
                 shuffles += 1
             }
-            .disabled(!mediaPlayer.canShuffleUpcomingTracks())
+            .disabled(!mediaPlayer.isPlaybackActive || !mediaPlayer.canShuffleUpcomingTracks())
             .sensoryFeedback(.impact(weight: .light), trigger: shuffles)
             Spacer()
             NPQueueMenu()
             Spacer()
             NPPlaybackOptionsMenu()
+                .disabled(!mediaPlayer.isPlaybackActive)
         }
         .padding(.horizontal, 20.0)
         .padding(.vertical, 10.0)
         .glassEffect(.clear.interactive(), in: .capsule)
         .buttonStyle(DimsWhenDisabled())
         .foregroundStyle(.primary)
-        .disabled(!mediaPlayer.isPlaybackActive)
     }
 
     private func controlButton(systemImage: String, label: LocalizedStringKey, inset: CGFloat = 2.0,
