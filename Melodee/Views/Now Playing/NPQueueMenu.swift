@@ -50,7 +50,6 @@ struct NPQueueMenu: View {
         .padding(-10.0)
         .foregroundStyle(.primary)
         .accessibilityLabel("Shared.Queue")
-        .disabled(mediaPlayer.queue.isEmpty)
         .confirmationDialog("NowPlaying.Stop", isPresented: $isStopConfirming) {
             Button("NowPlaying.Stop", role: .destructive) {
                 withAnimation(.default.speed(2)) {

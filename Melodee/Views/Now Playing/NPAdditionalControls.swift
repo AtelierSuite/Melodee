@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// The controls shown below the playback controls when they're expanded: repeat, shuffle, the queue menu,
-/// and the playback options.
+/// playback speed and the playback options.
 struct NPAdditionalControls: View {
 
     @Environment(MediaPlayerManager.self) var mediaPlayer
@@ -16,6 +16,7 @@ struct NPAdditionalControls: View {
     var body: some View {
         HStack(alignment: .center) {
             repeatButton
+                .disabled(!mediaPlayer.isPlaybackActive)
             Spacer()
             controlButton(systemImage: "shuffle", label: "NowPlaying.ShuffleUpNext") {
                 withAnimation(.default.speed(2)) {
@@ -23,19 +24,22 @@ struct NPAdditionalControls: View {
                 }
                 shuffles += 1
             }
-            .disabled(!mediaPlayer.canShuffleUpcomingTracks())
+            .disabled(!mediaPlayer.isPlaybackActive || !mediaPlayer.canShuffleUpcomingTracks())
             .sensoryFeedback(.impact(weight: .light), trigger: shuffles)
             Spacer()
             NPQueueMenu()
             Spacer()
+            NPPlaybackSpeedMenu()
+                .disabled(!mediaPlayer.isPlaybackActive)
+            Spacer()
             NPPlaybackOptionsMenu()
+                .disabled(!mediaPlayer.isPlaybackActive)
         }
         .padding(.horizontal, 20.0)
         .padding(.vertical, 10.0)
         .glassEffect(.clear.interactive(), in: .capsule)
         .buttonStyle(DimsWhenDisabled())
         .foregroundStyle(.primary)
-        .disabled(!mediaPlayer.isPlaybackActive)
     }
 
     private func controlButton(systemImage: String, label: LocalizedStringKey, inset: CGFloat = 2.0,
