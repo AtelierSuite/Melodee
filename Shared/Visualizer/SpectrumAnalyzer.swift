@@ -192,6 +192,8 @@ final class SpectrumAnalyzer: @unchecked Sendable {
             // Use the loudest bin so narrow tones still show in wide high-frequency bands
             let power = magnitudes[bins].max() ?? 0
             let decibels = 10.0 * log10(max(power * powerScale, 1e-12))
+            // The time pitch unit can briefly output NaN samples while its rate changes
+            guard decibels.isFinite else { return 0 }
             return min(max((decibels - Self.floorDecibels) / range, 0), 1)
         }
     }
