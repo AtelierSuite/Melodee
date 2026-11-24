@@ -21,6 +21,7 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
     @ObservationIgnored let videoPlayerView: VideoPlayerView
     @ObservationIgnored private let videoPictureInPictureController: AVPictureInPictureController?
     @ObservationIgnored let extendedVideoPlayer = ExtendedVideoPlayer()
+    @ObservationIgnored let visualizerPictureInPicture: VisualizerPictureInPicture
     /// Changes the audio player's speed without changing its pitch. It's bypassed at normal speed.
     @ObservationIgnored let timePitch = AVAudioUnitTimePitch()
     /// How fast audio and video play, where 1 is normal speed.
@@ -148,7 +149,10 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
             }
         }
         videoPictureInPictureController = pictureInPictureController
+        visualizerPictureInPicture = MainActor.assumeIsolated { VisualizerPictureInPicture() }
         super.init()
+        nonisolated(unsafe) let managerRef = self
+        MainActor.assumeIsolated { managerRef.visualizerPictureInPicture.attach(to: managerRef) }
         audioPlayer.delegate = self
         insertTimePitch()
         applyPlaybackSpeed()
@@ -731,6 +735,8 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
         nowPlayingInfoCenter.nowPlayingInfo = nil
         isPlaybackActive = false
         isPaused = true
+        let pictureInPicture = visualizerPictureInPicture
+        MainActor.assumeIsolated { pictureInPicture.stop() }
     }
 
     func skipToNextTrack() {
@@ -1008,6 +1014,7 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
             nowPlayingInfo[MPNowPlayingInfoPropertyPlaybackQueueCount] = queue.count
         }
         nowPlayingInfoCenter.nowPlayingInfo = nowPlayingInfo
+        visualizerPictureInPicture.playbackStateDidChange()
     }
 
     private static func makeArtwork(from image: UIImage) -> MPMediaItemArtwork {
