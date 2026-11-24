@@ -46,6 +46,9 @@ final class MainSplitViewController: NSSplitViewController {
         browserViewController.onEditTags = { [weak self] files in
             self?.editTags(of: files)
         }
+        browserViewController.onEditSubtitles = { file in
+            (NSApp.delegate as? AppDelegate)?.openSubtitleEditor(for: file)
+        }
         inspectorModel.onSave = { [weak self] files, closesInspector in
             self?.tagsDidChange(in: files)
             if closesInspector {

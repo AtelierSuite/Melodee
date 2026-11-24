@@ -63,6 +63,15 @@ struct FBContextMenu: View {
                 }
                 Divider()
             }
+            // Subtitles & Lyrics Editor for videos
+            if file.type == .video {
+                Button {
+                    state.subtitleEditorPresentation = SubtitleEditorPresentation(file: file)
+                } label: {
+                    Label("SubtitleEditor.Open", systemImage: "captions.bubble")
+                }
+                Divider()
+            }
             // Trimming menu items
             if MediaTrimmer.canTrim(file) {
                 Button {

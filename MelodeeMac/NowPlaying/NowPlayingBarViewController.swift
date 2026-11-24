@@ -18,6 +18,7 @@ final class NowPlayingBarViewController: NSViewController {
     private let elapsedLabel = NSTextField(labelWithString: "")
     private let remainingLabel = NSTextField(labelWithString: "")
     private let progressBar = FlatProgressBar()
+    private let subtitlesButton = NowPlayingBarViewController.button("captions.bubble", "Subtitles.MenuTitle")
     private let repeatButton = NowPlayingBarViewController.button("repeat", "NowPlaying.Repeat")
     private let queueButton = NowPlayingBarViewController.button("list.bullet", "NowPlaying.Queue")
     private var playerObserver: NSObjectProtocol?
@@ -64,6 +65,7 @@ final class NowPlayingBarViewController: NSViewController {
             (previousButton, #selector(previousTrack(_:))),
             (playPauseButton, #selector(togglePlayPause(_:))),
             (nextButton, #selector(nextTrack(_:))),
+            (subtitlesButton, #selector(showSubtitlesMenu(_:))),
             (repeatButton, #selector(cycleRepeatMode(_:))),
             (queueButton, #selector(toggleQueue(_:)))
         ]
@@ -86,14 +88,15 @@ final class NowPlayingBarViewController: NSViewController {
         infoStack.setHuggingPriority(NSLayoutConstraint.Priority(1), for: .horizontal)
         let transportStack = NSStackView(views: [previousButton, playPauseButton, nextButton])
         transportStack.spacing = 10
-        let barStack = NSStackView(views: [transportStack, artworkView, infoStack, repeatButton, queueButton])
+        let barStack = NSStackView(views: [transportStack, artworkView, infoStack, subtitlesButton, repeatButton, queueButton])
         barStack.spacing = 14
         barStack.alignment = .centerY
         barStack.distribution = .fill
         barStack.setCustomSpacing(10, after: artworkView)
+        barStack.setCustomSpacing(10, after: subtitlesButton)
         barStack.setCustomSpacing(10, after: repeatButton)
         // Only the title and seek bar stretch, so the controls stay packed at the edges
-        for fixedView in [transportStack, artworkView, repeatButton, queueButton] {
+        for fixedView in [transportStack, artworkView, subtitlesButton, repeatButton, queueButton] {
             fixedView.setContentHuggingPriority(.required, for: .horizontal)
         }
         progressBar.setContentHuggingPriority(.defaultLow, for: .horizontal)
@@ -175,6 +178,7 @@ final class NowPlayingBarViewController: NSViewController {
         playPauseButton.toolTip = MacText.string(playPauseKey)
         playPauseButton.isEnabled = player.canPlay
         updateSkipButtons()
+        updateSubtitlesButton()
         updateRepeatButton()
         updateProgress()
         if isPlaying {
@@ -198,6 +202,22 @@ final class NowPlayingBarViewController: NSViewController {
             guard let self, let thumbnail, self.player.currentFile?.path == file.path else { return }
             self.artworkView.image = thumbnail
         }
+    }
+
+    private func updateSubtitlesButton() {
+        subtitlesButton.isHidden = !player.isPlayingVideo
+        let isActive = player.subtitleController.selectedTrackID != nil
+        let symbolName = isActive ? "captions.bubble.fill" : "captions.bubble"
+        let label = MacText.shared("Subtitles.MenuTitle")
+        subtitlesButton.image = NSImage(systemSymbolName: symbolName, accessibilityDescription: label)
+        subtitlesButton.toolTip = label
+        subtitlesButton.contentTintColor = isActive ? .controlAccentColor : .secondaryLabelColor
+    }
+
+    @objc private func showSubtitlesMenu(_ sender: NSButton) {
+        let menu = NSMenu()
+        SubtitleMenuBuilder.populate(menu, player: player, target: NSApp.delegate as? AppDelegate)
+        menu.popUp(positioning: nil, at: NSPoint(x: 0, y: sender.bounds.height + 6), in: sender)
     }
 
     private func updateRepeatButton() {

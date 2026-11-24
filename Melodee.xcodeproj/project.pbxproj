@@ -21,6 +21,7 @@
 		A6107C010000000000000006 /* Videoglot in Frameworks */ = {isa = PBXBuildFile; productRef = A6107C010000000000000004 /* Videoglot */; };
 		E4F736C02F3A010000A203FE /* VLCKit in Frameworks */ = {isa = PBXBuildFile; productRef = E4F736C12F3A010000A203FE /* VLCKit */; };
 		4D454C4F4D41430000000030 /* VLCKit in Frameworks */ = {isa = PBXBuildFile; productRef = 4D454C4F4D41430000000031 /* VLCKit */; };
+		4D454C4F4D41430000000032 /* Videoglot in Frameworks */ = {isa = PBXBuildFile; productRef = 4D454C4F4D41430000000033 /* Videoglot */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -108,6 +109,7 @@
 				4D454C4F4D41430000000020 /* PreludeLookup in Frameworks */,
 				4D454C4F4D41430000000007 /* ZIPFoundation in Frameworks */,
 				4D454C4F4D41430000000030 /* VLCKit in Frameworks */,
+				4D454C4F4D41430000000032 /* Videoglot in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -168,6 +170,7 @@
 				4D454C4F4D41430000000021 /* PreludeLookup */,
 				4D454C4F4D4143000000000A /* ZIPFoundation */,
 				4D454C4F4D41430000000031 /* VLCKit */,
+				4D454C4F4D41430000000033 /* Videoglot */,
 			);
 			productName = Melodee;
 			productReference = 4D454C4F4D41430000000004 /* Melodee.app */;
@@ -791,6 +794,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = E4F736C22F3A010000A203FE /* XCRemoteSwiftPackageReference "VLCKit" */;
 			productName = VLCKit;
+		};
+		4D454C4F4D41430000000033 /* Videoglot */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A6107C010000000000000002 /* XCLocalSwiftPackageReference "Packages/Videoglot" */;
+			productName = Videoglot;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

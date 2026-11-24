@@ -10,6 +10,11 @@ struct TrimPresentation: Identifiable {
     let file: FSFile
 }
 
+struct SubtitleEditorPresentation: Identifiable {
+    let id = UUID()
+    let file: FSFile
+}
+
 struct FBState {
     // State handling for display
     var isInitialLoadCompleted: Bool = false
@@ -48,6 +53,7 @@ struct FBState {
 
     // State handling for trimming
     var trimPresentation: TrimPresentation?
+    var subtitleEditorPresentation: SubtitleEditorPresentation?
     var pasteTrimFiles: [FSFile] = []
     var isPasteTrimConfirmationPresented: Bool = false
     var fileBeingRestored: FSFile?

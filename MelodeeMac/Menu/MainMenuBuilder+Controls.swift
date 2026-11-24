@@ -46,9 +46,19 @@ extension MainMenuBuilder {
         }
         videoEngineItem.submenu = videoEngineMenu
         menu.addItem(videoEngineItem)
+        menu.addItem(subtitlesMenuItem())
         menu.addItem(.separator())
         menu.addItem(item("Queue.Clear", action: #selector(AppDelegate.clearQueue(_:))))
         return menu
+    }
+
+    /// Dynamically populated submenu for video subtitles & synced lyrics.
+    private static func subtitlesMenuItem() -> NSMenuItem {
+        let item = NSMenuItem(title: MacText.shared("Subtitles.MenuTitle"), action: nil, keyEquivalent: "")
+        let submenu = NSMenu(title: MacText.shared("Subtitles.MenuTitle"))
+        submenu.delegate = NSApp.delegate as? NSMenuDelegate
+        item.submenu = submenu
+        return item
     }
 
     /// Chooses whether the previous and next buttons change tracks or skip within the file.

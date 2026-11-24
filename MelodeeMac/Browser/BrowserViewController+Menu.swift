@@ -50,6 +50,17 @@ extension BrowserViewController: NSMenuDelegate {
             menu.addItem(editItem)
             menu.addItem(.separator())
         }
+        // Lyrics & Subtitles editor for a single video file
+        if targets.count == 1, targets[0].file?.type == .video {
+            let subtitleItem = NSMenuItem(
+                title: MacText.shared("SubtitleEditor.Open"),
+                action: #selector(editTargetSubtitles(_:)),
+                keyEquivalent: ""
+            )
+            subtitleItem.target = self
+            menu.addItem(subtitleItem)
+            menu.addItem(.separator())
+        }
         if targets.contains(where: { !$0.isPlayable }) {
             add("Browser.Open", #selector(openTargets(_:)))
             menu.addItem(.separator())
@@ -73,6 +84,11 @@ extension BrowserViewController: NSMenuDelegate {
 
     @objc func editTargetTags(_ sender: Any?) {
         onEditTags?(contextMenuTargets.compactMap(\.file))
+    }
+
+    @objc func editTargetSubtitles(_ sender: Any?) {
+        guard let file = contextMenuTargets.first?.file, file.type == .video else { return }
+        onEditSubtitles?(file)
     }
 
     @objc func openTargets(_ sender: Any?) {

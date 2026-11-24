@@ -11,6 +11,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var mainWindowController: MainWindowController?
     private let player = MacServices.shared.player
     private var videoWindowController: VideoWindowController?
+    private var subtitleEditorWindows: [String: SubtitleEditorWindowController] = [:]
 
     func applicationWillFinishLaunching(_ notification: Notification) {
         NSWindow.allowsAutomaticWindowTabbing = false
@@ -130,6 +131,46 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     @objc func clearQueue(_ sender: Any?) {
         player.clearQueue()
     }
+
+    // MARK: - Subtitles & Lyrics
+
+    @objc func selectSubtitleTrack(_ sender: NSMenuItem) {
+        let trackID = sender.representedObject as? String
+        player.subtitleController.selectTrack(trackID)
+    }
+
+    @objc func editCurrentVideoSubtitles(_ sender: Any?) {
+        guard let file = player.currentFile, file.type == .video else { return }
+        openSubtitleEditor(for: file)
+    }
+
+    func openSubtitleEditor(for file: FSFile) {
+        let key = FilesystemManager.normalizedPath(file.path)
+        if let existing = subtitleEditorWindows[key] {
+            existing.showWindow(nil)
+            existing.window?.makeKeyAndOrderFront(nil)
+            return
+        }
+        let controller = SubtitleEditorWindowController(
+            file: file,
+            onSaved: { [weak self] _ in
+                self?.mainWindowController?.browser.reload()
+            },
+            onClose: { [weak self] closedKey in
+                self?.subtitleEditorWindows.removeValue(forKey: closedKey)
+            }
+        )
+        subtitleEditorWindows[key] = controller
+        controller.showWindow(nil)
+        controller.window?.makeKeyAndOrderFront(nil)
+    }
+}
+
+extension AppDelegate: NSMenuDelegate {
+
+    func menuNeedsUpdate(_ menu: NSMenu) {
+        SubtitleMenuBuilder.populate(menu, player: player, target: self)
+    }
 }
 
 extension AppDelegate: NSMenuItemValidation {
@@ -155,6 +196,8 @@ extension AppDelegate: NSMenuItemValidation {
             menuItem.state = (menuItem.representedObject as? String) == VideoEngine.current.rawValue ? .on : .off
         case #selector(clearQueue(_:)):
             return player.canPlay
+        case #selector(editCurrentVideoSubtitles(_:)):
+            return player.isPlayingVideo
         default:
             break
         }

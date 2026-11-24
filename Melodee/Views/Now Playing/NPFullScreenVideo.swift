@@ -51,6 +51,15 @@ struct NPFullScreenVideo: View {
                     Color.black
                         .opacity(isExpanded ? max(1.0 - dragProgress * 2.0, 0.0) : 0.0)
                     surface
+                        .overlay {
+                            SubtitleOverlayView(
+                                text: mediaPlayer.subtitleController.activeText,
+                                isLyrics: mediaPlayer.subtitleController.isShowingLyrics,
+                                unsyncedLyrics: mediaPlayer.subtitleController.unsyncedLyrics,
+                                isCompact: false,
+                                bottomPadding: 28.0
+                            )
+                        }
                         .frame(width: videoRect.width, height: videoRect.height)
                         .clipShape(RoundedRectangle(cornerRadius: placement.cornerRadius))
                         .scaleEffect(placement.scale)
@@ -73,6 +82,7 @@ struct NPFullScreenVideo: View {
                                 close()
                             }
                             Spacer(minLength: 0.0)
+                            NPSubtitleOverlayButton(size: .navigationBar, controls: controls)
                             if mediaPlayer.supportsVideoPictureInPicture {
                                 NPVideoOverlayButton(systemImage: "pip.enter",
                                                      accessibilityLabel: String(localized: "NowPlaying.PictureInPicture"),

@@ -26,6 +26,8 @@ final class BrowserViewController: NSViewController {
     var items: [BrowserItem] = []
     /// Called with the files chosen with Edit Track Information.
     var onEditTags: (([FSFile]) -> Void)?
+    /// Called with a video file chosen with Edit Subtitles & Lyrics.
+    var onEditSubtitles: ((FSFile) -> Void)?
     /// Called whenever the folder, history or search changes, so the window can update its title and toolbar.
     var onNavigate: (() -> Void)?
 

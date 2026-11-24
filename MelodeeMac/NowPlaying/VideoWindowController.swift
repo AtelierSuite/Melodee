@@ -5,15 +5,17 @@
 
 import AppKit
 import AVKit
+import SwiftUI
 
 /// Shows the playing video in its own window, which opens when a video starts and closes when the queue moves on.
 /// Closing the window pauses the video. Videos played with the Extended engine show VLCKit's video
-/// in place of AVKit's player view. Neither shows its own controls: videos are controlled from the
-/// Now Playing bar and Controls menu.
+/// in place of AVKit's player view. Subtitles and synced lyrics render over either engine, and hovering
+/// reveals a captions menu button in the corner.
 @MainActor
 final class VideoWindowController: NSWindowController, NSWindowDelegate {
 
     private let player = MacServices.shared.player
+    private let rootContainer = VideoWindowContentView()
     private let playerView = AVPlayerView()
     /// Holds the view VLCKit draws into.
     private let extendedVideoContainer: NSView = {
@@ -22,6 +24,8 @@ final class VideoWindowController: NSWindowController, NSWindowDelegate {
         view.layer?.backgroundColor = NSColor.black.cgColor
         return view
     }()
+    private let subtitleOverlayHost: NSHostingView<MacVideoSubtitleOverlay>
+    private let subtitlesButton = NSButton()
     private var playerObserver: NSObjectProtocol?
     /// The video the window was last sized for, so it's only resized when a new video starts.
     private var sizedVideoPath: String?
@@ -30,6 +34,7 @@ final class VideoWindowController: NSWindowController, NSWindowDelegate {
     private static let defaultContentSize = CGSize(width: 800, height: 450)
 
     init() {
+        subtitleOverlayHost = NSHostingView(rootView: MacVideoSubtitleOverlay(controller: player.subtitleController))
         let window = NSWindow(
             contentRect: NSRect(origin: .zero, size: Self.defaultContentSize),
             styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
@@ -44,14 +49,44 @@ final class VideoWindowController: NSWindowController, NSWindowDelegate {
         window.setFrameAutosaveName("VideoWindow")
         super.init(window: window)
         window.delegate = self
+
         playerView.player = player.videoPlayer
-        // Playback is controlled only from the Now Playing bar and Controls menu
+        // Playback is controlled from the Now Playing bar and Controls menu
         playerView.controlsStyle = .none
+
         let extendedVideoView = player.extendedVideoPlayer.videoView
         extendedVideoView.frame = extendedVideoContainer.bounds
         extendedVideoView.autoresizingMask = [.width, .height]
         extendedVideoContainer.addSubview(extendedVideoView)
-        window.contentView = playerView
+
+        rootContainer.wantsLayer = true
+        rootContainer.layer?.backgroundColor = NSColor.black.cgColor
+
+        for subview in [playerView, extendedVideoContainer, subtitleOverlayHost] {
+            subview.translatesAutoresizingMaskIntoConstraints = false
+            rootContainer.addSubview(subview)
+            NSLayoutConstraint.activate([
+                subview.topAnchor.constraint(equalTo: rootContainer.topAnchor),
+                subview.bottomAnchor.constraint(equalTo: rootContainer.bottomAnchor),
+                subview.leadingAnchor.constraint(equalTo: rootContainer.leadingAnchor),
+                subview.trailingAnchor.constraint(equalTo: rootContainer.trailingAnchor)
+            ])
+        }
+        extendedVideoContainer.isHidden = true
+
+        configureSubtitlesButton()
+        rootContainer.addSubview(subtitlesButton)
+        NSLayoutConstraint.activate([
+            subtitlesButton.topAnchor.constraint(equalTo: rootContainer.topAnchor, constant: 12),
+            subtitlesButton.trailingAnchor.constraint(equalTo: rootContainer.trailingAnchor, constant: -12),
+            subtitlesButton.widthAnchor.constraint(equalToConstant: 32),
+            subtitlesButton.heightAnchor.constraint(equalToConstant: 32)
+        ])
+        rootContainer.onHoverChanged = { [weak self] isHovering in
+            self?.setOverlayControlsVisible(isHovering)
+        }
+
+        window.contentView = rootContainer
         if !window.setFrameUsingName("VideoWindow") {
             window.center()
         }
@@ -69,6 +104,43 @@ final class VideoWindowController: NSWindowController, NSWindowDelegate {
         fatalError("init(coder:) has not been implemented")
     }
 
+    private func configureSubtitlesButton() {
+        subtitlesButton.translatesAutoresizingMaskIntoConstraints = false
+        subtitlesButton.isBordered = false
+        subtitlesButton.wantsLayer = true
+        subtitlesButton.layer?.cornerRadius = 16
+        subtitlesButton.layer?.backgroundColor = NSColor.black.withAlphaComponent(0.55).cgColor
+        subtitlesButton.contentTintColor = .white
+        subtitlesButton.symbolConfiguration = .init(pointSize: 14, weight: .semibold)
+        subtitlesButton.toolTip = MacText.shared("Subtitles.MenuTitle")
+        subtitlesButton.target = self
+        subtitlesButton.action = #selector(showSubtitlesMenu(_:))
+        subtitlesButton.alphaValue = 0
+        updateSubtitlesButtonAppearance()
+    }
+
+    private func updateSubtitlesButtonAppearance() {
+        let isActive = player.subtitleController.selectedTrackID != nil
+        let symbolName = isActive ? "captions.bubble.fill" : "captions.bubble"
+        subtitlesButton.image = NSImage(
+            systemSymbolName: symbolName,
+            accessibilityDescription: MacText.shared("Subtitles.MenuTitle")
+        )
+    }
+
+    private func setOverlayControlsVisible(_ visible: Bool) {
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = 0.2
+            subtitlesButton.animator().alphaValue = visible ? 1.0 : 0.0
+        }
+    }
+
+    @objc private func showSubtitlesMenu(_ sender: NSButton) {
+        let menu = NSMenu()
+        SubtitleMenuBuilder.populate(menu, player: player, target: NSApp.delegate as? AppDelegate)
+        menu.popUp(positioning: nil, at: NSPoint(x: 0, y: sender.bounds.height + 4), in: sender)
+    }
+
     private func updateWindow() {
         guard let window else { return }
         guard player.isPlayingVideo, let file = player.currentFile else {
@@ -80,10 +152,9 @@ final class VideoWindowController: NSWindowController, NSWindowDelegate {
             return
         }
         window.title = player.metadata?.title ?? file.name
-        let contentView: NSView = player.isPlayingExtendedVideo ? extendedVideoContainer : playerView
-        if window.contentView !== contentView {
-            window.contentView = contentView
-        }
+        playerView.isHidden = player.isPlayingExtendedVideo
+        extendedVideoContainer.isHidden = !player.isPlayingExtendedVideo
+        updateSubtitlesButtonAppearance()
         if let videoSize = player.videoSize, sizedVideoPath != file.path {
             sizedVideoPath = file.path
             fit(window, to: videoSize)
@@ -117,5 +188,50 @@ final class VideoWindowController: NSWindowController, NSWindowDelegate {
         if player.isPlayingVideo {
             player.pause()
         }
+    }
+}
+
+/// Observes `VideoSubtitleController` and renders captions/lyrics over the Mac video window.
+private struct MacVideoSubtitleOverlay: View {
+    var controller: VideoSubtitleController
+
+    var body: some View {
+        SubtitleOverlayView(
+            text: controller.activeText,
+            isLyrics: controller.isShowingLyrics,
+            unsyncedLyrics: controller.unsyncedLyrics,
+            isCompact: false,
+            bottomPadding: 24.0
+        )
+    }
+}
+
+/// Tracks pointer hover in the video window so overlay controls fade in and out cleanly.
+private final class VideoWindowContentView: NSView {
+
+    var onHoverChanged: ((Bool) -> Void)?
+    private var hoverTrackingArea: NSTrackingArea?
+
+    override func updateTrackingAreas() {
+        super.updateTrackingAreas()
+        if let hoverTrackingArea {
+            removeTrackingArea(hoverTrackingArea)
+        }
+        let area = NSTrackingArea(
+            rect: bounds,
+            options: [.mouseEnteredAndExited, .activeInKeyWindow, .activeAlways, .inVisibleRect],
+            owner: self,
+            userInfo: nil
+        )
+        addTrackingArea(area)
+        hoverTrackingArea = area
+    }
+
+    override func mouseEntered(with event: NSEvent) {
+        onHoverChanged?(true)
+    }
+
+    override func mouseExited(with event: NSEvent) {
+        onHoverChanged?(false)
     }
 }

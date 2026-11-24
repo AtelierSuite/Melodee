@@ -22,6 +22,8 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
     @ObservationIgnored private let videoPictureInPictureController: AVPictureInPictureController?
     @ObservationIgnored let extendedVideoPlayer = ExtendedVideoPlayer()
     @ObservationIgnored let visualizerPictureInPicture: VisualizerPictureInPicture
+    /// Discovers, selects, and times subtitle and synced-lyrics tracks for the playing video.
+    @ObservationIgnored let subtitleController = MainActor.assumeIsolated { VideoSubtitleController() }
     /// Changes the audio player's speed without changing its pitch. It's bypassed at normal speed.
     @ObservationIgnored let timePitch = AVAudioUnitTimePitch()
     /// How fast audio and video play, where 1 is normal speed.
@@ -105,6 +107,7 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
     @ObservationIgnored private var hasRestoredState: Bool = false
     @ObservationIgnored private var isQueueSaveScheduled: Bool = false
     @ObservationIgnored private var positionSaveTimer: Timer?
+    @ObservationIgnored private var subtitleUpdateTimer: Timer?
     // The file the engine has loaded, whose play time is tracked so it can be continued later
     @ObservationIgnored private var playTimeTrackedFile: FSFile?
 
@@ -221,6 +224,20 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
         extendedVideoPlayer.onVideoSizeChanged = { [weak self] size in
             guard let self, self.isPlayingExtendedVideo() else { return }
             self.videoAspectRatio = size.width / size.height
+        }
+        extendedVideoPlayer.onTextTracksChanged = { [weak self] tracks in
+            guard let self, self.isPlayingExtendedVideo() else { return }
+            let controller = self.subtitleController
+            MainActor.assumeIsolated {
+                controller.updateExtendedTextTracks(tracks)
+            }
+        }
+        let controller = subtitleController
+        nonisolated(unsafe) weak var weakManager = self
+        MainActor.assumeIsolated {
+            controller.replacePlayerAsset = { asset in
+                weakManager?.replaceStandardVideoAsset(with: asset)
+            }
         }
     }
 
@@ -522,6 +539,12 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
             unloadStandardVideo()
             activeVideoEngine = .extended
             extendedVideoPlayer.play(url: url, from: startTime)
+            let controller = subtitleController
+            nonisolated(unsafe) let extended = extendedVideoPlayer
+            MainActor.assumeIsolated {
+                controller.loadForExtendedPlayer(videoURL: url, extendedPlayer: extended)
+            }
+            startSubtitleTimer()
             playTimeTrackedFile = file
             isPlaybackActive = true
             isPaused = false
@@ -534,27 +557,14 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
             activeVideoEngine = .standard
             let item = AVPlayerItem(url: url)
             videoAspectRatio = nil
-            // Size the Now Playing video surface to the video's own aspect ratio
-            videoPresentationSizeObservation = item.observe(
-                \.presentationSize,
-                 options: [.initial, .new]
-            ) { [weak self] item, _ in
-                let size = item.presentationSize
-                guard size.width > 0, size.height > 0, let self else { return }
-                nonisolated(unsafe) let managerRef = self
-                Task { @MainActor in
-                    managerRef.videoAspectRatio = size.width / size.height
-                }
-            }
-            videoItemStatusObservation = item.observe(\.status) { [weak self] item, _ in
-                guard item.status == .failed, let self else { return }
-                debugPrint("AVPlayer failed to load item: \(item.error?.localizedDescription ?? "unknown error")")
-                nonisolated(unsafe) let managerRef = self
-                Task { @MainActor in
-                    managerRef.handlePlaybackFailure()
-                }
-            }
+            observeStandardVideoItem(item)
             videoPlayer.replaceCurrentItem(with: item)
+            let controller = subtitleController
+            nonisolated(unsafe) let playerItem = item
+            MainActor.assumeIsolated {
+                controller.loadForAVPlayer(videoURL: url, item: playerItem)
+            }
+            startSubtitleTimer()
             if let startTime {
                 videoPlayer.seek(to: CMTime(seconds: startTime, preferredTimescale: 600),
                                  toleranceBefore: .zero,
@@ -568,6 +578,11 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
             return
         }
         unloadStandardVideo()
+        stopSubtitleTimer()
+        let controller = subtitleController
+        MainActor.assumeIsolated {
+            controller.clear()
+        }
         activeVideoEngine = nil
         do {
             try playAudio(at: url, from: startTime)
@@ -579,6 +594,43 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
             debugPrint("Failed to start playback: \(error.localizedDescription)")
             handlePlaybackFailure()
         }
+    }
+
+    private func observeStandardVideoItem(_ item: AVPlayerItem) {
+        // Size the Now Playing video surface to the video's own aspect ratio
+        videoPresentationSizeObservation = item.observe(
+            \.presentationSize,
+             options: [.initial, .new]
+        ) { [weak self] item, _ in
+            let size = item.presentationSize
+            guard size.width > 0, size.height > 0, let self else { return }
+            nonisolated(unsafe) let managerRef = self
+            Task { @MainActor in
+                managerRef.videoAspectRatio = size.width / size.height
+            }
+        }
+        videoItemStatusObservation = item.observe(\.status) { [weak self] item, _ in
+            guard item.status == .failed, let self else { return }
+            debugPrint("AVPlayer failed to load item: \(item.error?.localizedDescription ?? "unknown error")")
+            nonisolated(unsafe) let managerRef = self
+            Task { @MainActor in
+                managerRef.handlePlaybackFailure()
+            }
+        }
+    }
+
+    /// Plays `asset` in place of the current video's item from the same position, such as to add a subtitle track.
+    @MainActor
+    private func replaceStandardVideoAsset(with asset: AVAsset) -> AVPlayerItem? {
+        guard activeVideoEngine == .standard, let currentItem = videoPlayer.currentItem else { return nil }
+        let time = currentItem.currentTime()
+        let item = AVPlayerItem(asset: asset)
+        observeStandardVideoItem(item)
+        videoPlayer.replaceCurrentItem(with: item)
+        if time.isNumeric, time.seconds > 0 {
+            videoPlayer.seek(to: time, toleranceBefore: .zero, toleranceAfter: .zero)
+        }
+        return item
     }
 
     private func unloadStandardVideo() {
@@ -728,6 +780,11 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
         audioPlayer.stop()
         unloadStandardVideo()
         extendedVideoPlayer.stop()
+        stopSubtitleTimer()
+        let controller = subtitleController
+        MainActor.assumeIsolated {
+            controller.clear()
+        }
         activeVideoEngine = nil
         clearPendingResume()
         queue.removeAll()
@@ -763,6 +820,8 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
         }
         if isPlayingExtendedVideo() {
             extendedVideoPlayer.seek(to: time)
+            let controller = subtitleController
+            MainActor.assumeIsolated { controller.update(currentTime: time) }
             setNowPlaying()
             savePlaybackPosition(at: time)
             recordPlayTime(at: time)
@@ -772,6 +831,8 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
             videoPlayer.seek(to: CMTime(seconds: time, preferredTimescale: 600),
                              toleranceBefore: .zero,
                              toleranceAfter: .zero)
+            let controller = subtitleController
+            MainActor.assumeIsolated { controller.update(currentTime: time) }
             setNowPlaying()
             savePlaybackPosition(at: time)
             recordPlayTime(at: time)
@@ -1084,6 +1145,42 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
         setNowPlaying()
     }
 
+    /// Reloads subtitle sidecars/embedded tracks after edits in the subtitle & lyrics editor.
+    @MainActor
+    func subtitlesDidChange(forPath path: String, videoFileChangedOnDisk: Bool) {
+        if videoFileChangedOnDisk {
+            fileDidChangeOnDisk(atPath: path)
+            return
+        }
+        guard let file = currentlyPlayingFile(),
+              FilesystemManager.normalizedPath(file.path) == FilesystemManager.normalizedPath(path) else { return }
+        subtitleController.reloadAfterEdit()
+    }
+
+    private func startSubtitleTimer() {
+        stopSubtitleTimer()
+        subtitleUpdateTimer = Timer.scheduledTimer(
+            timeInterval: 0.1,
+            target: self,
+            selector: #selector(subtitleUpdateTimerFired(_:)),
+            userInfo: nil,
+            repeats: true
+        )
+    }
+
+    private func stopSubtitleTimer() {
+        subtitleUpdateTimer?.invalidate()
+        subtitleUpdateTimer = nil
+    }
+
+    @objc private func subtitleUpdateTimerFired(_ timer: Timer) {
+        guard isCurrentlyPlayingVideo(), let time = playbackTime() else { return }
+        let controller = subtitleController
+        MainActor.assumeIsolated {
+            controller.update(currentTime: time.currentTime)
+        }
+    }
+
     /// Reloads the current file if it's the one at `path`, which was changed in place, for example by trimming.
     /// The player otherwise keeps playing the old contents. The queue is kept, the file starts again from the
     /// beginning, and playback carries on if it was playing.
@@ -1097,6 +1194,11 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
         audioPlayer.stop()
         unloadStandardVideo()
         extendedVideoPlayer.stop()
+        stopSubtitleTimer()
+        let controller = subtitleController
+        MainActor.assumeIsolated {
+            controller.clear()
+        }
         activeVideoEngine = nil
         // Start from the top, since a saved position may lie past the end of the trimmed file
         pendingResumeTime = 0

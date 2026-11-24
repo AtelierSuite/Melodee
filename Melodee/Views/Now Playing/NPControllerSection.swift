@@ -37,6 +37,8 @@ struct NPControllerSection: View {
     @Binding var isVideoFullScreen: Bool
     /// Where the video is, for the full screen video to grow out of and shrink back into.
     var videoFrame: NPScreenFrameReference
+    /// Opens the lyrics and subtitle editor for the playing video.
+    var onEditSubtitles: (() -> Void)? = nil
 
     let updateTimer = Timer.publish(every: 0.25, on: .current, in: .common).autoconnect()
 
@@ -122,6 +124,17 @@ struct NPControllerSection: View {
                 .aspectRatio(mediaPlayer.videoAspectRatio ?? 1.0, contentMode: .fit)
                 .background(NPScreenFrameReader(reference: videoFrame))
                 .overlay {
+                    if !mediaPlayer.isVideoFullScreen {
+                        SubtitleOverlayView(
+                            text: mediaPlayer.subtitleController.activeText,
+                            isLyrics: mediaPlayer.subtitleController.isShowingLyrics,
+                            unsyncedLyrics: mediaPlayer.subtitleController.unsyncedLyrics,
+                            isCompact: true,
+                            bottomPadding: 10.0
+                        )
+                    }
+                }
+                .overlay {
                     NPVideoControlsOverlay { controls in
                         HStack(alignment: .top) {
                             if mediaPlayer.supportsVideoPictureInPicture {
@@ -134,6 +147,16 @@ struct NPControllerSection: View {
                                 }
                             }
                             Spacer(minLength: 0.0)
+                            NPSubtitleOverlayButton(
+                                size: .regular,
+                                controls: controls,
+                                onOpenEditor: onEditSubtitles.map { openEditor in
+                                    {
+                                        controls.hide()
+                                        openEditor()
+                                    }
+                                }
+                            )
                             NPVideoOverlayButton(
                                 systemImage: "arrow.up.left.and.arrow.down.right",
                                 accessibilityLabel: String(localized: "NowPlaying.EnterFullScreen")
