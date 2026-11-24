@@ -15,6 +15,13 @@ struct NPPlaybackOptionsMenu: View {
             SkipButtonModePicker()
                 .pickerStyle(.inline)
                 .labelsVisibility(.visible)
+            if mediaPlayer.isCurrentlyPlayingVideo() {
+                Menu {
+                    NPSubtitleMenuContent()
+                } label: {
+                    Label("Subtitles.MenuTitle", systemImage: "captions.bubble")
+                }
+            }
         } label: {
             Image(systemName: "ellipsis")
                 .resizable()

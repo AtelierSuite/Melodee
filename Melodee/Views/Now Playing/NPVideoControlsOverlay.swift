@@ -44,8 +44,14 @@ struct NPVideoControlsOverlay<Controls: View>: View {
                     .ignoresSafeArea()
                     .allowsHitTesting(false)
                     .transition(.opacity)
+            }
+            // Hidden rather than removed, so a menu opened from the controls stays open as they fade
+            if isEnabled {
+                let isVisible = isShowingControls || isVoiceOverEnabled
                 controls(context)
-                    .transition(.opacity)
+                    .opacity(isVisible ? 1.0 : 0.0)
+                    .allowsHitTesting(isVisible)
+                    .accessibilityHidden(!isVisible)
             }
         }
         .task(id: interactionID) {

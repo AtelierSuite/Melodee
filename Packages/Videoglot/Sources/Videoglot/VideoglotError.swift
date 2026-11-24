@@ -13,6 +13,14 @@ public enum VideoglotError: LocalizedError, Equatable {
     case trimNotSupported(String)
     /// The trim's end is not after its start, or lies outside the video.
     case invalidTrimRange
+    /// The file's container doesn't support embedding subtitle tracks.
+    case subtitleEmbedNotSupported(String)
+    /// The requested embedded subtitle track wasn't found.
+    case subtitleTrackNotFound
+    /// Reading an embedded subtitle track failed.
+    case subtitleReadFailed
+    /// Writing an embedded subtitle track failed.
+    case subtitleWriteFailed
 
     public var errorDescription: String? {
         switch self {
@@ -28,6 +36,14 @@ public enum VideoglotError: LocalizedError, Equatable {
             return "\(container.uppercased()) videos can't be trimmed."
         case .invalidTrimRange:
             return "The trimmed section is empty."
+        case .subtitleEmbedNotSupported(let container):
+            return "Subtitles can't be embedded into \(container.uppercased()) videos."
+        case .subtitleTrackNotFound:
+            return "The selected subtitle track wasn't found in this video."
+        case .subtitleReadFailed:
+            return "Couldn't read the subtitle track from this video."
+        case .subtitleWriteFailed:
+            return "Couldn't embed the subtitle track into this video."
         }
     }
 }

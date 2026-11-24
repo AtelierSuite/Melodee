@@ -11,6 +11,12 @@ extension MacPlayer {
     /// and moves on once a video finishes.
     func setUpVideoPlayer() {
         setUpExtendedVideoPlayer()
+        subtitleController.onChange = { [weak self] in
+            self?.notifyChange()
+        }
+        subtitleController.replacePlayerAsset = { [weak self] asset in
+            self?.replaceVideoAsset(with: asset)
+        }
         videoTimeControlObservation = videoPlayer.observe(\.timeControlStatus) { [weak self] _, _ in
             Task { @MainActor in
                 guard let self, self.isPlayingVideo, !self.isPlayingExtendedVideo else { return }
@@ -56,11 +62,38 @@ extension MacPlayer {
                 self.notifyChange()
             }
         }
+        extendedVideoPlayer.onTextTracksChanged = { [weak self] tracks in
+            MainActor.assumeIsolated {
+                guard let self, self.isPlayingExtendedVideo else { return }
+                self.subtitleController.updateExtendedTextTracks(tracks)
+            }
+        }
     }
 
     func playVideo(at url: URL) {
         let item = AVPlayerItem(url: url)
         videoSize = nil
+        observeVideoItem(item)
+        videoPlayer.replaceCurrentItem(with: item)
+        subtitleController.loadForAVPlayer(videoURL: url, item: item)
+        startSubtitleTimer()
+        videoPlayer.play()
+    }
+
+    /// Plays `asset` in place of the current video's item from the same position, such as to add a subtitle track.
+    func replaceVideoAsset(with asset: AVAsset) -> AVPlayerItem? {
+        guard isPlayingVideo, !isPlayingExtendedVideo, let currentItem = videoPlayer.currentItem else { return nil }
+        let time = currentItem.currentTime()
+        let item = AVPlayerItem(asset: asset)
+        observeVideoItem(item)
+        videoPlayer.replaceCurrentItem(with: item)
+        if time.isNumeric, time.seconds > 0 {
+            videoPlayer.seek(to: time, toleranceBefore: .zero, toleranceAfter: .zero)
+        }
+        return item
+    }
+
+    private func observeVideoItem(_ item: AVPlayerItem) {
         videoItemObservations = [
             item.observe(\.status) { [weak self] item, _ in
                 Task { @MainActor in
@@ -83,8 +116,6 @@ extension MacPlayer {
                 }
             }
         ]
-        videoPlayer.replaceCurrentItem(with: item)
-        videoPlayer.play()
     }
 
     func stopVideo() {
@@ -92,5 +123,41 @@ extension MacPlayer {
         videoPlayer.replaceCurrentItem(with: nil)
         videoItemObservations = []
         videoSize = nil
+    }
+
+    func startSubtitleTimer() {
+        stopSubtitleTimer()
+        subtitleTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
+            MainActor.assumeIsolated {
+                guard let self, self.isPlayingVideo, let time = self.playbackTime else { return }
+                self.subtitleController.update(currentTime: time.currentTime)
+            }
+        }
+    }
+
+    func stopSubtitleTimer() {
+        subtitleTimer?.invalidate()
+        subtitleTimer = nil
+    }
+
+    /// Refreshes subtitles or reloads the playing video after edits in the subtitle & lyrics editor.
+    func subtitlesDidChange(forPath path: String, videoFileChangedOnDisk: Bool) {
+        guard let currentFile,
+              FilesystemManager.normalizedPath(currentFile.path) == FilesystemManager.normalizedPath(path) else {
+            return
+        }
+        if videoFileChangedOnDisk, let currentIndex {
+            let resumeTime = playbackTime?.currentTime
+            let wasPlaying = isPlaying
+            play(at: currentIndex)
+            if let resumeTime, resumeTime > 0 {
+                seek(to: resumeTime)
+            }
+            if !wasPlaying {
+                pause()
+            }
+        } else {
+            subtitleController.reloadAfterEdit()
+        }
     }
 }

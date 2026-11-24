@@ -31,6 +31,13 @@ final class ExtendedVideoPlayer: NSObject {
         return view
     }
 
+    /// An embedded text/subtitle track reported by VLCKit.
+    struct TextTrack: Identifiable, Hashable, Sendable {
+        let id: String
+        let name: String
+        let language: String?
+    }
+
     /// Called when the file plays to the end.
     var onFinished: (() -> Void)?
     /// Called when VLC can't open or decode the file.
@@ -39,6 +46,8 @@ final class ExtendedVideoPlayer: NSObject {
     var onPausedChanged: ((Bool) -> Void)?
     /// Called with the video's size in pixels once it is known.
     var onVideoSizeChanged: ((CGSize) -> Void)?
+    /// Called when VLC discovers, updates, or removes embedded subtitle tracks.
+    var onTextTracksChanged: (([TextTrack]) -> Void)?
 
     /// The VLC instance every player and the parser run on.
     nonisolated(unsafe) private static let library: VLCLibrary = {
@@ -185,6 +194,31 @@ final class ExtendedVideoPlayer: NSObject {
         tearDownPlayer()
     }
 
+    /// Embedded subtitle tracks currently reported by VLC for the playing video.
+    var textTracks: [TextTrack] {
+        guard let player else { return [] }
+        return player.textTracks.map { track in
+            let title = track.trackName.trimmingCharacters(in: .whitespacesAndNewlines)
+            let desc = track.trackDescription?.trimmingCharacters(in: .whitespacesAndNewlines)
+            let name = !title.isEmpty ? title : (desc?.isEmpty == false ? desc! : track.trackId)
+            return TextTrack(id: track.trackId, name: name, language: track.language)
+        }
+    }
+
+    /// Selects one of VLC's embedded subtitle tracks by ID, or disables all embedded subtitles when `nil`.
+    func selectTextTrack(id: String?) {
+        guard let player else { return }
+        guard let id else {
+            player.deselectAllTextTracks()
+            return
+        }
+        if let track = player.textTracks.first(where: { $0.trackId == id }) {
+            player.selectTextTracks([track])
+        } else {
+            player.deselectAllTextTracks()
+        }
+    }
+
     private func tearDownPlayer() {
         #if canImport(UIKit)
         if player != nil {
@@ -280,6 +314,7 @@ extension ExtendedVideoPlayer: VLCMediaPlayerDelegate {
                 self.invalidatePictureInPicturePlaybackState()
                 self.onPausedChanged?(false)
                 self.reportVideoSizeIfNeeded(for: player)
+                self.onTextTracksChanged?(self.textTracks)
             case .paused:
                 self.invalidatePictureInPicturePlaybackState()
                 self.onPausedChanged?(true)
@@ -309,6 +344,27 @@ extension ExtendedVideoPlayer: VLCMediaPlayerDelegate {
         DispatchQueue.main.async {
             guard let self = playerRef, let player = self.player, !self.isStopRequested else { return }
             self.reportVideoSizeIfNeeded(for: player)
+        }
+    }
+
+    func mediaPlayerTrackAdded(_ trackId: String, with trackType: VLCMedia.TrackType) {
+        notifyTextTracksIfNeeded(trackType)
+    }
+
+    func mediaPlayerTrackRemoved(_ trackId: String, with trackType: VLCMedia.TrackType) {
+        notifyTextTracksIfNeeded(trackType)
+    }
+
+    func mediaPlayerTrackUpdated(_ trackId: String, with trackType: VLCMedia.TrackType) {
+        notifyTextTracksIfNeeded(trackType)
+    }
+
+    private func notifyTextTracksIfNeeded(_ trackType: VLCMedia.TrackType) {
+        guard trackType == .text else { return }
+        nonisolated(unsafe) weak let playerRef = self
+        DispatchQueue.main.async {
+            guard let self = playerRef, self.player != nil, !self.isStopRequested else { return }
+            self.onTextTracksChanged?(self.textTracks)
         }
     }
 }

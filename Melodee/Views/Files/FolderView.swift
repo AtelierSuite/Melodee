@@ -185,6 +185,7 @@ struct FolderView: View {
         .fileBrowserAlerts(state: $state, refreshFiles: refreshFiles)
         .fileBrowserTrimActions(state: $state, refreshFiles: refreshFiles)
         .tagEditorPresentation($state.tagEditorPresentation)
+        .subtitleEditorPresentation($state.subtitleEditorPresentation, onChange: refreshFiles)
         .sheet(item: $state.batchRenamePresentation) { presentation in
             BatchRenameView(
                 files: presentation.files,

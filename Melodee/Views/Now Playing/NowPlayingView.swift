@@ -22,6 +22,7 @@ struct NowPlayingView: View {
     @State var listSize: CGSize = .zero
     @State var isVideoFullScreen: Bool = false
     @State var videoFrame = NPScreenFrameReference()
+    @State var subtitleEditorPresentation: SubtitleEditorPresentation?
     @AppStorage(NPAdditionalControls.isExpandedKey) var isAdditionalControlsExpanded: Bool = false
 
     /// Where Now Playing is shown, which decides how much room the artwork has.
@@ -65,7 +66,12 @@ struct NowPlayingView: View {
             Group {
                 NPControllerSection(albumArt: $albumArt, layout: controllerLayout,
                                     topPadding: presentation == .sheet ? Self.topPadding : 0.0,
-                                    isVideoFullScreen: $isVideoFullScreen, videoFrame: videoFrame)
+                                    isVideoFullScreen: $isVideoFullScreen, videoFrame: videoFrame,
+                                    onEditSubtitles: {
+                                        if let file = mediaPlayer.currentlyPlayingFile(), file.type == .video {
+                                            subtitleEditorPresentation = SubtitleEditorPresentation(file: file)
+                                        }
+                                    })
                     .listRowSeparator(.hidden)
                 NPQueueSection()
                     .alignmentGuide(.listRowSeparatorTrailing) { dimensions in
@@ -91,6 +97,7 @@ struct NowPlayingView: View {
             }
             .environment(mediaPlayer)
         }
+        .subtitleEditorPresentation($subtitleEditorPresentation) { }
         .background {
             // The artwork is laid out as an overlay so its size can't widen the background past
             // this view, which matters when Now Playing sits in a column beside the file browser.

@@ -18,6 +18,8 @@ final class MacPlayer: NSObject {
     let audioPlayer = AudioPlayer()
     let videoPlayer = AVPlayer()
     let extendedVideoPlayer = ExtendedVideoPlayer()
+    /// Discovers, selects, and times subtitle and synced-lyrics tracks for the playing video.
+    let subtitleController = VideoSubtitleController()
     /// Measures the audio player's output for the visualizer while it is on screen.
     let spectrumAnalyzer = SpectrumAnalyzer()
     /// The engine playing the loaded video, chosen from the setting when the video started.
@@ -51,6 +53,7 @@ final class MacPlayer: NSObject {
     var videoTimeControlObservation: NSKeyValueObservation?
     var videoItemObservations: [NSKeyValueObservation] = []
     var videoEndObserver: NSObjectProtocol?
+    var subtitleTimer: Timer?
 
     override init() {
         super.init()
@@ -198,21 +201,26 @@ final class MacPlayer: NSObject {
         detectSpokenWord()
         if file.type == .video {
             audioPlayer.stop()
+            let videoURL = URL(filePath: file.path)
             if VideoEngine.current == .extended {
                 stopVideo()
                 activeVideoEngine = .extended
                 videoSize = nil
-                extendedVideoPlayer.play(url: URL(filePath: file.path), from: nil)
+                extendedVideoPlayer.play(url: videoURL, from: nil)
+                subtitleController.loadForExtendedPlayer(videoURL: videoURL, extendedPlayer: extendedVideoPlayer)
+                startSubtitleTimer()
             } else {
                 extendedVideoPlayer.stop()
                 activeVideoEngine = .standard
-                playVideo(at: URL(filePath: file.path))
+                playVideo(at: videoURL)
             }
             notifyChange()
             return
         }
         stopVideo()
         extendedVideoPlayer.stop()
+        stopSubtitleTimer()
+        subtitleController.clear()
         activeVideoEngine = nil
         do {
             try audioPlayer.play(URL(filePath: file.path))
@@ -262,6 +270,8 @@ final class MacPlayer: NSObject {
         audioPlayer.stop()
         stopVideo()
         extendedVideoPlayer.stop()
+        stopSubtitleTimer()
+        subtitleController.clear()
         activeVideoEngine = nil
         queue.removeAll()
         currentIndex = nil
@@ -292,11 +302,13 @@ final class MacPlayer: NSObject {
         guard supportsSeeking else { return }
         if isPlayingExtendedVideo {
             extendedVideoPlayer.seek(to: time)
+            subtitleController.update(currentTime: time)
         } else if isPlayingVideo {
             videoPlayer.seek(to: CMTime(seconds: time, preferredTimescale: 600),
                              toleranceBefore: .zero, toleranceAfter: .zero) { [weak self] _ in
                 Task { @MainActor in self?.notifyChange() }
             }
+            subtitleController.update(currentTime: time)
         } else {
             audioPlayer.seek(time: time)
         }
