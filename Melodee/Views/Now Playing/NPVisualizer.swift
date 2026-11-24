@@ -55,6 +55,12 @@ struct NPVisualizer: View {
         .overlay(alignment: .topTrailing) {
             switchButton
         }
+        .overlay(alignment: .topLeading) {
+            if VisualizerPictureInPicture.isSupported, !isChoosingStyle {
+                pictureInPictureButton
+                    .transition(.opacity)
+            }
+        }
         .onChange(of: shouldAnalyse, initial: true) { _, newValue in
             setAnalysing(newValue)
         }
@@ -93,6 +99,23 @@ struct NPVisualizer: View {
             String(localized: "Shared.Cancel") :
             String(localized: "NowPlaying.ChooseVisualizer")
         )
+    }
+
+    private var pictureInPictureButton: some View {
+        let isActive = mediaPlayer.visualizerPictureInPicture.isActive
+        return Button {
+            mediaPlayer.visualizerPictureInPicture.toggle()
+        } label: {
+            Image(systemName: isActive ? "pip.exit" : "pip.enter")
+                .font(.system(size: 16.0, weight: .semibold))
+                .frame(width: 24.0, height: 24.0)
+        }
+        .buttonStyle(.glass(.clear))
+        .buttonBorderShape(.circle)
+        .foregroundStyle(.white)
+        .padding(10.0)
+        .disabled(!mediaPlayer.isPlaybackActive)
+        .accessibilityLabel(String(localized: "NowPlaying.PictureInPicture"))
     }
 
     private var switchAnimation: Animation {

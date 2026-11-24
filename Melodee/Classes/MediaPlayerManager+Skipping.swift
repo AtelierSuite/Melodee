@@ -15,7 +15,7 @@ extension MediaPlayerManager {
         skip(by: -SkipButtonMode.interval)
     }
 
-    private func skip(by offset: TimeInterval) {
+    func skip(by offset: TimeInterval) {
         guard isPlaybackActive, !isScrubbing, supportsSeeking(), let time = playbackTime() else { return }
         // Stay just short of the end, so the file finishes playing normally
         let target = min(max(0, time.currentTime + offset), max(0, time.totalTime - 0.1))
