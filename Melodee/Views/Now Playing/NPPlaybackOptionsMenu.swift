@@ -1,12 +1,17 @@
 import SwiftUI
 
-/// Chooses whether the previous and next buttons change tracks or skip within the file.
+/// Opens the equalizer, and chooses whether the previous and next buttons change tracks or skip within the file.
 struct NPPlaybackOptionsMenu: View {
 
     @Environment(MediaPlayerManager.self) var mediaPlayer
 
+    @State private var isEqualizerPresented: Bool = false
+
     var body: some View {
         Menu {
+            Button("Equalizer", systemImage: "slider.vertical.3") {
+                isEqualizerPresented = true
+            }
             SkipButtonModePicker()
                 .pickerStyle(.inline)
                 .labelsVisibility(.visible)
@@ -25,5 +30,8 @@ struct NPPlaybackOptionsMenu: View {
         .foregroundStyle(.primary)
         .accessibilityLabel("NowPlaying.PlaybackOptions")
         .disabled(!mediaPlayer.isPlaybackActive)
+        .sheet(isPresented: $isEqualizerPresented) {
+            NPEqualizerSheet()
+        }
     }
 }
