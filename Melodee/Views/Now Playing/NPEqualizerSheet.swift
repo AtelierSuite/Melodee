@@ -73,6 +73,10 @@ struct NPEqualizerSheet: View {
         .onChange(of: bands) { _, newValue in
             EQBand.saved = newValue
             if !isEnabled { isEnabled = true }
+            mediaPlayer.applyEqualizer(bands: newValue, isEnabled: isEnabled)
+        }
+        .onChange(of: isEnabled) { _, newValue in
+            mediaPlayer.applyEqualizer(bands: bands, isEnabled: newValue)
         }
         .onAppear {
             mediaPlayer.startSpectrumAnalysis()
