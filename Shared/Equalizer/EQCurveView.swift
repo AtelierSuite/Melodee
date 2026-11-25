@@ -15,8 +15,6 @@ struct EQCurveView: View {
     private static let hitRadius: CGFloat = 30.0
     private static let sampleCount = 160
     private static let labelledFrequencies: [Double] = [20, 50, 100, 200, 500, 1_000, 2_000, 5_000, 10_000, 20_000]
-    private static let minorFrequencies: [Double] = [30, 40, 60, 70, 80, 90, 300, 400, 600, 700, 800, 900,
-                                                     3_000, 4_000, 6_000, 7_000, 8_000, 9_000]
 
     @State private var draggedBandID: Int?
     @State private var dragOffset: CGSize = .zero
@@ -64,14 +62,6 @@ struct EQCurveView: View {
     // MARK: Drawing
 
     private func drawGrid(in context: inout GraphicsContext, plot: EQPlot, size: CGSize) {
-        var minor = Path()
-        for frequency in Self.minorFrequencies {
-            let xPosition = plot.x(for: frequency)
-            minor.move(to: CGPoint(x: xPosition, y: plot.rect.minY))
-            minor.addLine(to: CGPoint(x: xPosition, y: plot.rect.maxY))
-        }
-        context.stroke(minor, with: .color(.white.opacity(0.04)), lineWidth: 1.0)
-
         var major = Path()
         for frequency in Self.labelledFrequencies {
             let xPosition = plot.x(for: frequency)
