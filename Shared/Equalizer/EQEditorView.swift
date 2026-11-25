@@ -21,11 +21,7 @@ struct EQEditorView: View {
             GlassEffectContainer(spacing: 6.0) {
                 HStack(spacing: 6.0) {
                     ForEach($bands) { $band in
-                        EQBandToggle(band: $band, isSelected: band.id == selectedBandID) {
-                            withAnimation(.spring(duration: 0.3)) {
-                                selectedBandID = band.id
-                            }
-                        }
+                        EQBandToggle(band: $band)
                     }
                 }
             }
@@ -37,13 +33,12 @@ struct EQEditorView: View {
 struct EQBandToggle: View {
 
     @Binding var band: EQBand
-    var isSelected: Bool
-    var onSelect: () -> Void
 
     var body: some View {
         Button {
-            if isSelected { band.isEnabled.toggle() }
-            onSelect()
+            withAnimation(.spring(duration: 0.3)) {
+                band.isEnabled.toggle()
+            }
         } label: {
             Canvas { context, size in
                 let plot = EQPlot(rect: CGRect(origin: .zero, size: size).insetBy(dx: 1.0, dy: 2.0))
@@ -77,11 +72,6 @@ struct EQBandToggle: View {
             .contentShape(.capsule)
             .glassEffect(band.isEnabled ? .regular.tint(band.color.opacity(0.8)).interactive() : .regular.interactive(),
                          in: .capsule)
-            .overlay {
-                Capsule()
-                    .strokeBorder(.white.opacity(isSelected ? 0.85 : 0.0), lineWidth: 1.5)
-            }
-            .scaleEffect(isSelected ? 1.06 : 1.0)
         }
         .buttonStyle(.plain)
         .accessibilityLabel(Text(band.kind.localizedName))
