@@ -22,6 +22,7 @@ final class MacPlayer: NSObject {
     let subtitleController = VideoSubtitleController()
     /// Measures the audio player's output for the visualizer while it is on screen.
     let spectrumAnalyzer = SpectrumAnalyzer()
+    let levelVolume = LevelVolume()
     /// The engine playing the loaded video, chosen from the setting when the video started.
     private(set) var activeVideoEngine: VideoEngine?
     /// The natural size of the playing video, once the video engine knows it.
@@ -58,6 +59,7 @@ final class MacPlayer: NSObject {
     override init() {
         super.init()
         audioPlayer.delegate = self
+        levelVolume.insert(into: audioPlayer)
         setUpVideoPlayer()
         setUpRemoteCommands()
     }
@@ -199,6 +201,7 @@ final class MacPlayer: NSObject {
         let file = queue[index]
         metadata = TrackMetadata(file: file)
         detectSpokenWord()
+        prepareLevelVolume(for: file, at: index)
         if file.type == .video {
             audioPlayer.stop()
             let videoURL = URL(filePath: file.path)

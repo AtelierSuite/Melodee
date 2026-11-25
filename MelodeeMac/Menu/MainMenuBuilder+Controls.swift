@@ -36,6 +36,7 @@ extension MainMenuBuilder {
         repeatItem.submenu = repeatMenu
         menu.addItem(repeatItem)
         menu.addItem(skipButtonsItem())
+        menu.addItem(item("LevelVolume", action: #selector(AppDelegate.toggleLevelVolume(_:))))
         let videoEngineItem = item("VideoEngine.Title", action: nil)
         let videoEngineMenu = NSMenu()
         let engines: [(String, VideoEngine)] = [("VideoEngine.Default", .standard), ("VideoEngine.Extended", .extended)]

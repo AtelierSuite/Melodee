@@ -1,16 +1,21 @@
 import SwiftUI
 
-/// Opens the equalizer, and chooses whether the previous and next buttons change tracks or skip within the file.
+/// Opens the equalizer, evens out loudness between tracks, and chooses whether the previous and next buttons
+/// change tracks or skip within the file.
 struct NPPlaybackOptionsMenu: View {
 
     @Environment(MediaPlayerManager.self) var mediaPlayer
 
     @State private var isEqualizerPresented: Bool = false
+    @State private var isLevelVolumePresented: Bool = false
 
     var body: some View {
         Menu {
             Button("Equalizer", systemImage: "slider.vertical.3") {
                 isEqualizerPresented = true
+            }
+            Button("LevelVolume", systemImage: "speaker.wave.2") {
+                isLevelVolumePresented = true
             }
             SkipButtonModePicker()
                 .pickerStyle(.inline)
@@ -39,6 +44,9 @@ struct NPPlaybackOptionsMenu: View {
         .disabled(!mediaPlayer.isPlaybackActive)
         .sheet(isPresented: $isEqualizerPresented) {
             NPEqualizerSheet()
+        }
+        .sheet(isPresented: $isLevelVolumePresented) {
+            NPLevelVolumeSheet()
         }
     }
 }

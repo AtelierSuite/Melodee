@@ -35,12 +35,11 @@ extension MediaPlayerManager {
 
     // MARK: - AudioPlayerDelegate
 
-    /// Carries the time pitch unit over to the new format when the audio player changes formats between files.
+    /// Carries the time pitch and level volume units over to the new format when the audio player changes formats
+    /// between files.
     func audioPlayer(_ audioPlayer: AudioPlayer,
                      reconfigureProcessingGraph engine: AVAudioEngine,
                      with format: AVAudioFormat) -> AVAudioNode {
-        engine.disconnectNodeOutput(timePitch)
-        engine.connect(timePitch, to: engine.mainMixerNode, format: format)
-        return timePitch
+        levelVolume.reconnect(in: engine, after: timePitch, with: format)
     }
 }
