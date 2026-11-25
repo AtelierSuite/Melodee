@@ -49,12 +49,13 @@ struct EQCurveView: View {
             })
         }
         .background {
-            RoundedRectangle(cornerRadius: 24.0, style: .continuous)
+            ConcentricRectangle()
                 .fill(LinearGradient(colors: [Color(white: 0.14), Color(white: 0.05)],
                                      startPoint: .top, endPoint: .bottom))
                 .opacity(0.9)
                 .padding(3.0)
         }
+        .containerShape(.rect(cornerRadius: 24.0))
         .glassEffect(.clear, in: .rect(cornerRadius: 24.0))
         .environment(\.colorScheme, .dark)
     }
