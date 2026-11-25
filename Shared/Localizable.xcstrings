@@ -3770,6 +3770,457 @@
         }
       }
     },
+    "LevelVolume" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Level Volume"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "音量を自動調整"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "음량 평준화"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cân bằng âm lượng"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "音量均衡"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "音量平衡"
+          }
+        }
+      }
+    },
+    "LevelVolume.CouldNotMeasure" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This track couldn't be measured, so it plays at its own volume."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "この曲は測定できなかったため、元の音量で再生します。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "이 트랙은 측정할 수 없어 원래 음량으로 재생됩니다."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không thể đo bài này nên nó phát ở âm lượng gốc."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法测量此曲目，将以原始音量播放。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "無法測量此曲目，將以原始音量播放。"
+          }
+        }
+      }
+    },
+    "LevelVolume.Idle" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Play a song to see how much it's adjusted."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "曲を再生すると、どれだけ調整しているかが表示されます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "노래를 재생하면 얼마나 조정되는지 표시됩니다."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Phát một bài để xem mức điều chỉnh."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "播放歌曲即可查看调整幅度。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "播放歌曲即可查看調整幅度。"
+          }
+        }
+      }
+    },
+    "LevelVolume.Loud" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Loud"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "大"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "크게"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "To"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "响"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "大"
+          }
+        }
+      }
+    },
+    "LevelVolume.Measuring" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Measuring this track…"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "この曲を測定中…"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "이 트랙을 측정하는 중…"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đang đo bài này…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在测量此曲目…"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在測量此曲目…"
+          }
+        }
+      }
+    },
+    "LevelVolume.On" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Level Volume On"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "音量の自動調整をオン"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "음량 평준화 켜기"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bật cân bằng âm lượng"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "开启音量均衡"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "開啟音量平衡"
+          }
+        }
+      }
+    },
+    "LevelVolume.Original" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Original"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "元の音量"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "원래 음량"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gốc"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "原始"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "原始"
+          }
+        }
+      }
+    },
+    "LevelVolume.Quiet" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quiet"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "小"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "작게"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nhỏ"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "轻"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "小"
+          }
+        }
+      }
+    },
+    "LevelVolume.Silent" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This track is silent, so there's nothing to adjust."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "この曲は無音のため、調整しません。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "이 트랙은 무음이라 조정하지 않습니다."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bài này không có âm thanh nên không cần điều chỉnh."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "此曲目为静音，无需调整。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "此曲目為靜音，無需調整。"
+          }
+        }
+      }
+    },
+    "LevelVolume.Target" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Target"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "目標"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "목표"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mục tiêu"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "目标"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "目標"
+          }
+        }
+      }
+    },
+    "LevelVolume.Video" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Videos play at their own volume."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ビデオは元の音量で再生されます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "비디오는 원래 음량으로 재생됩니다."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Video phát ở âm lượng gốc."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "视频以原始音量播放。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "影片以原始音量播放。"
+          }
+        }
+      }
+    },
     "Library.AddFolder" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -6230,6 +6681,201 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
+            "value" : "Continue"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "続ける"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "계속"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tiếp tục"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "继续"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "繼續"
+          }
+        }
+      }
+    },
+    "Onboarding.Files.Description" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "device" : {
+              "ipad" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Melodee shows the files in its folder in 'On My iPad'. Add music and videos there with the Files app or from your computer in Finder, or use the menu at the top to switch to iCloud Drive or add any other folder."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Melodee shows the files in its folder in 'On My iPhone'. Add music and videos there with the Files app or from your computer in Finder, or use the menu at the top to switch to iCloud Drive or add any other folder."
+                }
+              }
+            }
+          }
+        },
+        "ja" : {
+          "variations" : {
+            "device" : {
+              "ipad" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Melodeeには、「このiPad内」の「Melodee」フォルダーにあるファイルが表示されます。「ファイル」アプリやパソコンのFinderから音楽や動画を追加できます。上部のメニューから、iCloud Driveに切り替えたり、ほかのフォルダーを追加したりすることもできます。"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Melodeeには、「このiPhone内」の「Melodee」フォルダーにあるファイルが表示されます。「ファイル」アプリやパソコンのFinderから音楽や動画を追加できます。上部のメニューから、iCloud Driveに切り替えたり、ほかのフォルダーを追加したりすることもできます。"
+                }
+              }
+            }
+          }
+        },
+        "ko" : {
+          "variations" : {
+            "device" : {
+              "ipad" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Melodee는 '나의 iPad'에 있는 Melodee 폴더의 파일을 표시합니다. 파일 앱이나 컴퓨터의 Finder로 음악과 동영상을 추가하거나, 상단 메뉴에서 iCloud Drive로 전환하거나 다른 폴더를 추가하세요."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Melodee는 '나의 iPhone'에 있는 Melodee 폴더의 파일을 표시합니다. 파일 앱이나 컴퓨터의 Finder로 음악과 동영상을 추가하거나, 상단 메뉴에서 iCloud Drive로 전환하거나 다른 폴더를 추가하세요."
+                }
+              }
+            }
+          }
+        },
+        "vi" : {
+          "variations" : {
+            "device" : {
+              "ipad" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Melodee hiển thị các tệp trong thư mục của ứng dụng tại 'Trên iPad'. Thêm nhạc và video vào đó bằng ứng dụng Tệp hoặc từ máy tính qua Finder, hoặc dùng menu ở trên cùng để chuyển sang iCloud Drive hay thêm thư mục khác."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Melodee hiển thị các tệp trong thư mục của ứng dụng tại 'Trên iPhone'. Thêm nhạc và video vào đó bằng ứng dụng Tệp hoặc từ máy tính qua Finder, hoặc dùng menu ở trên cùng để chuyển sang iCloud Drive hay thêm thư mục khác."
+                }
+              }
+            }
+          }
+        },
+        "zh-Hans" : {
+          "variations" : {
+            "device" : {
+              "ipad" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Melodee 会显示“我的 iPad”中 Melodee 文件夹里的文件。你可以通过“文件”App 或电脑上的“访达”添加音乐和视频，也可以使用顶部菜单切换到 iCloud 云盘或添加其他文件夹。"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Melodee 会显示“我的 iPhone”中 Melodee 文件夹里的文件。你可以通过“文件”App 或电脑上的“访达”添加音乐和视频，也可以使用顶部菜单切换到 iCloud 云盘或添加其他文件夹。"
+                }
+              }
+            }
+          }
+        },
+        "zh-Hant" : {
+          "variations" : {
+            "device" : {
+              "ipad" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Melodee 會顯示「我的 iPad」中 Melodee 檔案夾裡的檔案。你可以透過「檔案」App 或電腦上的 Finder 加入音樂和影片，也可以使用頂部選單切換到 iCloud 雲碟或加入其他檔案夾。"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Melodee 會顯示「我的 iPhone」中 Melodee 檔案夾裡的檔案。你可以透過「檔案」App 或電腦上的 Finder 加入音樂和影片，也可以使用頂部選單切換到 iCloud 雲碟或加入其他檔案夾。"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Onboarding.Files.Title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Where to Find Files"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ファイルの場所"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "파일 위치"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nơi tìm tệp"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "文件位置"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "檔案位置"
+          }
+        }
+      }
+    },
+    "Onboarding.GetStarted" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
             "value" : "Get Started"
           }
         },
@@ -6265,142 +6911,101 @@
         }
       }
     },
-    "Onboarding.Feature.BeyondAudio.Blurb" : {
+    "Onboarding.Music.Description" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "View images, text, and PDFs, and unzip archives without leaving the app."
+            "value" : "Melodee is a player for the music and videos you already have. Play your files straight from their folders and watch the visualizer dance along to every song. Here's a quick look at what else Melodee can do."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "画像やテキスト、PDFの表示も、アーカイブの展開も、アプリ内で完結。"
+            "value" : "Melodeeは、お手持ちの音楽や動画を楽しめるプレイヤーアプリです。フォルダーにあるファイルをそのまま再生でき、ビジュアライザが曲に合わせて動きます。Melodeeでできることを簡単にご紹介します。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "이미지, 텍스트, PDF를 보고 압축 파일을 앱에서 바로 풀어보세요."
+            "value" : "Melodee는 가지고 있는 음악과 동영상을 즐길 수 있는 플레이어입니다. 폴더에 있는 파일을 바로 재생하고, 곡에 맞춰 움직이는 비주얼라이저를 감상해 보세요. Melodee로 할 수 있는 일을 간단히 소개해 드릴게요."
           }
         },
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Xem hình ảnh, văn bản, PDF và giải nén tệp ngay trong ứng dụng."
+            "value" : "Melodee là trình phát dành cho nhạc và video bạn đã có. Phát tệp ngay từ thư mục và xem hiệu ứng âm thanh chuyển động theo từng bài hát. Hãy cùng xem nhanh Melodee có thể làm gì nữa nhé."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "在应用内查看图片、文本和 PDF，并解压缩归档文件。"
+            "value" : "Melodee 是一款播放你已有音乐和视频的播放器。直接从文件夹播放文件，还能看到随每首歌律动的可视化效果。下面快速了解一下 Melodee 的更多功能。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "在應用程式內檢視圖片、文字和 PDF，並解壓縮封存檔。"
+            "value" : "Melodee 是一款播放你已有音樂和影片的播放器。直接從檔案夾播放檔案，還能看到隨每首歌律動的視覺化效果。下面快速了解一下 Melodee 的更多功能。"
           }
         }
       }
     },
-    "Onboarding.Feature.BeyondAudio.Title" : {
+    "Onboarding.Tags.Description" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "More Than Music"
+            "value" : "Touch and hold a file and choose Edit Track Information to change its title, artist, album, artwork, and more. Select several files to edit them together."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "音声だけじゃない"
+            "value" : "ファイルを長押しして「トラック情報を編集」を選ぶと、タイトルやアーティスト、アルバム、アートワークなどを変更できます。複数のファイルを選択すれば、まとめて編集できます。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "음악 그 이상"
+            "value" : "파일을 길게 누르고 트랙 정보 편집을 선택하여 제목, 아티스트, 앨범, 아트워크 등을 변경하세요. 여러 파일을 선택하면 한 번에 편집할 수 있습니다."
           }
         },
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Không chỉ là âm nhạc"
+            "value" : "Chạm và giữ một tệp rồi chọn Chỉnh sửa thông tin bản nhạc để thay đổi tiêu đề, nghệ sĩ, album, ảnh bìa và hơn thế nữa. Chọn nhiều tệp để chỉnh sửa cùng lúc."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "不止于音乐"
+            "value" : "按住文件并选择“编辑曲目信息”，即可修改标题、艺人、专辑、封面等。选择多个文件即可一起编辑。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "不只是音樂"
+            "value" : "按住檔案並選擇「編輯曲目資訊」，即可修改標題、演出者、專輯、封面等。選擇多個檔案即可一起編輯。"
           }
         }
       }
     },
-    "Onboarding.Feature.EditTags.Blurb" : {
+    "Onboarding.Tags.Title" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Update titles, artists, artwork, and more across nearly any file type."
+            "value" : "Tag Editing"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ほぼあらゆる形式で、タイトルやアーティスト、アートワークなどを編集できます。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "거의 모든 파일 형식에서 제목, 아티스트, 아트워크 등을 수정하세요."
-          }
-        },
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cập nhật tiêu đề, nghệ sĩ, ảnh bìa và hơn thế nữa cho hầu hết mọi loại tệp."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "为几乎任何文件类型修改标题、艺人、封面等信息。"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "為幾乎任何檔案類型修改標題、演出者、封面等資訊。"
-          }
-        }
-      }
-    },
-    "Onboarding.Feature.EditTags.Title" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Edit Your Tags"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "タグを編集"
+            "value" : "タグの編集"
           }
         },
         "ko" : {
@@ -6425,170 +7030,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "編輯標籤"
-          }
-        }
-      }
-    },
-    "Onboarding.Feature.OpenFolder.Blurb" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Browse on-device storage, iCloud Drive, or any external folder you connect."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "デバイス内のストレージやiCloud Drive、接続した外部フォルダを閲覧できます。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "기기 저장 공간, iCloud Drive, 연결한 외부 폴더를 탐색하세요."
-          }
-        },
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Duyệt bộ nhớ trên thiết bị, iCloud Drive hoặc bất kỳ thư mục ngoài nào bạn kết nối."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "浏览设备本地存储、iCloud 云盘或你连接的任意外部文件夹。"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "瀏覽裝置本機儲存空間、iCloud 雲碟或你連接的任意外部檔案夾。"
-          }
-        }
-      }
-    },
-    "Onboarding.Feature.OpenFolder.Title" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Open Any Folder"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "どんなフォルダも開ける"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "어떤 폴더든 열기"
-          }
-        },
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mở mọi thư mục"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "打开任意文件夹"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "開啟任意檔案夾"
-          }
-        }
-      }
-    },
-    "Onboarding.Feature.PlayAnything.Blurb" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "MP3, WAV, FLAC, and many more formats — your whole library in one player."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "MP3、WAV、FLACなど多くの形式に対応。ライブラリ全体を1つのプレーヤーで。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "MP3, WAV, FLAC 등 다양한 형식 지원 — 모든 라이브러리를 하나의 플레이어로."
-          }
-        },
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "MP3, WAV, FLAC và nhiều định dạng khác — toàn bộ thư viện của bạn trong một trình phát."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "支持 MP3、WAV、FLAC 等多种格式——用一个播放器畅享整个音乐库。"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "支援 MP3、WAV、FLAC 等多種格式——用一個播放器暢享整個音樂庫。"
-          }
-        }
-      }
-    },
-    "Onboarding.Feature.PlayAnything.Title" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Play Almost Anything"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ほぼ何でも再生"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "거의 모든 음악 재생"
-          }
-        },
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Phát hầu hết mọi thứ"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "几乎任何格式都能播放"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "幾乎任何格式都能播放"
           }
         }
       }
@@ -6630,6 +7071,170 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "歡迎使用 %@"
+          }
+        }
+      }
+    },
+    "Onboarding.Trimming.Description" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Touch and hold a song and choose Trim… to cut its start and end on the waveform. Select several songs to trim them all at once. Originals are kept for 30 days, so you can always restore them."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "曲を長押しして「トリミング…」を選ぶと、波形を見ながら先頭と末尾をカットできます。複数の曲を選択すれば、まとめてトリミングできます。オリジナルは30日間保持されるので、いつでも元に戻せます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "노래를 길게 누르고 트리밍…을 선택하여 파형에서 시작과 끝을 잘라내세요. 여러 노래를 선택하면 한 번에 트리밍할 수 있습니다. 원본은 30일 동안 보관되므로 언제든지 복원할 수 있습니다."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chạm và giữ một bài hát rồi chọn Cắt… để cắt phần đầu và cuối trên dạng sóng. Chọn nhiều bài hát để cắt tất cả cùng lúc. Bản gốc được giữ trong 30 ngày, nên bạn luôn có thể khôi phục."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "按住歌曲并选择“修剪…”，即可在波形上剪掉开头和结尾。选择多首歌曲即可一次修剪。原始文件会保留 30 天，可随时恢复。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "按住歌曲並選擇「修剪…」，即可在波形上剪掉開頭和結尾。選擇多首歌曲即可一次修剪。原始檔案會保留 30 天，可隨時復原。"
+          }
+        }
+      }
+    },
+    "Onboarding.Trimming.Title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Audio Trimming"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "オーディオのトリミング"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "오디오 트리밍"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cắt âm thanh"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "音频修剪"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "音訊修剪"
+          }
+        }
+      }
+    },
+    "Onboarding.Video.Description" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Videos play right in Now Playing. Turn on subtitles or lyrics, go full screen, or keep watching in Picture in Picture while you use other apps."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "動画は再生中画面でそのまま再生できます。字幕や歌詞を表示したり、フルスクリーンにしたり、ピクチャ・イン・ピクチャでほかのアプリを使いながら視聴したりできます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "동영상은 지금 재생 중 화면에서 바로 재생됩니다. 자막이나 가사를 켜고, 전체 화면으로 보거나, 다른 앱을 사용하는 동안 PIP 모드로 계속 시청하세요."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Video phát ngay trong Đang phát. Bật phụ đề hoặc lời bài hát, xem toàn màn hình, hoặc tiếp tục xem trong chế độ Hình trong hình khi dùng ứng dụng khác."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "视频直接在“正在播放”中播放。你可以打开字幕或歌词、全屏观看，或在使用其他应用时通过画中画继续观看。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "影片直接在「正在播放」中播放。你可以開啟字幕或歌詞、全螢幕觀看，或在使用其他 App 時透過子母畫面繼續觀看。"
+          }
+        }
+      }
+    },
+    "Onboarding.Video.Title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Video Playback"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "動画の再生"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "동영상 재생"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Phát video"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "视频播放"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "影片播放"
           }
         }
       }

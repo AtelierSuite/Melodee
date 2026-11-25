@@ -118,6 +118,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         player.skipButtonMode = mode
     }
 
+    @objc func toggleLevelVolume(_ sender: NSMenuItem) {
+        player.levelVolume.isOn.toggle()
+    }
+
     @objc func setVideoEngine(_ sender: NSMenuItem) {
         guard let rawValue = sender.representedObject as? String, let engine = VideoEngine(rawValue: rawValue),
               engine != VideoEngine.current else {
@@ -192,6 +196,8 @@ extension AppDelegate: NSMenuItemValidation {
             menuItem.state = (menuItem.representedObject as? String) == player.repeatMode.rawValue ? .on : .off
         case #selector(setSkipButtonMode(_:)):
             menuItem.state = (menuItem.representedObject as? String) == player.skipButtonMode.rawValue ? .on : .off
+        case #selector(toggleLevelVolume(_:)):
+            menuItem.state = player.levelVolume.isOn ? .on : .off
         case #selector(setVideoEngine(_:)):
             menuItem.state = (menuItem.representedObject as? String) == VideoEngine.current.rawValue ? .on : .off
         case #selector(clearQueue(_:)):

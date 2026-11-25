@@ -27,6 +27,7 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
     /// Changes the audio player's speed without changing its pitch. It's bypassed at normal speed.
     @ObservationIgnored let timePitch = AVAudioUnitTimePitch()
     @ObservationIgnored let equalizer = AVAudioUnitEQ(numberOfBands: EQBand.defaults.count)
+    @ObservationIgnored let levelVolume = MainActor.assumeIsolated { LevelVolume() }
     /// How fast audio and video play, where 1 is normal speed.
     var playbackSpeed: Double = PlaybackSpeed.current {
         didSet {
@@ -159,6 +160,7 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
         MainActor.assumeIsolated { managerRef.visualizerPictureInPicture.attach(to: managerRef) }
         audioPlayer.delegate = self
         insertTimePitch()
+        levelVolume.insert(into: audioPlayer, after: equalizer)
         applyPlaybackSpeed()
         applyEqualizer(bands: EQBand.saved,
                        isEnabled: UserDefaults.standard.bool(forKey: NPEqualizerSheet.isEnabledKey))
@@ -535,6 +537,7 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
 
     private func loadAndPlay(_ file: FSFile, from startTime: TimeInterval? = nil) {
         activateAudioSession()
+        prepareLevelVolume(for: file)
         let url = URL(fileURLWithPath: file.path)
         let startTime = startTime.flatMap { $0 > 0 ? $0 : nil }
         if file.type == .video, VideoEngine.current == .extended {
@@ -641,6 +644,21 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
         videoItemStatusObservation = nil
         videoPresentationSizeObservation = nil
         videoAspectRatio = nil
+    }
+
+    /// Sets the gain for an audio file before it plays, and measures the audio files queued after it ahead of time.
+    private func prepareLevelVolume(for file: FSFile) {
+        let index = currentlyPlayingIndex()
+        let upcoming = queue.dropFirst(index + 1)
+            .filter { $0.type != .video }
+            .prefix(2)
+            .map { URL(fileURLWithPath: $0.path) }
+        let url = URL(fileURLWithPath: file.path)
+        let isVideo = file.type == .video
+        let levelVolume = self.levelVolume
+        MainActor.assumeIsolated {
+            levelVolume.trackWillPlay(url, isVideo: isVideo, upcoming: Array(upcoming))
+        }
     }
 
     private func playAudio(at url: URL, from startTime: TimeInterval?) throws {
@@ -1145,6 +1163,9 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
         stateStore.saveQueue(queue)
         savePlaybackPosition()
         invalidateMetadataCache()
+        if let file = currentlyPlayingFile() {
+            prepareLevelVolume(for: file)
+        }
         setNowPlaying()
     }
 
