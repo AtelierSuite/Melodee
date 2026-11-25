@@ -2,120 +2,49 @@ import SwiftUI
 
 struct OnboardingView: View {
 
-    var onContinue: () -> Void
+    @State private var feature: OnboardingFeature = .music
+    var onFinish: () -> Void
 
-    private let appName = "Melodee"
-
-    private var welcomeTitle: Text {
-        let format = String(localized: "Onboarding.Title")
-        let accent = Text(appName).foregroundStyle(.accent)
-        guard let range = format.range(of: "%@") else {
-            return Text(format).foregroundStyle(.primary)
-        }
-        let leading = Text(String(format[..<range.lowerBound])).foregroundStyle(.primary)
-        let trailing = Text(String(format[range.upperBound...])).foregroundStyle(.primary)
-        return leading + accent + trailing
-    }
+    private var isLast: Bool { feature == OnboardingFeature.allCases.last }
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 16.0) {
-                welcomeTitle
-                    .fontWeight(.black)
-                    .font(.largeTitle)
-                    .multilineTextAlignment(.leading)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.top, 24.0)
-                Spacer()
-                VStack(alignment: .leading, spacing: 32.0) {
-                    FeatureRow(
-                        symbol: "waveform",
-                        colors: [.accent, .primary],
-                        title: "Onboarding.Feature.PlayAnything.Title",
-                        blurb: "Onboarding.Feature.PlayAnything.Blurb"
-                    )
-                    FeatureRow(
-                        symbol: "tag.fill",
-                        colors: [.pink, .red],
-                        title: "Onboarding.Feature.EditTags.Title",
-                        blurb: "Onboarding.Feature.EditTags.Blurb"
-                    )
-                    FeatureRow(
-                        symbol: "doc.richtext.fill",
-                        colors: [.green, .yellow],
-                        title: "Onboarding.Feature.BeyondAudio.Title",
-                        blurb: "Onboarding.Feature.BeyondAudio.Blurb"
-                    )
-                    FeatureRow(
-                        symbol: "folder.fill",
-                        colors: [.cyan, .blue],
-                        title: "Onboarding.Feature.OpenFolder.Title",
-                        blurb: "Onboarding.Feature.OpenFolder.Blurb"
-                    )
+            VStack(alignment: .leading, spacing: 0.0) {
+                GlassEffectContainer(spacing: 4.0) {
+                    VStack(spacing: 12.0) {
+                        OnboardingTrail(current: feature)
+                        OnboardingStage(feature: feature)
+                    }
                 }
-                Spacer()
+                OnboardingText(feature: feature)
+                    .padding(.top, 28.0)
             }
-            .padding(18.0)
+            .padding(.horizontal, 24.0)
+            .padding(.top, 16.0)
+            .padding(.bottom, 24.0)
+            .frame(maxWidth: 560.0)
+            .frame(maxWidth: .infinity)
         }
-        .background {
-            LinearGradient(
-                colors: [.accent.opacity(0.12), .clear],
-                startPoint: .top,
-                endPoint: .center
+        .scrollBounceBehavior(.basedOnSize)
+        .safeAreaBar(edge: .bottom, spacing: 0.0) {
+            OnboardingButton(
+                title: String(localized: isLast ? "Onboarding.GetStarted" : "Onboarding.Continue"),
+                action: advance
             )
-            .ignoresSafeArea()
+            .frame(maxWidth: 560.0)
+            .padding(24.0)
         }
-        .safeAreaInset(edge: .bottom, spacing: 0.0) {
-            VStack(spacing: 12.0) {
-                continueButton
-            }
-            .padding()
-        }
+        .background { OnboardingBackground(feature: feature) }
         .interactiveDismissDisabled()
         .presentationDragIndicator(.hidden)
     }
 
-    @ViewBuilder
-    private var continueButton: some View {
-        Button(action: onContinue) {
-            Text("Onboarding.Continue")
-                .fontWeight(.bold)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 6.0)
+    private func advance() {
+        let features = OnboardingFeature.allCases
+        guard let index = features.firstIndex(of: feature), index + 1 < features.count else {
+            return onFinish()
         }
-        .clipShape(.capsule)
-        .tint(.accent)
-        .buttonStyle(.glassProminent)
-    }
-}
-
-private struct FeatureRow: View {
-
-    var symbol: String
-    var colors: [Color]
-    var title: LocalizedStringKey
-    var blurb: LocalizedStringKey
-
-    var body: some View {
-        HStack(alignment: .center, spacing: 16.0) {
-            Image(systemName: symbol)
-                .font(.system(size: 40.0))
-                .foregroundStyle(
-                    LinearGradient(
-                        colors: colors,
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-                .frame(width: 56.0, height: 56.0)
-            VStack(alignment: .leading, spacing: 6.0) {
-                Text(title)
-                    .fontWeight(.bold)
-                Text(blurb)
-                    .foregroundStyle(.secondary)
-            }
-            Spacer(minLength: 0.0)
-        }
+        feature = features[index + 1]
     }
 }
 
