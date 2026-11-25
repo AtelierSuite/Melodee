@@ -3,17 +3,19 @@ import SFBAudioEngine
 
 extension MediaPlayerManager {
 
-    /// Places the time pitch unit between the audio player's source and its mixer, so audio can play faster or
-    /// slower without changing its pitch.
+    /// Places the time pitch unit and the equalizer between the audio player's source and its mixer.
     func insertTimePitch() {
         let timePitch = self.timePitch
+        let equalizer = self.equalizer
         let sourceNode = audioPlayer.sourceNode
         audioPlayer.modifyProcessingGraph { engine in
             let format = sourceNode.outputFormat(forBus: 0)
             engine.attach(timePitch)
+            engine.attach(equalizer)
             engine.disconnectNodeOutput(sourceNode)
             engine.connect(sourceNode, to: timePitch, format: format)
-            engine.connect(timePitch, to: engine.mainMixerNode, format: format)
+            engine.connect(timePitch, to: equalizer, format: format)
+            engine.connect(equalizer, to: engine.mainMixerNode, format: format)
         }
     }
 
@@ -35,12 +37,15 @@ extension MediaPlayerManager {
 
     // MARK: - AudioPlayerDelegate
 
-    /// Carries the time pitch unit over to the new format when the audio player changes formats between files.
+    /// Carries the time pitch unit and the equalizer over to the new format when the audio player changes formats
+    /// between files.
     func audioPlayer(_ audioPlayer: AudioPlayer,
                      reconfigureProcessingGraph engine: AVAudioEngine,
                      with format: AVAudioFormat) -> AVAudioNode {
         engine.disconnectNodeOutput(timePitch)
-        engine.connect(timePitch, to: engine.mainMixerNode, format: format)
+        engine.disconnectNodeOutput(equalizer)
+        engine.connect(timePitch, to: equalizer, format: format)
+        engine.connect(equalizer, to: engine.mainMixerNode, format: format)
         return timePitch
     }
 }

@@ -26,6 +26,7 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
     @ObservationIgnored let subtitleController = MainActor.assumeIsolated { VideoSubtitleController() }
     /// Changes the audio player's speed without changing its pitch. It's bypassed at normal speed.
     @ObservationIgnored let timePitch = AVAudioUnitTimePitch()
+    @ObservationIgnored let equalizer = AVAudioUnitEQ(numberOfBands: EQBand.defaults.count)
     /// How fast audio and video play, where 1 is normal speed.
     var playbackSpeed: Double = PlaybackSpeed.current {
         didSet {
@@ -159,6 +160,8 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
         audioPlayer.delegate = self
         insertTimePitch()
         applyPlaybackSpeed()
+        applyEqualizer(bands: EQBand.saved,
+                       isEnabled: UserDefaults.standard.bool(forKey: NPEqualizerSheet.isEnabledKey))
         // By default AVPlayer pauses a video when the app is backgrounded or the screen is
         // locked unless Picture in Picture is active, so keep its audio playing instead
         videoPlayer.audiovisualBackgroundPlaybackPolicy = .continuesIfPossible
