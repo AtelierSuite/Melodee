@@ -45,6 +45,7 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
     }
     /// Changes whenever a saved play time changes, so views showing playback progress refresh.
     var playTimesRevision: Int = 0
+    @ObservationIgnored var onPlaybackStart: ((FSFile) -> Void)?
     var isPlaybackActive: Bool = false
     var isPaused: Bool = true
     var repeatMode: RepeatMode = .none {
@@ -552,6 +553,7 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
             }
             startSubtitleTimer()
             playTimeTrackedFile = file
+            didStartPlaying(file)
             isPlaybackActive = true
             isPaused = false
             setNowPlaying()
@@ -578,6 +580,7 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
             }
             videoPlayer.play()
             playTimeTrackedFile = file
+            didStartPlaying(file)
             isPlaybackActive = true
             isPaused = false
             setNowPlaying()
@@ -593,6 +596,7 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
         do {
             try playAudio(at: url, from: startTime)
             playTimeTrackedFile = file
+            didStartPlaying(file)
             isPlaybackActive = true
             isPaused = false
             setNowPlaying()
@@ -698,6 +702,13 @@ class MediaPlayerManager: NSObject, AudioPlayer.Delegate {
         } catch {
             debugPrint(error.localizedDescription)
         }
+    }
+
+    private func didStartPlaying(_ file: FSFile) {
+        if file.type == .audio {
+            stateStore?.recordRecentlyPlayed(file)
+        }
+        onPlaybackStart?(file)
     }
 
     private func activateAudioSession() {
