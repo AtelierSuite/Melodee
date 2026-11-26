@@ -11,6 +11,7 @@ final class AppServices {
     let mediaPlayerManager = MediaPlayerManager()
     let fileDownloadManager = FileDownloadManager()
     let externalFoldersManager = ExternalFoldersManager()
+    private(set) var playbackSuggestions: PlaybackSuggestions?
 
     private var hasStarted: Bool = false
 
@@ -29,5 +30,8 @@ final class AppServices {
             externalFolders: externalFoldersManager
         )
         mediaPlayerManager.restorePlaybackState()
+        let playbackSuggestions = PlaybackSuggestions(mediaPlayer: mediaPlayerManager)
+        self.playbackSuggestions = playbackSuggestions
+        playbackSuggestions.update()
     }
 }

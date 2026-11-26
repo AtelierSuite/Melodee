@@ -42,6 +42,12 @@ struct PersistedPlayTime: Codable {
     var lastPlayedDate: Date
 }
 
+/// A file that was played recently, kept to suggest it again later.
+struct PersistedRecentlyPlayed: Codable {
+    var key: PlayTimeKey
+    var type: FileType
+}
+
 /// The playback state restored at launch, with files that are no longer available removed.
 struct RestoredPlaybackState {
     var queue: [FSFile]
@@ -60,7 +66,9 @@ class PlaybackStateStore {
     private let externalFolders: ExternalFoldersManager?
     private let queueFileURL: URL?
     private let playTimesFileURL: URL?
+    private let recentlyPlayedFileURL: URL?
     private lazy var playTimes: [PlayTimeKey: PersistedPlayTime] = loadPlayTimes()
+    lazy var recentlyPlayed: [PersistedRecentlyPlayed] = loadRecentlyPlayed()
     /// Called whenever a saved play time is added, changed or removed.
     var onPlayTimesChange: (() -> Void)?
 
@@ -69,6 +77,7 @@ class PlaybackStateStore {
     static let endPlayTimeMargin: TimeInterval = 5.0
     /// Older entries are dropped beyond this many files.
     private static let maximumPlayTimeCount = 1000
+    static let maximumRecentlyPlayedCount = 50
 
     init(documentsDirectoryURL: URL?,
          cloudDocumentsDirectoryURL: URL?,
@@ -84,6 +93,7 @@ class PlaybackStateStore {
                  create: true)
         queueFileURL = supportDirectoryURL?.appending(path: "PlaybackQueue.json")
         playTimesFileURL = supportDirectoryURL?.appending(path: "PlayTimes.json")
+        recentlyPlayedFileURL = supportDirectoryURL?.appending(path: "RecentlyPlayed.json")
     }
 
     // MARK: - Saving
@@ -210,6 +220,16 @@ class PlaybackStateStore {
         if isModified {
             writePlayTimes()
         }
+        var isRecentlyPlayedModified = false
+        for (index, entry) in recentlyPlayed.enumerated() {
+            guard let oldPath = absolutePath(for: entry.key),
+                  let movedPath = newPath(FilesystemManager.normalizedPath(oldPath)) else { continue }
+            recentlyPlayed[index].key = playTimeKey(for: movedPath)
+            isRecentlyPlayedModified = true
+        }
+        if isRecentlyPlayedModified {
+            writeRecentlyPlayed()
+        }
     }
 
     private func removePlayTime(for key: PlayTimeKey) {
@@ -217,7 +237,7 @@ class PlaybackStateStore {
         writePlayTimes()
     }
 
-    private func playTimeKey(for path: String) -> PlayTimeKey {
+    func playTimeKey(for path: String) -> PlayTimeKey {
         if let location = libraryLocation(for: path) {
             return PlayTimeKey(root: location.root, path: location.path)
         }
@@ -225,7 +245,7 @@ class PlaybackStateStore {
             .standardizedFileURL.path(percentEncoded: false)))
     }
 
-    private func absolutePath(for key: PlayTimeKey) -> String? {
+    func absolutePath(for key: PlayTimeKey) -> String? {
         switch key.root {
         case .documents:
             return documentsDirectoryURL?.appending(path: key.path).path(percentEncoded: false)
@@ -260,6 +280,27 @@ class PlaybackStateStore {
             try data.write(to: playTimesFileURL, options: .atomic)
         } catch {
             debugPrint("Failed to save play times: \(error.localizedDescription)")
+        }
+    }
+
+    // MARK: - Recently played
+
+    private func loadRecentlyPlayed() -> [PersistedRecentlyPlayed] {
+        guard let recentlyPlayedFileURL,
+              let data = try? Data(contentsOf: recentlyPlayedFileURL),
+              let entries = try? JSONDecoder().decode([PersistedRecentlyPlayed].self, from: data) else {
+            return []
+        }
+        return entries
+    }
+
+    func writeRecentlyPlayed() {
+        guard let recentlyPlayedFileURL else { return }
+        do {
+            let data = try JSONEncoder().encode(recentlyPlayed)
+            try data.write(to: recentlyPlayedFileURL, options: .atomic)
+        } catch {
+            debugPrint("Failed to save recently played files: \(error.localizedDescription)")
         }
     }
 
@@ -340,7 +381,7 @@ class PlaybackStateStore {
     }
 
     /// A file counts as available if it is on disk or is an iCloud file that can be downloaded on demand.
-    private static func isAvailable(_ url: URL) -> Bool {
+    static func isAvailable(_ url: URL) -> Bool {
         let path = url.path(percentEncoded: false)
         return FileManager.default.fileExists(atPath: path) || FSFile.isEvicted(atPath: path)
     }
