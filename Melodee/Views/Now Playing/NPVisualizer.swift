@@ -61,6 +61,9 @@ struct NPVisualizer: View {
                     .transition(.opacity)
             }
         }
+        .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { newValue in
+            mediaPlayer.visualizerPictureInPicture.sourceFrame = newValue
+        }
         .onChange(of: shouldAnalyse, initial: true) { _, newValue in
             setAnalysing(newValue)
         }

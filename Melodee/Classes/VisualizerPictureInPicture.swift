@@ -28,10 +28,14 @@ final class VisualizerPictureInPicture: NSObject {
     @ObservationIgnored private var artworkKey: String?
     @ObservationIgnored private var background: Image?
     @ObservationIgnored private var colors: NPVisualizerStyle.Colors = VisualizerPictureInPicture.accentColors
+    /// Where the visualizer is on screen, in window coordinates, so Picture in Picture grows out of its middle.
+    @ObservationIgnored var sourceFrame: CGRect = .zero {
+        didSet { positionDisplayView() }
+    }
 
-    private static let pointSide: CGFloat = 360.0
+    private static let pointSize = CGSize(width: 384.0, height: 216.0)
+    private static let sourceSize = CGSize(width: 16.0, height: 9.0)
     private static let scale: CGFloat = 2.0
-    private static let pixelSide = Int(pointSide * scale)
     private static let playingFrameInterval: TimeInterval = 1.0 / 30.0
     /// Frames are still drawn while paused so the bars settle, but far less often.
     private static let pausedFrameInterval: TimeInterval = 1.0 / 6.0
@@ -117,11 +121,20 @@ final class VisualizerPictureInPicture: NSObject {
         guard let window else { return displayView.window != nil }
         if displayView.superview !== window {
             displayView.removeFromSuperview()
-            displayView.frame = CGRect(x: 0, y: 0, width: 2, height: 2)
             displayView.isUserInteractionEnabled = false
             window.insertSubview(displayView, at: 0)
         }
+        positionDisplayView()
         return true
+    }
+
+    private func positionDisplayView() {
+        guard displayView.superview != nil else { return }
+        let size = Self.sourceSize
+        let center = sourceFrame.isEmpty ? CGPoint(x: size.width / 2, y: size.height / 2) :
+            CGPoint(x: sourceFrame.midX, y: sourceFrame.midY)
+        displayView.frame = CGRect(x: center.x - size.width / 2, y: center.y - size.height / 2,
+                                   width: size.width, height: size.height)
     }
 
     // MARK: Playback State
@@ -195,7 +208,7 @@ final class VisualizerPictureInPicture: NSObject {
         ) ?? .bars
         let frame = NPVisualizerFrame(bands: levels.bands, time: time, colors: colors, history: history)
         let content = VisualizerPictureInPictureFrame(style: style, frame: frame, background: background)
-            .frame(width: Self.pointSide, height: Self.pointSide)
+            .frame(width: Self.pointSize.width, height: Self.pointSize.height)
         guard let pixelBuffer = draw(content), let sampleBuffer = makeSampleBuffer(from: pixelBuffer) else { return }
         let layer = displayView.sampleBufferDisplayLayer
         if layer.sampleBufferRenderer.status == .failed {
@@ -205,11 +218,13 @@ final class VisualizerPictureInPicture: NSObject {
     }
 
     private func draw(_ content: some View) -> CVPixelBuffer? {
+        let pixelWidth = Int(Self.pointSize.width * Self.scale)
+        let pixelHeight = Int(Self.pointSize.height * Self.scale)
         if pixelBufferPool == nil {
             let attributes: [String: Any] = [
                 kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA,
-                kCVPixelBufferWidthKey as String: Self.pixelSide,
-                kCVPixelBufferHeightKey as String: Self.pixelSide,
+                kCVPixelBufferWidthKey as String: pixelWidth,
+                kCVPixelBufferHeightKey as String: pixelHeight,
                 kCVPixelBufferIOSurfacePropertiesKey as String: [String: Any]()
             ]
             CVPixelBufferPoolCreate(kCFAllocatorDefault, nil, attributes as CFDictionary, &pixelBufferPool)
@@ -223,16 +238,15 @@ final class VisualizerPictureInPicture: NSObject {
         defer { CVPixelBufferUnlockBaseAddress(pixelBuffer, []) }
         guard let context = CGContext(
             data: CVPixelBufferGetBaseAddress(pixelBuffer),
-            width: Self.pixelSide,
-            height: Self.pixelSide,
+            width: pixelWidth,
+            height: pixelHeight,
             bitsPerComponent: 8,
             bytesPerRow: CVPixelBufferGetBytesPerRow(pixelBuffer),
             space: CGColorSpaceCreateDeviceRGB(),
             bitmapInfo: CGImageAlphaInfo.premultipliedFirst.rawValue | CGBitmapInfo.byteOrder32Little.rawValue
         ) else { return nil }
-        // Core Graphics draws from the bottom up, and SwiftUI expects the origin at the top
-        context.translateBy(x: 0, y: CGFloat(Self.pixelSide))
-        context.scaleBy(x: Self.scale, y: -Self.scale)
+        // ImageRenderer flips to Core Graphics' bottom-up coordinates itself
+        context.scaleBy(x: Self.scale, y: Self.scale)
         let renderer = ImageRenderer(content: content)
         renderer.render { _, render in
             render(context)
@@ -289,7 +303,8 @@ final class VisualizerPictureInPicture: NSObject {
     /// Blurred once per track, as blurring every frame would cost too much.
     private static func blurredBackground(from image: UIImage) -> UIImage? {
         guard let input = CIImage(image: image) else { return nil }
-        let side = input.extent.width > 0 ? Self.pointSide / input.extent.width : 1.0
+        let shortest = min(input.extent.width, input.extent.height)
+        let side = shortest > 0 ? Self.pointSize.width / shortest : 1.0
         let scaled = input.transformed(by: CGAffineTransform(scaleX: side, y: side))
         let blurred = scaled.clampedToExtent().applyingGaussianBlur(sigma: 16.0).cropped(to: scaled.extent)
         guard let cgImage = CIContext().createCGImage(blurred, from: scaled.extent) else { return nil }
